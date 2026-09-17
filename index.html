@@ -59,7 +59,7 @@
       </div>
     </div>
 
-    <!-- DATE & MONTH FILTER BAR (DEFAULT SET TO ALL TIME SO ALL ENTRIES SHOW) -->
+    <!-- DATE & MONTH FILTER BAR -->
     <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-2 text-xs font-bold">
         <i class="fa-solid fa-filter text-blue-500"></i> Filter Period:
@@ -350,6 +350,21 @@
       fetchFromSheet();
     }
 
+    // BULLETPROOF FRONTEND DATE SANITIZER
+    function cleanDateString(raw) {
+      if (!raw) return new Date().toLocaleDateString('en-CA');
+      let str = String(raw).trim();
+      if (str.includes('GMT') || str.includes('UTC') || str.includes('Sun') || str.includes('Mon') || str.includes('Tue') || str.includes('Wed') || str.includes('Thu') || str.includes('Fri') || str.includes('Sat')) {
+        let d = new Date(str);
+        if (!isNaN(d.getTime())) {
+          return d.toLocaleDateString('en-CA');
+        }
+      }
+      if (str.includes('T')) str = str.split('T')[0];
+      if (str.length >= 10) return str.substring(0, 10);
+      return str;
+    }
+
     // ROBUST FETCH
     async function fetchFromSheet() {
       const apiUrl = localStorage.getItem('finance_api_url');
@@ -376,13 +391,10 @@
         
         if(Array.isArray(data)) {
           entries = data.map(item => {
-            let cleanDate = String(item.Date || item.date || '');
-            if (cleanDate.includes('T')) {
-              cleanDate = cleanDate.split('T')[0];
-            }
+            let rawDate = item.Date || item.date || '';
             return {
               id: String(item.ID || item.id || Date.now()),
-              date: cleanDate,
+              date: cleanDateString(rawDate),
               type: String(item.Type || item.type || 'Expense'),
               category: String(item.Category || item.category || 'Other'),
               person: String(item.Person || item.person || '-'),
@@ -599,7 +611,7 @@
     }
 
     function checkDailyStreak() {
-      const today = new Date().toLocaleDateString('en-CA');
+      const today = new Date().toLocaleDateString('en-CA'); // "2026-09-17"
       const hasTodayEntry = entries.some(e => e.date === today);
       const badge = document.getElementById('streakBadge');
       if(!badge) return;
