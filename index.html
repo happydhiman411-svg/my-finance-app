@@ -250,7 +250,7 @@
         <button onclick="addBulkRow()" class="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold px-3 py-2 rounded-xl">+ Add More Row</button>
         <div class="flex gap-2">
           <button onclick="closeExpressModal()" class="bg-slate-200 dark:bg-slate-700 text-xs font-bold px-4 py-2 rounded-xl">Cancel</button>
-          <button onclick="saveBulkEntries()" class="bg-emerald-600 text-white text-xs font-bold px-5 py-2 rounded-xl shadow-md">Save All Entries</button>
+          <button id="saveBulkBtn" onclick="saveBulkEntries()" class="bg-emerald-600 text-white text-xs font-bold px-5 py-2 rounded-xl shadow-md">Save All Entries</button>
         </div>
       </div>
     </div>
@@ -715,22 +715,41 @@
       `);
     }
 
-    async function saveBulkEntries() {
-      const rows = document.querySelectorAll('.bulk-row');
-      for(let row of rows) {
-        const type = row.querySelector('.bulk-type').value;
-        const date = row.querySelector('.bulk-date').value;
-        const category = row.querySelector('.bulk-category').value;
-        const person = row.querySelector('.bulk-person').value.trim() || '-';
-        const amount = parseFloat(row.querySelector('.bulk-amount').value) || 0;
-        const note = row.querySelector('.bulk-note').value.trim() || '-';
+   async function saveBulkEntries() {
+  const saveBtn = document.getElementById('saveBulkBtn');
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = "⏳ Saving Entries...";
+    saveBtn.classList.add('opacity-50', 'cursor-not-allowed');
+  }
 
-        if(amount > 0) {
-          await syncToApi({ id: Date.now() + Math.random(), date, type, category, person, amount, note }, 'addTransaction');
-        }
-      }
-      closeExpressModal();
+  const rows = document.querySelectorAll('.bulk-row');
+  let promises = [];
+
+  for(let row of rows) {
+    const type = row.querySelector('.bulk-type').value;
+    const date = row.querySelector('.bulk-date').value;
+    const category = row.querySelector('.bulk-category').value;
+    const person = row.querySelector('.bulk-person').value.trim() || '-';
+    const amount = parseFloat(row.querySelector('.bulk-amount').value) || 0;
+    const note = row.querySelector('.bulk-note').value.trim() || '-';
+
+    if(amount > 0) {
+      promises.push(syncToApi({ id: Date.now() + Math.random(), date, type, category, person, amount, note }, 'addTransaction'));
     }
+  }
+
+  // Wait for all entries to save completely
+  await Promise.all(promises);
+
+  if (saveBtn) {
+    saveBtn.disabled = false;
+    saveBtn.innerHTML = "Save All Entries";
+    saveBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+  }
+
+  closeExpressModal();
+}
     // TOGGLE PASSWORD VISIBILITY FUNCTION
     function togglePassword(inputId, el) {
       const input = document.getElementById(inputId);
