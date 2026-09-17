@@ -301,7 +301,7 @@
       document.getElementById('passInput').value = '';
     }
 
-    function updateCredentials() {
+async function updateCredentials() {
       const currentPass = document.getElementById('currentPassInput').value.trim();
       const newUsername = document.getElementById('newUsernameInput').value.trim();
       const newPassword = document.getElementById('newPasswordInput').value.trim();
@@ -314,8 +314,11 @@
       }
 
       let updated = false;
+      let payload = {};
+
       if (newUsername) {
         localStorage.setItem('finance_login_user', newUsername);
+        payload.newUsername = newUsername;
         updated = true;
       }
       if (newPassword) {
@@ -324,11 +327,15 @@
           return;
         }
         localStorage.setItem('finance_login_pass', newPassword);
+        payload.newPassword = newPassword;
         updated = true;
       }
 
       if (updated) {
-        alert("✅ Credentials Successfully Updated!");
+        // Cloud par bhi sync karein taaki doosre device par bhi yehi password chale
+        await syncToApi(payload, 'updateCredentials');
+
+        alert("✅ Credentials Successfully Updated & Synced to Cloud!");
         document.getElementById('currentPassInput').value = '';
         document.getElementById('newUsernameInput').value = '';
         document.getElementById('newPasswordInput').value = '';
@@ -404,7 +411,13 @@
 
         const res = await fetch(`${apiUrl}?action=getData&token=${SECRET_TOKEN}&t=${Date.now()}`);
         const data = await res.json();
-        
+        // Fetch Credentials from Cloud
+        const credRes = await fetch(`${apiUrl}?action=getCredentials&token=${SECRET_TOKEN}&t=${Date.now()}`);
+        const credData = await credRes.json();
+        if (credData && credData.username && credData.password) {
+          localStorage.setItem('finance_login_user', credData.username);
+          localStorage.setItem('finance_login_pass', credData.password);
+        }
         if(Array.isArray(data)) {
           entries = data.map(item => {
             let rawDate = item.Date || item.date || '';
