@@ -283,21 +283,82 @@
             checkAuth();
         }
 
-        async function fetchFromSheet() {
+      async function fetchFromSheet() {
             const apiUrl = localStorage.getItem('finance_api_url') || DEFAULT_API_URL;
             const badge = document.getElementById('cloudSyncBadge');
             
+            // 1. Instant load from local storage first
+            const cachedLocalData = localStorage.getItem('finance_offline_entries');
+            let currentLocalEntries = [];
+            if (cachedLocalData) {
+                try {
+                    currentLocalEntries = JSON.parse(cachedLocalData);
+                    entries = currentLocalEntries;
+                    renderCategoriesDatalist();
+                    renderTransactions();
+                } catch(e) {}
+            }
+
             badge.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300";
-            badge.innerHTML = "🔄 Syncing...";
+            badge.innerHTML = "🔄 Background Syncing...";
 
             try {
-                // Fetch Categories
-                const catRes = await fetch(`${apiUrl}?action=getCategories&token=${SECRET_TOKEN}&t=${Date.now()}`);
+                const [catRes, res, credRes] = await Promise.all([
+                    fetch(`${apiUrl}?action=getCategories&token=${SECRET_TOKEN}&t=${Date.now()}`),
+                    fetch(`${apiUrl}?action=getData&token=${SECRET_TOKEN}&t=${Date.now()}`),
+                    fetch(`${apiUrl}?action=getCredentials&token=${SECRET_TOKEN}&t=${Date.now()}`)
+                ]);
+
                 const catData = await catRes.json();
                 if (Array.isArray(catData) && catData.length > 0) {
                     categoriesList = catData;
                 }
 
+                const data = await res.json();
+                const credData = await credRes.json();
+                
+                if (credData && credData.username && credData.password) {
+                    localStorage.setItem('finance_login_user', credData.username);
+                    localStorage.setItem('finance_login_pass', credData.password);
+                }
+
+                if (Array.isArray(data)) {
+                    let serverEntries = data.map(item => ({
+                        id: String(item.id || item.ID || Date.now()),
+                        date: item.date || item.DATE || '',
+                        type: item.type || item.TYPE || 'Expense',
+                        category: item.category || item.CATEGORY || 'Other',
+                        person: item.person || item.PERSON || '-',
+                        amount: parseFloat(item.amount || item.AMOUNT || 0),
+                        note: item.note || item.NOTE || '-'
+                    }));
+
+                    // --- SMART MERGE (Conflict Prevention) ---
+                    // Agar user ne sync ke dauran koi nayi entry add ki thi jo abhi server par nahi gayi, 
+                    // toh use serverEntries ke sath mila lo taaki wo gayab na ho.
+                    const serverIds = new Set(serverEntries.map(e => e.id));
+                    currentLocalEntries.forEach(localItem => {
+                        // Agar local item ki ID server mein nahi hai, matlab wo abhi-abhi offline/sync se pehle bani hai
+                        if (!serverIds.has(localItem.id)) {
+                            serverEntries.unshift(localItem); // Use upar rakh lo
+                        }
+                    });
+
+                    entries = serverEntries;
+                    localStorage.setItem('finance_offline_entries', JSON.stringify(entries));
+                }
+
+                badge.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300";
+                badge.innerHTML = "✅ Cloud Connected";
+                
+                renderCategoriesDatalist();
+                renderTransactions();
+            } catch (err) {
+                badge.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300";
+                badge.innerHTML = "⚠️ Offline Mode (Cached)";
+                console.error(err);
+            }
+        }
                 // Fetch Transactions
                 const res = await fetch(`${apiUrl}?action=getData&token=${SECRET_TOKEN}&t=${Date.now()}`);
                 const data = await res.json();
