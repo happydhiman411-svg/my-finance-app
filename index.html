@@ -185,9 +185,24 @@
       <div class="space-y-3 bg-slate-50 dark:bg-slate-700/50 p-3 rounded-xl border dark:border-slate-600">
         <p class="text-xs font-bold text-slate-800 dark:text-white">Change Username & Password</p>
         <div class="space-y-2">
-          <input type="password" id="currentPassInput" placeholder="Current Password (Required)..." autocomplete="current-password" class="w-full border dark:border-slate-600 p-2 rounded-xl text-xs bg-white dark:bg-slate-700">
-          <input type="text" id="newUsernameInput" placeholder="New Username (Optional)..." autocomplete="off" class="w-full border dark:border-slate-600 p-2 rounded-xl text-xs bg-white dark:bg-slate-700">
-          <input type="password" id="newPasswordInput" placeholder="New Password (Optional)..." autocomplete="new-password" class="w-full border dark:border-slate-600 p-2 rounded-xl text-xs bg-white dark:bg-slate-700">
+          <!-- Current Password with Eye Icon -->
+          <div class="relative">
+            <input type="password" id="currentPassInput" placeholder="Current Password (Required)..." autocomplete="current-password" class="w-full border dark:border-slate-600 p-2 pr-9 rounded-xl text-xs bg-white dark:bg-slate-700 outline-none">
+            <span onclick="togglePassword('currentPassInput', this)" class="absolute right-3 top-2.5 cursor-pointer text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+              <i class="fa-solid fa-eye text-xs"></i>
+            </span>
+          </div>
+
+          <input type="text" id="newUsernameInput" placeholder="New Username (Optional)..." autocomplete="off" class="w-full border dark:border-slate-600 p-2 rounded-xl text-xs bg-white dark:bg-slate-700 outline-none">
+          
+          <!-- New Password with Eye Icon -->
+          <div class="relative">
+            <input type="password" id="newPasswordInput" placeholder="New Password (Optional)..." autocomplete="new-password" class="w-full border dark:border-slate-600 p-2 pr-9 rounded-xl text-xs bg-white dark:bg-slate-700 outline-none">
+            <span onclick="togglePassword('newPasswordInput', this)" class="absolute right-3 top-2.5 cursor-pointer text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+              <i class="fa-solid fa-eye text-xs"></i>
+            </span>
+          </div>
+
           <button onclick="updateCredentials()" class="w-full bg-indigo-600 text-white font-bold py-2 rounded-xl text-xs">Update Credentials</button>
         </div>
       </div>
@@ -715,6 +730,18 @@
         }
       }
       closeExpressModal();
+    }
+    // TOGGLE PASSWORD VISIBILITY FUNCTION
+    function togglePassword(inputId, el) {
+      const input = document.getElementById(inputId);
+      const icon = el.querySelector('i');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'fa-solid fa-eye-slash text-xs';
+      } else {
+        input.type = 'password';
+        icon.className = 'fa-solid fa-eye text-xs';
+      }
     }
   </script>
 </body>
