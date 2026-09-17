@@ -268,22 +268,48 @@
       { category: "Salary", budget: 0 }
     ];
     // Page khulte hi turant cloud se latest password fetch karne ke liye
-    async function loadCloudCredentialsOnStart() {
+   // ⚡ OPTIMIZED FUNCTION FOR INSTANT LOGIN & RECONNECT
+async function loadCloudCredentialsOnStart() {
+  // Pehle browser memory (LocalCache) se password check karo taaki login turant ho
+  const savedUser = localStorage.getItem('finance_login_user');
+  const savedPass = localStorage.getItem('finance_login_pass');
+  if (savedUser && savedPass) {
+    console.log("Credentials loaded from LocalCache.");
+  }
+
+  try {
+    const apiurl = localStorage.getItem('finance_api_url') || DEFAULT_API_URL;
+    if (!apiurl) return;
+
+    // Background me 3 baar khud try karega agar network slow hua toh
+    for (let i = 0; i < 3; i++) {
       try {
-        const apiUrl = localStorage.getItem('finance_api_url') || DEFAULT_API_URL;
-        if (!apiUrl) return;
+        const tokenParam = typeof SECRET_TOKEN !== 'undefined' ? SECRET_TOKEN : '';
+        const res = await fetch(`${apiurl}?action=getCredentials&token=${tokenParam}&t=${Date.now()}`, { 
+          method: 'GET', 
+          redirect: 'follow' 
+        });
         
-        const res = await fetch(`${apiUrl}?action=getCredentials&token=${SECRET_TOKEN}&t=${Date.now()}`);
+        if (!res.ok) throw new Error('Network error');
         const data = await res.json();
-        
+
         if (data && data.username && data.password) {
           localStorage.setItem('finance_login_user', data.username);
           localStorage.setItem('finance_login_pass', data.password);
+          console.log("Credentials refreshed from Cloud successfully.");
+          return; // Success! Loop se bahar niklein
         }
       } catch (err) {
-        console.log("Cloud credential fetch error:", err);
+        console.log(`Cloud credentials retry attempt ${i + 1} failed...`);
+        if (i === 2) throw err; // Teeno baar fail hone par error throw karega
+        await new Promise(res => setTimeout(res, 1000)); // 1 second rukh kar dobara try karega
       }
     }
+  } catch (err) {
+    console.log("Cloud credential fetch error, using offline/local credentials:", err);
+  }
+}
+
 
     // App load hote hi sabse pehle yehi chalega
     loadCloudCredentialsOnStart();
