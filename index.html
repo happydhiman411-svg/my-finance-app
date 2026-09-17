@@ -1,155 +1,577 @@
 <!DOCTYPE html>
-<html lang="hi" class="light">
-<!-- 🔍 APNE HEAD TAG KE ANDAR IN LINKS KO REPLACE KAREIN -->
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pro Personal Finance Dashboard</title>
-  
-  <!-- Tailwind CSS with secure HTTPS crossorigin -->
-  <script src="https://tailwindcss.com" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script>
-    tailwind.config = { 
-      darkMode: 'class' 
-    }
-  </script>
-  
-  <!-- Chart.js with secure HTTPS crossorigin -->
-  <script src="https://jsdelivr.net" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  
-  <!-- FontAwesome Icons with secure HTTPS crossorigin -->
-  <link rel="stylesheet" href="https://cloudflare.com" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Personal Finance Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
+<body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen font-sans">
 
-<body class="bg-slate-100 dark:bg-slate-900 min-h-screen text-slate-800 dark:text-slate-100 transition-colors duration-200">
-
-  <!-- LOGIN PAGE -->
-  <div id="loginPage" class="flex items-center justify-center min-h-screen p-4">
-    <div class="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 dark:border-slate-700">
-      <div class="text-center mb-6">
-        <div class="bg-blue-600 text-white w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg">
-          <i class="fa-solid fa-wallet text-2xl"></i>
-        </div>
-        <h2 class="text-2xl font-bold text-slate-800 dark:text-white">Pro Finance Manager</h2>
-        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Cloud Sync Dashboard</p>
-      </div>
-      <div class="space-y-4">
-        <div>
-          <label class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Username</label>
-          <input type="text" id="userInput" placeholder="Enter Username" autocomplete="off" class="w-full border dark:border-slate-600 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-700 focus:bg-white outline-none">
-        </div>
-        <div>
-          <label class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Password</label>
-          <input type="password" id="passInput" placeholder="Enter Password" autocomplete="new-password" class="w-full border dark:border-slate-600 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-700 focus:bg-white outline-none">
-        </div>
-        <button onclick="checkLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold transition">Dashboard Login</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MAIN DASHBOARD -->
-  <div id="dashboardPage" class="hidden p-4 md:p-8 max-w-7xl mx-auto space-y-6">
-    
-    <!-- TOP NAVBAR -->
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center bg-white dark:bg-slate-800 p-4 md:p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 gap-4">
-      <div>
-        <h1 class="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-2">📊 Financial Dashboard</h1>
-        <div class="flex flex-wrap items-center gap-2 mt-2">
-          <div id="streakBadge" class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold"></div>
-          <div id="cloudSyncBadge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border dark:border-slate-600">
-            ⚡ Checking Connection...
-          </div>
-        </div>
-      </div>
-
-      <div class="flex flex-wrap gap-2 w-full md:w-auto">
-        <button onclick="fetchFromSheet()" class="bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-1"><i class="fa-solid fa-rotate"></i> Sync Refresh</button>
-        <button onclick="openExpressModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-1.5"><i class="fa-solid fa-bolt"></i> ⚡ Express Entry</button>
-        <button onclick="openCatModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-1.5"><i class="fa-solid fa-list-check"></i> Categories & Budget</button>
-        <button onclick="openSettingsModal()" class="bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 text-white text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5"><i class="fa-solid fa-gear text-amber-400"></i> Settings</button>
-        <button onclick="logout()" class="bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold px-3 py-2 rounded-xl">Logout</button>
-      </div>
-    </div>
-
-    <!-- DATE & MONTH FILTER BAR -->
-    <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3">
-      <div class="flex items-center gap-2 text-xs font-bold">
-        <i class="fa-solid fa-filter text-blue-500"></i> Filter Period:
-        <select id="filterType" onchange="handleFilterChange()" class="border dark:border-slate-600 p-1.5 rounded-xl bg-slate-50 dark:bg-slate-700 text-xs">
-          <option value="all" selected>All Time</option>
-          <option value="this_month">This Month</option>
-          <option value="custom_month">Specific Month</option>
-          <option value="custom_range">Date Range</option>
-        </select>
-      </div>
-      <div class="flex items-center gap-2" id="filterInputsContainer"></div>
-    </div>
-
-    <!-- METRIC CARDS -->
-    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
-      <div class="bg-emerald-500 text-white p-4 rounded-2xl shadow-sm"><p class="text-[10px] uppercase font-bold opacity-80">Total Income</p><h3 class="text-xl md:text-2xl font-black mt-1" id="totalIncome">₹0</h3></div>
-      <div class="bg-rose-500 text-white p-4 rounded-2xl shadow-sm"><p class="text-[10px] uppercase font-bold opacity-80">Total Expense</p><h3 class="text-xl md:text-2xl font-black mt-1" id="totalExpense">₹0</h3></div>
-      <div class="bg-amber-500 text-white p-4 rounded-2xl shadow-sm"><p class="text-[10px] uppercase font-bold opacity-80">Udhaar Diya</p><h3 class="text-xl md:text-2xl font-black mt-1" id="totalAdvGiven">₹0</h3></div>
-      <div class="bg-sky-500 text-white p-4 rounded-2xl shadow-sm"><p class="text-[10px] uppercase font-bold opacity-80">Udhaar Liya</p><h3 class="text-xl md:text-2xl font-black mt-1" id="totalAdvTaken">₹0</h3></div>
-      <div class="bg-indigo-600 text-white p-4 rounded-2xl shadow-sm col-span-2 md:col-span-1"><p class="text-[10px] uppercase font-bold opacity-80">Net Balance</p><h3 class="text-xl md:text-2xl font-black mt-1" id="netBalance">₹0</h3></div>
-    </div>
-
-    <div id="budgetAlertContainer" class="hidden space-y-2"></div>
-
-    <!-- ENTRY FORM & CHART -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 lg:col-span-1">
-        <h2 class="text-md font-bold text-slate-800 dark:text-white mb-4">➕ Single Fast Entry</h2>
-        <form onsubmit="addSingleEntry(event)" class="space-y-3">
-          <div>
-            <label class="text-[11px] font-bold text-slate-500 dark:text-slate-400">TYPE</label>
-            <select id="entryType" class="w-full border dark:border-slate-600 p-2 rounded-xl text-sm bg-slate-50 dark:bg-slate-700 font-semibold outline-none">
-              <option value="Expense">Expense (Kharch)</option>
-              <option value="Income">Income (Paise Aaye)</option>
-              <option value="Advance Given">Udhaar Diya (Given)</option>
-              <option value="Advance Taken">Udhaar Liya (Taken)</option>
-              <option value="Savings">Savings (RD/FD/EMI)</option>
-            </select>
-          </div>
-
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <label class="text-[11px] font-bold text-slate-500 dark:text-slate-400">DATE</label>
-              <input type="date" id="entryDate" required class="w-full border dark:border-slate-600 p-2 rounded-xl text-sm bg-slate-50 dark:bg-slate-700 outline-none">
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen" class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-200 dark:border-slate-700">
+            <h2 class="text-2xl font-bold mb-6 text-center text-indigo-600 dark:text-indigo-400">🔒 Finance Login</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Username</label>
+                    <input type="text" id="loginUser" class="w-full px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-600 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Enter username">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Password</label>
+                    <div class="relative">
+                        <input type="password" id="loginPass" class="w-full px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-600 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Enter password">
+                        <button type="button" onclick="togglePasswordVisibility('loginPass', 'loginEyeIcon')" class="absolute right-3 top-3 text-slate-400 hover:text-slate-600">
+                            <i id="loginEyeIcon" class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <button onclick="handleLogin()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-xl transition duration-200 shadow-lg">Login</button>
             </div>
-            <div>
-              <label class="text-[11px] font-bold text-slate-500 dark:text-slate-400">CATEGORY</label>
-              <select id="entryCategory" class="w-full border dark:border-slate-600 p-2 rounded-xl text-sm bg-slate-50 dark:bg-slate-700 outline-none"></select>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <label class="text-[11px] font-bold text-slate-500 dark:text-slate-400">PERSON</label>
-              <input type="text" id="entryPerson" placeholder="Self, Papa..." class="w-full border dark:border-slate-600 p-2 rounded-xl text-sm bg-slate-50 dark:bg-slate-700 outline-none">
-            </div>
-            <div>
-              <label class="text-[11px] font-bold text-slate-500 dark:text-slate-400">AMOUNT (₹)</label>
-              <input type="number" id="entryAmount" required placeholder="0" class="w-full border dark:border-slate-600 p-2 rounded-xl text-sm bg-slate-50 dark:bg-slate-700 font-bold outline-none">
-            </div>
-          </div>
-
-          <div>
-            <label class="text-[11px] font-bold text-slate-500 dark:text-slate-400">NOTE</label>
-            <input type="text" id="entryNote" placeholder="Details..." class="w-full border dark:border-slate-600 p-2 rounded-xl text-sm bg-slate-50 dark:bg-slate-700 outline-none">
-          </div>
-
-          <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-bold text-sm shadow-md transition">Save Record</button>
-        </form>
-      </div>
-
-      <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 lg:col-span-2">
-        <h2 class="text-md font-bold text-slate-800 dark:text-white mb-2">Category Wise Expense Breakdown</h2>
-        <div class="w-full h-64 flex items-center justify-center">
-          <canvas id="financeChart"></canvas>
         </div>
-      </div>
     </div>
 
-    <!-- TRANSACTIONS TABLE -->
-    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+    <!-- MAIN DASHBOARD -->
+    <div id="dashboardApp" class="hidden max-w-7xl mx-auto p-4 md:p-6 space-y-6">
+        
+        <!-- HEADER -->
+        <div class="flex flex-col md:flex-row justify-between items-center bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 gap-4">
+            <h1 class="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-2">💰 Financial Dashboard</h1>
+            <div class="flex flex-wrap items-center gap-2">
+                <div id="cloudSyncBadge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-600">
+                    🔄 Checking Connection...
+                </div>
+                <button onclick="fetchFromSheet()" class="bg-sky-600 hover:bg-sky-700 text-white px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1"><i class="fa-solid fa-rotate"></i> Sync Refresh</button>
+                <button onclick="openExpressModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1"><i class="fa-solid fa-bolt"></i> Express Entry</button>
+                <button onclick="openSettingsModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1"><i class="fa-solid fa-gear"></i> Settings</button>
+                <button onclick="logout()" class="bg-rose-500 hover:bg-rose-600 text-white px-3 py-2 rounded-xl text-xs font-bold">Logout</button>
+            </div>
+        </div>
+
+        <!-- TRANSACTION FORM & STATS -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- SINGLE ENTRY FORM -->
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 space-y-4">
+                <h2 class="text-lg font-bold text-indigo-600 dark:text-indigo-400">➕ Add / Edit Transaction</h2>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-semibold mb-1">Type</label>
+                        <select id="entryType" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-600 dark:bg-slate-700">
+                            <option value="Expense">Expense</option>
+                            <option value="Income">Income</option>
+                            <option value="Advance Given">Advance Given</option>
+                            <option value="Advance Taken">Advance Taken</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold mb-1">Date</label>
+                        <input type="date" id="entryDate" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-600 dark:bg-slate-700">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold mb-1">Category</label>
+                        <input type="text" id="entryCategory" list="categoryListOptions" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-600 dark:bg-slate-700" placeholder="Select or type category">
+                        <datalist id="categoryListOptions"></datalist>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold mb-1">Person / Source</label>
+                        <input type="text" id="entryPerson" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-600 dark:bg-slate-700" placeholder="-">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold mb-1">Amount</label>
+                        <input type="number" id="entryAmount" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-600 dark:bg-slate-700" placeholder="0.00">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold mb-1">Note</label>
+                        <input type="text" id="entryNote" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-600 dark:bg-slate-700" placeholder="Optional note">
+                    </div>
+                    <button id="saveRecordBtn" onclick="saveSingleEntry()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl transition duration-200 shadow-md">Save Record</button>
+                </div>
+            </div>
+
+            <!-- ANALYTICS / OVERVIEW -->
+            <div class="lg:col-span-2 space-y-6">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="bg-emerald-50 dark:bg-emerald-950/40 p-4 rounded-2xl border border-emerald-200 dark:border-emerald-800">
+                        <p class="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Total Income</p>
+                        <h3 id="totalIncomeVal" class="text-xl font-black text-emerald-700 dark:text-emerald-300">₹0</h3>
+                    </div>
+                    <div class="bg-rose-50 dark:bg-rose-950/40 p-4 rounded-2xl border border-rose-200 dark:border-rose-800">
+                        <p class="text-xs font-semibold text-rose-600 dark:text-rose-400">Total Expense</p>
+                        <h3 id="totalExpenseVal" class="text-xl font-black text-rose-700 dark:text-rose-300">₹0</h3>
+                    </div>
+                    <div class="bg-indigo-50 dark:bg-indigo-950/40 p-4 rounded-2xl border border-indigo-200 dark:border-indigo-800">
+                        <p class="text-xs font-semibold text-indigo-600 dark:text-indigo-400">Net Balance</p>
+                        <h3 id="netBalanceVal" class="text-xl font-black text-indigo-700 dark:text-indigo-300">₹0</h3>
+                    </div>
+                </div>
+
+                <!-- FILTER BAR -->
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center gap-2 text-xs font-bold">
+                        <i class="fa-solid fa-filter"></i> Filter Period:
+                        <select id="filterType" onchange="handleFilterChange()" class="border dark:border-slate-600 dark:bg-slate-700 px-3 py-1.5 rounded-xl text-xs">
+                            <option value="all">All Time</option>
+                            <option value="this_month" selected>This Month</option>
+                            <option value="custom_month">Specific Month</option>
+                            <option value="custom_range">Date Range</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2" id="filterInputsContainer"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TRANSACTIONS TABLE -->
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                <h3 class="font-bold text-sm">Recent Transactions</h3>
+                <span id="recordCount" class="text-xs text-slate-400">0 records</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
+                            <th class="p-3">Date</th>
+                            <th class="p-3">Type</th>
+                            <th class="p-3">Category</th>
+                            <th class="p-3">Person</th>
+                            <th class="p-3">Amount</th>
+                            <th class="p-3">Note</th>
+                            <th class="p-3 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactionTableBody">
+                        <tr><td colspan="7" class="text-center p-6 text-slate-400">Loading entries...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- EXPRESS ENTRY MODAL -->
+    <div id="expressModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto space-y-4 border border-slate-200 dark:border-slate-700">
+            <div class="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-700">
+                <h3 class="font-bold text-lg text-emerald-600">⚡ Express Bulk Entry</h3>
+                <button onclick="closeExpressModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div id="expressRowsContainer" class="space-y-3"></div>
+            <div class="flex justify-between pt-2">
+                <button onclick="addBulkRow()" class="bg-slate-200 dark:bg-slate-700 px-3 py-2 rounded-xl text-xs font-bold">+ Add Row</button>
+                <button id="saveBulkBtn" onclick="saveBulkEntries()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl text-xs font-bold">Save All Entries</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settingsModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl w-full max-w-md space-y-4 border border-slate-200 dark:border-slate-700">
+            <div class="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-700">
+                <h3 class="font-bold text-lg text-indigo-600">⚙️ Settings & Security</h3>
+                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold mb-1">Google Apps Script API URL</label>
+                    <input type="text" id="settingsApiUrl" class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 dark:bg-slate-700">
+                </div>
+                <hr class="border-slate-200 dark:border-slate-700 my-2">
+                <p class="font-bold text-slate-700 dark:text-slate-300">Change Credentials (Synced to Cloud)</p>
+                <div>
+                    <label class="block font-semibold mb-1">Current Password</label>
+                    <input type="password" id="currentPassInput" class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 dark:bg-slate-700" placeholder="Enter current password">
+                </div>
+                <div>
+                    <label class="block font-semibold mb-1">New Username (Optional)</label>
+                    <input type="text" id="newUsernameInput" class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 dark:bg-slate-700" placeholder="New username">
+                </div>
+                <div>
+                    <label class="block font-semibold mb-1">New Password (Optional)</label>
+                    <input type="password" id="newPasswordInput" class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 dark:bg-slate-700" placeholder="New password (min 4 chars)">
+                </div>
+                <button onclick="updateCredentials()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-xl transition duration-200">Update Credentials</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        const SECRET_TOKEN = "Punya@2026";
+        const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbxi8eKxzqSLYIcf6GVKq7pgQNAZxPPKGVrFFIBKiBILiSbVyHbbO0d/exec";
+        
+        let entries = [];
+        let categoriesList = [
+            { category: "Doodh", budget: 0 },
+            { category: "Bijli Bill", budget: 0 },
+            { category: "Petrol", budget: 0 },
+            { category: "Grocery", budget: 0 },
+            { category: "Salary", budget: 0 }
+        ];
+        let myChart = null;
+        let editingId = null;
+
+        // Page khulte hi turant cloud se latest password fetch karne ke liye
+        async function loadCloudCredentialsOnStart() {
+            try {
+                const apiUrl = localStorage.getItem('finance_api_url') || DEFAULT_API_URL;
+                if (!apiUrl) return;
+                
+                const res = await fetch(`${apiUrl}?action=getCredentials&token=${SECRET_TOKEN}&t=${Date.now()}`);
+                const data = await res.json();
+                
+                if (data && data.username && data.password) {
+                    localStorage.setItem('finance_login_user', data.username);
+                    localStorage.setItem('finance_login_pass', data.password);
+                }
+            } catch (err) {
+                console.log("Cloud credential fetch error:", err);
+            }
+        }
+        loadCloudCredentialsOnStart();
+
+        function setTodayDate() {
+            const todayIST = new Date().toLocaleDateString('en-CA');
+            const dateEl = document.getElementById('entryDate');
+            if (dateEl) dateEl.value = todayIST;
+        }
+
+        function checkAuth() {
+            const loggedIn = localStorage.getItem('finance_logged_in');
+            if (loggedIn === 'true') {
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('dashboardApp').classList.remove('hidden');
+                setTodayDate();
+                fetchFromSheet();
+            } else {
+                document.getElementById('loginScreen').classList.remove('hidden');
+                document.getElementById('dashboardApp').classList.add('hidden');
+            }
+        }
+
+        function togglePasswordVisibility(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        function handleLogin() {
+            const user = document.getElementById('loginUser').value.trim();
+            const pass = document.getElementById('loginPass').value.trim();
+            
+            const savedUser = localStorage.getItem('finance_login_user') || "admin";
+            const savedPass = localStorage.getItem('finance_login_pass') || "admin123";
+
+            if (user === savedUser && pass === savedPass) {
+                localStorage.setItem('finance_logged_in', 'true');
+                checkAuth();
+            } else {
+                alert("❌ Invalid Username or Password!");
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('finance_logged_in');
+            checkAuth();
+        }
+
+        async function fetchFromSheet() {
+            const apiUrl = localStorage.getItem('finance_api_url') || DEFAULT_API_URL;
+            const badge = document.getElementById('cloudSyncBadge');
+            
+            badge.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300";
+            badge.innerHTML = "🔄 Syncing...";
+
+            try {
+                // Fetch Categories
+                const catRes = await fetch(`${apiUrl}?action=getCategories&token=${SECRET_TOKEN}&t=${Date.now()}`);
+                const catData = await catRes.json();
+                if (Array.isArray(catData) && catData.length > 0) {
+                    categoriesList = catData;
+                }
+
+                // Fetch Transactions
+                const res = await fetch(`${apiUrl}?action=getData&token=${SECRET_TOKEN}&t=${Date.now()}`);
+                const data = await res.json();
+                
+                // Fetch Credentials from Cloud
+                const credRes = await fetch(`${apiUrl}?action=getCredentials&token=${SECRET_TOKEN}&t=${Date.now()}`);
+                const credData = await credRes.json();
+                if (credData && credData.username && credData.password) {
+                    localStorage.setItem('finance_login_user', credData.username);
+                    localStorage.setItem('finance_login_pass', credData.password);
+                }
+
+                if (Array.isArray(data)) {
+                    entries = data.map(item => ({
+                        id: String(item.id || item.ID || Date.now()),
+                        date: item.date || item.DATE || '',
+                        type: item.type || item.TYPE || 'Expense',
+                        category: item.category || item.CATEGORY || 'Other',
+                        person: item.person || item.PERSON || '-',
+                        amount: parseFloat(item.amount || item.AMOUNT || 0),
+                        note: item.note || item.NOTE || '-'
+                    }));
+                }
+
+                badge.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300";
+                badge.innerHTML = "✅ Cloud Connected";
+                
+                renderCategoriesDatalist();
+                renderTransactions();
+            } catch (err) {
+                badge.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300";
+                badge.innerHTML = "❌ Connection Failed";
+                console.error(err);
+            }
+        }
+
+        function renderCategoriesDatalist() {
+            const list = document.getElementById('categoryListOptions');
+            if (!list) return;
+            list.innerHTML = categoriesList.map(c => `<option value="${c.category}">`).join('');
+        }
+
+        async function syncToApi(payload, action) {
+            const apiUrl = localStorage.getItem('finance_api_url') || DEFAULT_API_URL;
+            try {
+                payload.action = action;
+                payload.token = SECRET_TOKEN;
+                await fetch(apiUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            } catch (err) {
+                console.error("Sync error:", err);
+            }
+        }
+
+        async function saveSingleEntry() {
+            const type = document.getElementById('entryType').value;
+            const date = document.getElementById('entryDate').value;
+            const category = document.getElementById('entryCategory').value.trim();
+            const person = document.getElementById('entryPerson').value.trim() || '-';
+            const amount = parseFloat(document.getElementById('entryAmount').value) || 0;
+            const note = document.getElementById('entryNote').value.trim() || '-';
+
+            if (!date || !category || amount <= 0) {
+                alert("Please fill date, category, and valid amount!");
+                return;
+            }
+
+            if (editingId) {
+                await syncToApi({ id: editingId, date, type, category, person, amount, note }, 'updateTransaction');
+                editingId = null;
+                const saveBtn = document.getElementById('saveRecordBtn');
+                if (saveBtn) {
+                    saveBtn.innerHTML = "Save Record";
+                    saveBtn.classList.remove('bg-amber-600');
+                    saveBtn.classList.add('bg-indigo-600');
+                }
+            } else {
+                const newId = Date.now() + Math.random();
+                await syncToApi({ id: newId, date, type, category, person, amount, note }, 'addTransaction');
+            }
+
+            clearForm();
+            setTimeout(fetchFromSheet, 1200);
+        }
+
+        function editRow(id) {
+            const t = entries.find(x => x.id == id);
+            if (!t) return;
+
+            document.getElementById('entryType').value = t.type;
+            document.getElementById('entryDate').value = t.date;
+            document.getElementById('entryCategory').value = t.category;
+            document.getElementById('entryPerson').value = t.person;
+            document.getElementById('entryAmount').value = t.amount;
+            document.getElementById('entryNote').value = t.note;
+
+            editingId = id;
+            const saveBtn = document.getElementById('saveRecordBtn');
+            if (saveBtn) {
+                saveBtn.innerHTML = "Update Record";
+                saveBtn.classList.remove('bg-indigo-600');
+                saveBtn.classList.add('bg-amber-600');
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        async function deleteRow(id) {
+            if (!confirm("Are you sure you want to delete this record?")) return;
+            await syncToApi({ id: id }, 'deleteTransaction');
+            setTimeout(fetchFromSheet, 1200);
+        }
+
+        function clearForm() {
+            setTodayDate();
+            document.getElementById('entryCategory').value = '';
+            document.getElementById('entryPerson').value = '';
+            document.getElementById('entryAmount').value = '';
+            document.getElementById('entryNote').value = '';
+        }
+
+        function renderTransactions() {
+            const tbody = document.getElementById('transactionTableBody');
+            const countEl = document.getElementById('recordCount');
+            
+            let html = '';
+            let totalInc = 0, totalExp = 0;
+
+            entries.forEach(t => {
+                if (t.type === 'Income') totalInc += t.amount;
+                if (t.type === 'Expense') totalExp += t.amount;
+
+                html += `<tr class="border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/20">
+                    <td class="p-3">${t.date}</td>
+                    <td class="p-3 font-semibold ${t.type === 'Income' ? 'text-emerald-600' : 'text-rose-600'}">${t.type}</td>
+                    <td class="p-3">${t.category}</td>
+                    <td class="p-3">${t.person}</td>
+                    <td class="p-3 font-bold">₹${t.amount}</td>
+                    <td class="p-3 text-slate-400">${t.note}</td>
+                    <td class="p-3 text-right">
+                        <button onclick="editRow('${t.id}')" class="text-blue-500 mr-2 hover:underline"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="deleteRow('${t.id}')" class="text-rose-500 hover:underline"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>`;
+            });
+
+            tbody.innerHTML = html || `<tr><td colspan="7" class="text-center p-6 text-slate-400">No records found.</td></tr>`;
+            countEl.innerText = `${entries.length} records`;
+
+            document.getElementById('totalIncomeVal').innerText = `₹${totalInc}`;
+            document.getElementById('totalExpenseVal').innerText = `₹${totalExp}`;
+            document.getElementById('netBalanceVal').innerText = `₹${totalInc - totalExp}`;
+        }
+
+        // Express Modal Logic
+        function openExpressModal() {
+            document.getElementById('expressModal').classList.remove('hidden');
+            document.getElementById('expressModal').classList.add('flex');
+            document.getElementById('expressRowsContainer').innerHTML = '';
+            addBulkRow();
+        }
+        function closeExpressModal() {
+            document.getElementById('expressModal').classList.remove('flex');
+            document.getElementById('expressModal').classList.add('hidden');
+            fetchFromSheet();
+        }
+        function addBulkRow() {
+            const container = document.getElementById('expressRowsContainer');
+            const today = new Date().toLocaleDateString('en-CA');
+            const rowDiv = document.createElement('div');
+            rowDiv.className = "bulk-row grid grid-cols-1 sm:grid-cols-6 gap-2 bg-slate-50 dark:bg-slate-700/40 p-3 rounded-xl border border-slate-200 dark:border-slate-600";
+            rowDiv.innerHTML = `
+                <select class="bulk-type px-2 py-1.5 rounded-lg border dark:bg-slate-700 text-xs">
+                    <option value="Expense">Expense</option>
+                    <option value="Income">Income</option>
+                </select>
+                <input type="date" value="${today}" class="bulk-date px-2 py-1.5 rounded-lg border dark:bg-slate-700 text-xs">
+                <input type="text" placeholder="Category" list="categoryListOptions" class="bulk-category px-2 py-1.5 rounded-lg border dark:bg-slate-700 text-xs">
+                <input type="text" placeholder="Person" class="bulk-person px-2 py-1.5 rounded-lg border dark:bg-slate-700 text-xs">
+                <input type="number" placeholder="Amount" class="bulk-amount px-2 py-1.5 rounded-lg border dark:bg-slate-700 text-xs">
+                <div class="flex gap-1">
+                    <input type="text" placeholder="Note" class="bulk-note px-2 py-1.5 rounded-lg border dark:bg-slate-700 text-xs w-full">
+                    <button onclick="this.parentElement.parentElement.remove()" class="text-rose-500 px-2 font-bold">×</button>
+                </div>
+            `;
+            container.appendChild(rowDiv);
+        }
+
+        async function saveBulkEntries() {
+            const saveBtn = document.getElementById('saveBulkBtn');
+            if (saveBtn) {
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = "⏳ Saving...";
+            }
+            const rows = document.querySelectorAll('.bulk-row');
+            let promises = [];
+            for (let row of rows) {
+                const type = row.querySelector('.bulk-type').value;
+                const date = row.querySelector('.bulk-date').value;
+                const category = row.querySelector('.bulk-category').value.trim();
+                const person = row.querySelector('.bulk-person').value.trim() || '-';
+                const amount = parseFloat(row.querySelector('.bulk-amount').value) || 0;
+                const note = row.querySelector('.bulk-note').value.trim() || '-';
+
+                if (amount > 0 && category) {
+                    promises.push(syncToApi({ id: Date.now() + Math.random(), date, type, category, person, amount, note }, 'addTransaction'));
+                }
+            }
+            await Promise.all(promises);
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = "Save All Entries";
+            }
+            closeExpressModal();
+        }
+
+        // Settings Modal
+        function openSettingsModal() {
+            document.getElementById('settingsModal').classList.remove('hidden');
+            document.getElementById('settingsModal').classList.add('flex');
+            document.getElementById('settingsApiUrl').value = localStorage.getItem('finance_api_url') || DEFAULT_API_URL;
+        }
+        function closeSettingsModal() {
+            document.getElementById('settingsModal').classList.remove('flex');
+            document.getElementById('settingsModal').classList.add('hidden');
+        }
+
+        async function updateCredentials() {
+            const currentPass = document.getElementById('currentPassInput').value.trim();
+            const newUsername = document.getElementById('newUsernameInput').value.trim();
+            const newPassword = document.getElementById('newPasswordInput').value.trim();
+            const savedPass = localStorage.getItem('finance_login_pass') || "admin123";
+
+            if (currentPass !== savedPass) {
+                alert("❌ Current password is incorrect!");
+                return;
+            }
+
+            let updated = false;
+            let payload = {};
+
+            if (newUsername) {
+                localStorage.setItem('finance_login_user', newUsername);
+                payload.newUsername = newUsername;
+                updated = true;
+            }
+            if (newPassword) {
+                if (newPassword.length < 4) {
+                    alert("New password must be at least 4 characters!");
+                    return;
+                }
+                localStorage.setItem('finance_login_pass', newPassword);
+                payload.newPassword = newPassword;
+                updated = true;
+            }
+
+            if (updated) {
+                await syncToApi(payload, 'updateCredentials');
+                alert("✅ Credentials Successfully Updated & Synced to Cloud!");
+                document.getElementById('currentPassInput').value = '';
+                document.getElementById('newUsernameInput').value = '';
+                document.getElementById('newPasswordInput').value = '';
+                closeSettingsModal();
+            } else {
+                alert("Please enter a new username or password to update.");
+            }
+        }
+
+        function handleFilterChange() { fetchFromSheet(); }
+
+        window.onload = checkAuth;
+    </script>
+</body>
+</html>
