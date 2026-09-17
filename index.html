@@ -11,7 +11,7 @@
 </head>
 <body class="bg-slate-100 dark:bg-slate-900 min-h-screen text-slate-800 dark:text-slate-100 transition-colors duration-200">
 
-  <!-- LOGIN PAGE -->
+  <!-- LOGIN PAGE (NO AUTO-FILL) -->
   <div id="loginPage" class="flex items-center justify-center min-h-screen p-4">
     <div class="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 dark:border-slate-700">
       <div class="text-center mb-6">
@@ -24,11 +24,11 @@
       <div class="space-y-4">
         <div>
           <label class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Username</label>
-          <input type="text" id="userInput" value="admin" class="w-full border dark:border-slate-600 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-700 focus:bg-white outline-none">
+          <input type="text" id="userInput" placeholder="Enter Username" autocomplete="off" class="w-full border dark:border-slate-600 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-700 focus:bg-white outline-none">
         </div>
         <div>
           <label class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Password</label>
-          <input type="password" id="passInput" value="admin123" class="w-full border dark:border-slate-600 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-700 focus:bg-white outline-none">
+          <input type="password" id="passInput" placeholder="Enter Password" autocomplete="new-password" class="w-full border dark:border-slate-600 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-700 focus:bg-white outline-none">
         </div>
         <button onclick="checkLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold transition">Dashboard Login</button>
       </div>
@@ -166,7 +166,7 @@
 
   </div>
 
-  <!-- UNIFIED SETTINGS MODAL -->
+  <!-- UNIFIED SETTINGS MODAL (WITH USERNAME + PASSWORD + CURRENT PASSWORD CHECK) -->
   <div id="settingsModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
     <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl max-w-lg w-full space-y-6 max-h-[90vh] overflow-y-auto border dark:border-slate-700">
       <div class="flex justify-between items-center border-b dark:border-slate-700 pb-3">
@@ -183,12 +183,14 @@
         <button onclick="toggleDarkMode()" class="bg-slate-200 dark:bg-blue-600 px-3 py-1.5 rounded-xl text-xs font-bold">Toggle</button>
       </div>
 
-      <!-- CHANGE LOGIN PASSWORD -->
-      <div class="space-y-2 bg-slate-50 dark:bg-slate-700/50 p-3 rounded-xl border dark:border-slate-600">
-        <p class="text-xs font-bold text-slate-800 dark:text-white">Change Login Password</p>
-        <div class="flex gap-2">
-          <input type="password" id="newLoginPassInput" placeholder="New Password..." class="w-full border dark:border-slate-600 p-2 rounded-xl text-xs bg-white dark:bg-slate-700">
-          <button onclick="updateLoginPassword()" class="bg-indigo-600 text-white font-bold px-3 py-2 rounded-xl text-xs">Update</button>
+      <!-- CHANGE USERNAME & PASSWORD (WITH CURRENT PASSWORD VERIFICATION) -->
+      <div class="space-y-3 bg-slate-50 dark:bg-slate-700/50 p-3 rounded-xl border dark:border-slate-600">
+        <p class="text-xs font-bold text-slate-800 dark:text-white">Change Username & Password</p>
+        <div class="space-y-2">
+          <input type="password" id="currentPassInput" placeholder="Current Password (Required)..." autocomplete="current-password" class="w-full border dark:border-slate-600 p-2 rounded-xl text-xs bg-white dark:bg-slate-700">
+          <input type="text" id="newUsernameInput" placeholder="New Username (Optional)..." autocomplete="off" class="w-full border dark:border-slate-600 p-2 rounded-xl text-xs bg-white dark:bg-slate-700">
+          <input type="password" id="newPasswordInput" placeholder="New Password (Optional)..." autocomplete="new-password" class="w-full border dark:border-slate-600 p-2 rounded-xl text-xs bg-white dark:bg-slate-700">
+          <button onclick="updateCredentials()" class="w-full bg-indigo-600 text-white font-bold py-2 rounded-xl text-xs">Update Credentials</button>
         </div>
       </div>
 
@@ -253,12 +255,12 @@
       { category: "Salary", budget: 0 }
     ];
     let myChart = null;
-    const DEFAULT_PIN = "1234";
 
     // TIMEZONE FIX: Auto Live Local Date
     function setTodayDate() {
       const todayIST = new Date().toLocaleDateString('en-CA');
-      document.getElementById('entryDate').value = todayIST;
+      const dateEl = document.getElementById('entryDate');
+      if (dateEl) dateEl.value = todayIST;
     }
 
     window.addEventListener('focus', setTodayDate);
@@ -266,17 +268,19 @@
       if (document.visibilityState === 'visible') setTodayDate();
     });
 
-    // LOGIN & PASS MANAGEMENT
+    // LOGIN & PASS MANAGEMENT (NO AUTO-FILL DEFAULTS)
     function checkLogin() {
-      const u = document.getElementById('userInput').value;
-      const p = document.getElementById('passInput').value;
+      const u = document.getElementById('userInput').value.trim();
+      const p = document.getElementById('passInput').value.trim();
+      
+      const savedUser = localStorage.getItem('finance_login_user') || "admin";
       const savedPass = localStorage.getItem('finance_login_pass') || "admin123";
 
-      if (u === "admin" && p === savedPass) {
+      if (u === savedUser && p === savedPass) {
         document.getElementById('loginPage').classList.add('hidden');
         document.getElementById('dashboardPage').classList.remove('hidden');
         setTodayDate();
-        loadData();
+        fetchFromSheet();
       } else {
         alert("Incorrect Username or Password!");
       }
@@ -285,16 +289,45 @@
     function logout() {
       document.getElementById('dashboardPage').classList.add('hidden');
       document.getElementById('loginPage').classList.remove('hidden');
+      document.getElementById('userInput').value = '';
+      document.getElementById('passInput').value = '';
     }
 
-    function updateLoginPassword() {
-      const newPass = document.getElementById('newLoginPassInput').value.trim();
-      if(newPass.length >= 4) {
-        localStorage.setItem('finance_login_pass', newPass);
-        alert("Password Successfully Updated!");
-        document.getElementById('newLoginPassInput').value = '';
+    // UPDATE USERNAME & PASSWORD WITH CURRENT PASSWORD VERIFICATION
+    function updateCredentials() {
+      const currentPass = document.getElementById('currentPassInput').value.trim();
+      const newUsername = document.getElementById('newUsernameInput').value.trim();
+      const newPassword = document.getElementById('newPasswordInput').value.trim();
+      
+      const savedPass = localStorage.getItem('finance_login_pass') || "admin123";
+
+      if (currentPass !== savedPass) {
+        alert("❌ Current password is incorrect!");
+        return;
+      }
+
+      let updated = false;
+      if (newUsername) {
+        localStorage.setItem('finance_login_user', newUsername);
+        updated = true;
+      }
+      if (newPassword) {
+        if (newPassword.length < 4) {
+          alert("New password must be at least 4 characters!");
+          return;
+        }
+        localStorage.setItem('finance_login_pass', newPassword);
+        updated = true;
+      }
+
+      if (updated) {
+        alert("✅ Credentials Successfully Updated!");
+        document.getElementById('currentPassInput').value = '';
+        document.getElementById('newUsernameInput').value = '';
+        document.getElementById('newPasswordInput').value = '';
+        closeSettingsModal();
       } else {
-        alert("Password must be at least 4 characters!");
+        alert("Please enter a new username or password to update.");
       }
     }
 
@@ -329,7 +362,7 @@
       fetchFromSheet();
     }
 
-    // FETCH DATA FROM GOOGLE SHEET
+    // FETCH DATA FROM GOOGLE SHEET (FRESH SYNC)
     async function fetchFromSheet() {
       const apiUrl = localStorage.getItem('finance_api_url');
       const badge = document.getElementById('cloudSyncBadge');
@@ -345,14 +378,14 @@
 
       try {
         // Fetch Categories
-        const catRes = await fetch(`${apiUrl}?action=getCategories&token=${SECRET_TOKEN}`);
+        const catRes = await fetch(`${apiUrl}?action=getCategories&token=${SECRET_TOKEN}&t=${Date.now()}`);
         const catData = await catRes.json();
         if (Array.isArray(catData) && catData.length > 0) {
           categoriesList = catData;
         }
 
-        // Fetch Transactions
-        const res = await fetch(`${apiUrl}?action=getData&token=${SECRET_TOKEN}`);
+        // Fetch Transactions (with timestamp to prevent browser caching)
+        const res = await fetch(`${apiUrl}?action=getData&token=${SECRET_TOKEN}&t=${Date.now()}`);
         const data = await res.json();
         
         if(Array.isArray(data)) {
@@ -388,15 +421,43 @@
           method: 'POST',
           body: JSON.stringify({ token: SECRET_TOKEN, action: action, ...payload })
         });
-        setTimeout(fetchFromSheet, 1200);
+        setTimeout(fetchFromSheet, 800);
       } catch(err) {
         console.error(err);
+      }
+    }
+
+    // SINGLE ENTRY SUBMIT
+    async function addSingleEntry(e) {
+      e.preventDefault();
+      const entry = {
+        id: Date.now().toString(),
+        date: document.getElementById('entryDate').value,
+        type: document.getElementById('entryType').value,
+        category: document.getElementById('entryCategory').value,
+        person: document.getElementById('entryPerson').value.trim() || '-',
+        amount: parseFloat(document.getElementById('entryAmount').value) || 0,
+        note: document.getElementById('entryNote').value.trim() || '-'
+      };
+
+      await syncToApi(entry, 'addTransaction');
+
+      document.getElementById('entryAmount').value = '';
+      document.getElementById('entryNote').value = '';
+      document.getElementById('entryPerson').value = '';
+    }
+
+    // DELETE ENTRY
+    async function deleteEntry(id) {
+      if(confirm("Are you sure you want to delete this entry?")) {
+        await syncToApi({ id: id }, 'deleteTransaction');
       }
     }
 
     // CATEGORY CLOUD SYNC
     function renderCatDropdowns() {
       const select = document.getElementById('entryCategory');
+      if(!select) return;
       select.innerHTML = '';
       categoriesList.forEach(c => {
         select.innerHTML += `<option value="${c.category}">${c.category}</option>`;
@@ -487,10 +548,12 @@
     function renderUI() {
       let income = 0, expense = 0, advGiven = 0, advTaken = 0;
       let categoryTotals = {};
-      const query = document.getElementById('searchInput').value.toLowerCase();
+      const searchInputEl = document.getElementById('searchInput');
+      const query = searchInputEl ? searchInputEl.value.toLowerCase() : '';
       const filteredList = getFilteredEntries();
 
       const table = document.getElementById('transactionTable');
+      if(!table) return;
       table.innerHTML = '';
 
       checkDailyStreak();
@@ -529,6 +592,7 @@
 
     function checkCategoryBudgets(totals) {
       const alertBox = document.getElementById('budgetAlertContainer');
+      if(!alertBox) return;
       alertBox.innerHTML = '';
       let hasOverbudget = false;
 
@@ -553,6 +617,7 @@
       const today = new Date().toLocaleDateString('en-CA');
       const hasTodayEntry = entries.some(e => e.date === today);
       const badge = document.getElementById('streakBadge');
+      if(!badge) return;
 
       if(hasTodayEntry) {
         badge.className = "inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300";
@@ -571,7 +636,9 @@
     }
 
     function updateChart(totals) {
-      const ctx = document.getElementById('financeChart').getContext('2d');
+      const canvasEl = document.getElementById('financeChart');
+      if(!canvasEl) return;
+      const ctx = canvasEl.getContext('2d');
       if (myChart) myChart.destroy();
 
       const labels = Object.keys(totals);
@@ -590,12 +657,12 @@
       });
     }
 
-    // EXPRESS & SINGLE ENTRY
+    // EXPRESS MODAL
     function openExpressModal() {
       document.getElementById('expressModal').classList.remove('hidden');
       const container = document.getElementById('bulkRowsContainer');
       container.innerHTML = '';
-      for(let i=0; i<5; i++) { addBulkRow(); }
+      for(let i=0; i<3; i++) { addBulkRow(); }
     }
     function closeExpressModal() { document.getElementById('expressModal').classList.add('hidden'); }
 
@@ -609,76 +676,48 @@
         <div class="grid grid-cols-12 gap-1.5 items-center bg-slate-50 dark:bg-slate-700 p-2 rounded-xl border dark:border-slate-600 text-xs bulk-row" id="row-${rowId}">
           <div class="col-span-2">
             <select class="w-full border dark:border-slate-600 p-1.5 rounded-lg bg-white dark:bg-slate-800 bulk-type">
-              <option value="Expense">Expense</option><option value="Income">Income</option>
-              <option value="Advance Given">Udhaar Diya</option><option value="Advance Taken">Udhaar Liya</option>
+              <option value="Expense">Expense</option>
+              <option value="Income">Income</option>
+              <option value="Advance Given">Udhaar Given</option>
             </select>
           </div>
-          <div class="col-span-2"><input type="date" value="${today}" class="w-full border dark:border-slate-600 p-1.5 rounded-lg bg-white dark:bg-slate-800 bulk-date"></div>
-          <div class="col-span-2"><select class="w-full border dark:border-slate-600 p-1.5 rounded-lg bg-white dark:bg-slate-800 bulk-cat">${catOptions}</select></div>
-          <div class="col-span-2"><input type="text" placeholder="Person" class="w-full border dark:border-slate-600 p-1.5 rounded-lg bg-white dark:bg-slate-800 bulk-person"></div>
-          <div class="col-span-2"><input type="number" placeholder="₹ Amount" class="w-full border dark:border-slate-600 p-1.5 rounded-lg bg-white dark:bg-slate-800 font-bold bulk-amount"></div>
-          <div class="col-span-2"><input type="text" placeholder="Note" class="w-full border dark:border-slate-600 p-1.5 rounded-lg bg-white dark:bg-slate-800 bulk-note"></div>
-        </div>`);
+          <div class="col-span-2">
+            <input type="date" value="${today}" class="w-full border dark:border-slate-600 p-1.5 rounded-lg bg-white dark:bg-slate-800 bulk-date">
+          </div>
+          <div class="col-span-2">
+            <select class="w-full border dark:border-slate-600 p-1.5 rounded-lg bg-white dark:bg-slate-800 bulk-category">
+              ${catOptions}
+            </select>
+          </div>
+          <div class="col-span-2">
+            <input type="text" placeholder="Person" class="w-full border dark:border-slate-600 p-1.5 rounded-lg bg-white dark:bg-slate-800 bulk-person">
+          </div>
+          <div class="col-span-2">
+            <input type="number" placeholder="Amount" class="w-full border dark:border-slate-600 p-1.5 rounded-lg bg-white dark:bg-slate-800 bulk-amount">
+          </div>
+          <div class="col-span-2 flex justify-between">
+            <input type="text" placeholder="Note" class="w-full border dark:border-slate-600 p-1.5 rounded-lg bg-white dark:bg-slate-800 bulk-note">
+            <button onclick="document.getElementById('row-${rowId}').remove()" class="text-rose-500 font-bold px-2">&times;</button>
+          </div>
+        </div>
+      `);
     }
 
-    function saveBulkEntries() {
+    async function saveBulkEntries() {
       const rows = document.querySelectorAll('.bulk-row');
-      rows.forEach(r => {
-        const amount = parseFloat(r.querySelector('.bulk-amount').value);
+      for(let row of rows) {
+        const type = row.querySelector('.bulk-type').value;
+        const date = row.querySelector('.bulk-date').value;
+        const category = row.querySelector('.bulk-category').value;
+        const person = row.querySelector('.bulk-person').value.trim() || '-';
+        const amount = parseFloat(row.querySelector('.bulk-amount').value) || 0;
+        const note = row.querySelector('.bulk-note').value.trim() || '-';
+
         if(amount > 0) {
-          const entry = {
-            id: Date.now().toString() + Math.random().toString().substr(2,3),
-            type: r.querySelector('.bulk-type').value,
-            date: r.querySelector('.bulk-date').value,
-            category: r.querySelector('.bulk-cat').value,
-            person: r.querySelector('.bulk-person').value || '-',
-            amount: amount,
-            note: r.querySelector('.bulk-note').value || '-'
-          };
-          entries.push(entry);
-          syncToApi(entry, 'add');
+          await syncToApi({ id: Date.now() + Math.random(), date, type, category, person, amount, note }, 'addTransaction');
         }
-      });
-      renderUI();
+      }
       closeExpressModal();
-    }
-
-    function addSingleEntry(e) {
-      e.preventDefault();
-      const newEntry = {
-        id: Date.now().toString(),
-        type: document.getElementById('entryType').value,
-        date: document.getElementById('entryDate').value,
-        category: document.getElementById('entryCategory').value,
-        person: document.getElementById('entryPerson').value || '-',
-        amount: parseFloat(document.getElementById('entryAmount').value),
-        note: document.getElementById('entryNote').value || '-'
-      };
-
-      entries.push(newEntry);
-      syncToApi(newEntry, 'add');
-
-      document.getElementById('entryAmount').value = '';
-      document.getElementById('entryNote').value = '';
-      renderUI();
-    }
-
-    function deleteEntry(id) {
-      const pin = prompt("Safety Check: Enter 4-Digit PIN to Delete:");
-      if (pin === DEFAULT_PIN) {
-        entries = entries.filter(item => item.id !== id);
-        syncToApi({ id: id }, 'delete');
-        renderUI();
-      } else if (pin !== null) {
-        alert("Incorrect PIN!");
-      }
-    }
-
-    function loadData() {
-      if (localStorage.getItem('finance_dark_mode') === 'enabled') {
-        document.documentElement.classList.add('dark');
-      }
-      fetchFromSheet();
     }
   </script>
 </body>
