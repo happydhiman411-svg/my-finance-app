@@ -267,6 +267,26 @@
       { category: "Grocery", budget: 0 },
       { category: "Salary", budget: 0 }
     ];
+    // Page khulte hi turant cloud se latest password fetch karne ke liye
+    async function loadCloudCredentialsOnStart() {
+      try {
+        const apiUrl = localStorage.getItem('finance_api_url') || DEFAULT_API_URL;
+        if (!apiUrl) return;
+        
+        const res = await fetch(`${apiUrl}?action=getCredentials&token=${SECRET_TOKEN}&t=${Date.now()}`);
+        const data = await res.json();
+        
+        if (data && data.username && data.password) {
+          localStorage.setItem('finance_login_user', data.username);
+          localStorage.setItem('finance_login_pass', data.password);
+        }
+      } catch (err) {
+        console.log("Cloud credential fetch error:", err);
+      }
+    }
+
+    // App load hote hi sabse pehle yehi chalega
+    loadCloudCredentialsOnStart();
     let myChart = null;
 
     function setTodayDate() {
