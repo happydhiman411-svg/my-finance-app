@@ -59,12 +59,12 @@
       </div>
     </div>
 
-    <!-- DATE & MONTH FILTER BAR -->
+    <!-- DATE & MONTH FILTER BAR (DEFAULT SET TO ALL TIME SO ALL ENTRIES SHOW) -->
     <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-2 text-xs font-bold">
         <i class="fa-solid fa-filter text-blue-500"></i> Filter Period:
         <select id="filterType" onchange="handleFilterChange()" class="border dark:border-slate-600 p-1.5 rounded-xl bg-slate-50 dark:bg-slate-700 text-xs">
-          <option value="all">All Time</option>
+          <option value="all" selected>All Time</option>
           <option value="this_month">This Month</option>
           <option value="custom_month">Specific Month</option>
           <option value="custom_range">Date Range</option>
@@ -350,7 +350,7 @@
       fetchFromSheet();
     }
 
-    // ROBUST FETCH WITH TIMEZONE-SAFE DATE PARSING
+    // ROBUST FETCH
     async function fetchFromSheet() {
       const apiUrl = localStorage.getItem('finance_api_url');
       const badge = document.getElementById('cloudSyncBadge');
@@ -504,8 +504,9 @@
 
     function getFilteredEntries() {
       const filterType = document.getElementById('filterType').value;
-      const now = new Date();
+      if (filterType === 'all') return entries;
 
+      const now = new Date();
       return entries.filter(item => {
         if (!item.date) return false;
 
