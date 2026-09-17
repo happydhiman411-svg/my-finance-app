@@ -243,6 +243,7 @@
 
   <script>
     const SECRET_TOKEN = "Punya@2026";
+    const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbxi8eKxqzqSLYiCf6GVKq7pgXqNAZxPPPKGVRfFIBkIBiLIsBvYHbbCpl6C6P79KAM2/exec";
     let entries = [];
     let categoriesList = [
       { category: "Doodh", budget: 0 },
@@ -367,7 +368,7 @@
 
     // ROBUST FETCH
     async function fetchFromSheet() {
-      const apiUrl = localStorage.getItem('finance_api_url');
+      const apiUrl = localStorage.getItem('finance_api_url') || DEFAULT_API_URL;
       const badge = document.getElementById('cloudSyncBadge');
 
       if(!apiUrl) {
@@ -417,7 +418,7 @@
     }
 
     async function syncToApi(payload, action) {
-      const apiUrl = localStorage.getItem('finance_api_url');
+      const apiUrl = localStorage.getItem('finance_api_url') || DEFAULT_API_URL;
       if (!apiUrl) return;
 
       try {
