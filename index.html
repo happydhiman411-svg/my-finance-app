@@ -1,279 +1,366 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="hi" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finance Manager - Google Sheets Sync</title>
+    <title>Finance Manager</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        darkBg: '#0f172a',
-                        cardBg: '#1e293b',
-                    }
-                }
-            }
+            theme: { extend: { colors: { darkBg: '#0f172a', cardBg: '#1e293b' } } }
         }
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body class="bg-slate-50 dark:bg-darkBg text-slate-800 dark:text-slate-100 min-h-screen transition-colors duration-200">
+<body class="bg-slate-950 text-slate-100 min-h-screen transition-colors duration-200">
 
-    <!-- Login Screen -->
-    <div id="loginScreen" class="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center p-4">
-        <div class="bg-cardBg p-8 rounded-2xl shadow-2xl w-full max-w-md border border-slate-700">
-            <h2 class="text-2xl font-bold mb-6 text-white text-center">Finance Dashboard Login</h2>
-            <div class="space-y-4">
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-cardBg border border-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-md">
+            <h2 class="text-2xl font-bold text-center mb-1">Finance Manager</h2>
+            <p class="text-sm text-slate-400 text-center mb-6">Hello Sir/Madam</p>
+            <form onsubmit="handleLogin(event)" class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium mb-1 text-slate-300">Google Apps Script Web App URL</label>
-                    <input type="text" id="apiUrl" placeholder="https://script.google.com/macros/s/.../exec" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-indigo-500">
+                    <label class="block text-xs text-slate-400 mb-1">Username</label>
+                    <input type="text" id="loginUser" required placeholder="admin" value="admin" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-500">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium mb-1 text-slate-300">Password (Default: admin123)</label>
-                    <input type="password" id="loginPassword" placeholder="Enter password" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-indigo-500">
+                    <label class="block text-xs text-slate-400 mb-1">Password</label>
+                    <div class="relative">
+                        <input type="password" id="loginPass" required placeholder="admin123" value="admin123" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 pr-10 text-sm focus:outline-none focus:border-indigo-500">
+                        <button type="button" onclick="togglePass('loginPass', this)" class="absolute right-3 top-3 text-slate-400">👁️</button>
+                    </div>
                 </div>
-                <button onclick="handleLogin()" id="loginBtn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-3 rounded-lg transition duration-150">Login / Connect</button>
-                <p id="loginError" class="text-red-400 text-sm text-center hidden"></p>
-            </div>
+                <button type="submit" id="loginBtn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl transition">Login</button>
+                <p id="loginError" class="text-rose-400 text-xs text-center hidden"></p>
+            </form>
         </div>
     </div>
 
-    <!-- Main App Container -->
-    <div id="appContainer" class="hidden max-w-7xl mx-auto p-4 md:p-6 space-y-6">
+    <!-- MAIN APP -->
+    <div id="mainApp" class="hidden max-w-7xl mx-auto p-4 md:p-6 space-y-6">
         
-        <!-- Header -->
-        <header class="flex flex-col md:flex-row justify-between items-center bg-cardBg p-4 rounded-2xl border border-slate-700 gap-4">
+        <!-- HEADER -->
+        <header class="flex flex-col md:flex-row justify-between items-center bg-cardBg border border-slate-800 p-4 rounded-2xl gap-4">
             <div class="flex items-center gap-3">
-                <h1 class="text-xl font-bold text-white">Financial Dashboard</h1>
-                <span id="connStatus" class="px-3 py-1 text-xs font-semibold rounded-full bg-emerald-500/20 text-emerald-400 flex items-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Connected
-                </span>
+                <h1 class="text-xl font-bold text-indigo-400">Financial Dashboard</h1>
+                <span id="connStatus" class="px-2.5 py-1 text-xs rounded-full bg-emerald-500/20 text-emerald-400">● Connected</span>
             </div>
-            <div id="currentTime" class="text-sm text-slate-400 font-medium"></div>
+            <div id="liveClock" class="text-sm text-slate-300 font-medium"></div>
             <div class="flex items-center gap-2">
-                <button onclick="toggleTheme()" class="p-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 transition" title="Toggle Theme"><i class="fa-solid fa-moon" id="themeIcon"></i></button>
-                <button onclick="syncData()" id="syncBtn" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-sm font-medium flex items-center gap-2 text-slate-300 transition"><i class="fa-solid fa-sync" id="syncIcon"></i> Sync</button>
-                <button onclick="openSettings()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-sm font-medium flex items-center gap-2 text-slate-300 transition"><i class="fa-solid fa-gear"></i> Settings</button>
-                <button onclick="handleLogout()" class="px-4 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 rounded-xl text-sm font-medium transition"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+                <button onclick="toggleTheme()" class="p-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-xs">🌓 Theme</button>
+                <button onclick="syncData()" id="syncBtn" class="p-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-xs font-semibold"><i class="fa-solid fa-sync" id="syncIcon"></i> Sync</button>
+                <button onclick="openSettings()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-xs font-semibold">⚙️ Settings</button>
+                <button onclick="handleLogout()" class="px-4 py-2 bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 rounded-xl text-xs font-semibold">Logout</button>
             </div>
         </header>
 
-        <!-- KPI Cards -->
+        <!-- BUDGET ALERTS BANNER -->
+        <div id="budgetAlerts" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div>
+
+        <!-- TODAY STATUS & KPIS -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="bg-cardBg p-5 rounded-2xl border border-slate-700">
-                <p class="text-xs text-slate-400 uppercase font-semibold">Aaj Ki Entry Status</p>
-                <p id="todayStatus" class="text-lg font-bold text-rose-400 mt-2">Aaj entry nahi hui!</p>
+            <div id="todayStatusCard" class="bg-cardBg border border-slate-800 p-5 rounded-2xl">
+                <h3 class="text-xs text-slate-400 uppercase tracking-wider mb-1">Aaj Ki Entry Status</h3>
+                <p id="todayStatusText" class="text-lg font-bold text-rose-400">Checking...</p>
             </div>
-            <div class="bg-cardBg p-5 rounded-2xl border border-slate-700">
-                <p class="text-xs text-slate-400 uppercase font-semibold">Total Income</p>
-                <p id="totalIncome" class="text-2xl font-bold text-emerald-400 mt-2">₹0</p>
+            <div class="bg-cardBg border border-slate-800 p-5 rounded-2xl">
+                <h3 class="text-xs text-slate-400 uppercase tracking-wider mb-1">Total Income</h3>
+                <p id="lblIncome" class="text-2xl font-bold text-emerald-400">₹0</p>
             </div>
-            <div class="bg-cardBg p-5 rounded-2xl border border-slate-700">
-                <p class="text-xs text-slate-400 uppercase font-semibold">Total Expense</p>
-                <p id="totalExpense" class="text-2xl font-bold text-rose-400 mt-2">₹0</p>
+            <div class="bg-cardBg border border-slate-800 p-5 rounded-2xl">
+                <h3 class="text-xs text-slate-400 uppercase tracking-wider mb-1">Total Expense</h3>
+                <p id="lblExpense" class="text-2xl font-bold text-rose-400">₹0</p>
             </div>
-            <div class="bg-cardBg p-5 rounded-2xl border border-slate-700">
-                <p class="text-xs text-slate-400 uppercase font-semibold">Net Balance</p>
-                <p id="netBalance" class="text-2xl font-bold text-indigo-400 mt-2">₹0</p>
+            <div class="bg-cardBg border border-slate-800 p-5 rounded-2xl">
+                <h3 class="text-xs text-slate-400 uppercase tracking-wider mb-1">Net Balance</h3>
+                <p id="lblBalance" class="text-2xl font-bold text-indigo-400">₹0</p>
             </div>
         </div>
 
-        <!-- Main Workspace -->
+        <!-- FILTERS & ADD TRANSACTION -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            <!-- Filter & Category Section -->
             <div class="space-y-6">
-                <div class="bg-cardBg p-5 rounded-2xl border border-slate-700 space-y-4">
-                    <h3 class="font-semibold text-white">Period Filter</h3>
-                    <div>
-                        <select id="periodType" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white">
-                            <option value="Monthly">Monthly</option>
+                <!-- Filter Card -->
+                <div class="bg-cardBg border border-slate-800 p-5 rounded-2xl space-y-4">
+                    <h3 class="text-sm font-semibold">📊 Period Filter & Analytics</h3>
+                    <div class="grid grid-cols-2 gap-2">
+                        <select id="filterType" onchange="applyFilters()" class="bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs">
+                            <option value="monthly">Monthly</option>
+                            <option value="yearly">Yearly</option>
                         </select>
+                        <input type="month" id="filterMonth" onchange="applyFilters()" class="bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs">
                     </div>
-                    <div>
-                        <input type="month" id="filterMonth" onchange="calculateKPIs()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white">
+                    <div class="h-44 flex items-center justify-center">
+                        <canvas id="expensePieChart"></canvas>
                     </div>
                 </div>
 
-                <!-- Add Category Card -->
-                <div class="bg-cardBg p-5 rounded-2xl border border-slate-700 space-y-4">
-                    <h3 class="font-semibold text-white">+ Add New Category</h3>
-                    <div class="space-y-3">
-                        <input type="text" id="catName" placeholder="Category Name" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white">
-                        <select id="catType" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white">
-                            <option value="Expense">Expense</option>
-                            <option value="Income">Income</option>
-                        </select>
-                        <input type="number" id="catBudget" placeholder="Budget (₹)" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white">
-                        <button onclick="saveCategory()" id="saveCatBtn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 rounded-xl text-sm transition">Add Category</button>
-                    </div>
+                <!-- Add Category / Type Card -->
+                <div class="bg-cardBg border border-slate-800 p-5 rounded-2xl space-y-3">
+                    <h3 class="text-sm font-semibold">+ Add New Category</h3>
+                    <input type="text" id="newCatName" placeholder="Category Name" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs">
+                    <select id="newCatType" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs">
+                        <option value="Expense">Expense</option>
+                        <option value="Income">Income</option>
+                    </select>
+                    <input type="number" id="newCatBudget" placeholder="Monthly Budget (₹)" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs">
+                    <button onclick="saveCategory()" id="saveCatBtn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2.5 rounded-xl text-xs">Add Category</button>
                 </div>
             </div>
 
-            <!-- Add New Transaction Form -->
-            <div class="lg:col-span-2 bg-cardBg p-6 rounded-2xl border border-slate-700 space-y-4">
-                <h3 class="font-semibold text-white text-lg">+ Add New Transaction</h3>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Transaction Form -->
+            <div class="lg:col-span-2 bg-cardBg border border-slate-800 p-6 rounded-2xl space-y-4">
+                <div class="flex justify-between items-center">
+                    <h3 id="formTitle" class="text-base font-semibold">➕ Add New Transaction</h3>
+                    <span id="personBalanceInfo" class="text-xs text-indigo-400"></span>
+                </div>
+                <form onsubmit="saveTransaction(event)" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs text-slate-400 mb-1">Type</label>
-                        <select id="txnType" onchange="updateCategoryDropdown()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white">
+                        <select id="entryType" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm">
                             <option value="Expense">Expense</option>
                             <option value="Income">Income</option>
+                            <option value="Advance Diya">Advance Diya</option>
+                            <option value="Advance Liya">Advance Liya</option>
+                            <option value="Saving">Saving</option>
+                            <option value="FD">FD</option>
+                            <option value="RD">RD</option>
+                            <option value="EMI">EMI</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs text-slate-400 mb-1">Date</label>
-                        <input type="date" id="txnDate" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white">
+                        <label class="block text-xs text-slate-400 mb-1">Date (No Future Dates)</label>
+                        <input type="date" id="entryDate" required class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm">
                     </div>
                     <div>
-                        <label class="block text-xs text-slate-400 mb-1">Category</label>
-                        <select id="txnCategory" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white"></select>
+                        <label class="block text-xs text-slate-400 mb-1">Category & Budget</label>
+                        <select id="entryCategory" required class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm"></select>
                     </div>
                     <div>
                         <label class="block text-xs text-slate-400 mb-1">Person / Source</label>
-                        <input type="text" id="txnPerson" placeholder="Name" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white">
+                        <input type="text" id="entryPerson" oninput="checkPersonBalance(this.value)" placeholder="Name (Family/Source)" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm">
                     </div>
                     <div>
                         <label class="block text-xs text-slate-400 mb-1">Amount (₹)</label>
-                        <input type="number" id="txnAmount" placeholder="0.00" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white">
+                        <input type="number" step="any" id="entryAmount" required min="1" placeholder="0.00" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm">
                     </div>
                     <div>
                         <label class="block text-xs text-slate-400 mb-1">Payment Mode</label>
-                        <select id="txnMode" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white">
+                        <select id="entryPayMode" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm">
                             <option value="Cash">Cash</option>
-                            <option value="Online">Online</option>
-                            <option value="Bank">Bank</option>
+                            <option value="UPI">UPI</option>
+                            <option value="Bank Transfer">Bank Transfer</option>
                         </select>
                     </div>
-                </div>
-                <div>
-                    <label class="block text-xs text-slate-400 mb-1">Note / Description</label>
-                    <input type="text" id="txnNote" placeholder="Optional details..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white">
-                </div>
-                <button onclick="saveTransaction()" id="saveTxnBtn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-3 rounded-xl transition">Save Record</button>
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs text-slate-400 mb-1">Note / Description</label>
+                        <input type="text" id="entryNote" placeholder="Optional details..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm">
+                    </div>
+                    <div class="sm:col-span-2 flex gap-3">
+                        <button type="submit" id="saveBtn" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl text-sm transition">Save Record</button>
+                        <button type="button" onclick="resetForm()" id="cancelEditBtn" class="hidden px-6 bg-slate-800 hover:bg-slate-700 py-3 rounded-xl text-sm font-semibold">Cancel</button>
+                    </div>
+                </form>
             </div>
         </div>
 
-        <!-- Daily Ledger Khata -->
-        <div class="bg-cardBg p-6 rounded-2xl border border-slate-700 space-y-4">
-            <div class="flex justify-between items-center">
-                <h3 class="font-semibold text-white text-lg"><i class="fa-solid fa-mug-hot text-indigo-400 mr-2"></i> Daily Ledger Khata (Doodh & Monthly Items)</h3>
-                <button onclick="addDailyItemPrompt()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium rounded-xl">+ Add Daily Item</button>
+        <!-- DAILY LEDGER KHATA (Doodh System) -->
+        <div class="bg-cardBg border border-slate-800 p-6 rounded-2xl space-y-4">
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                <h3 class="text-base font-semibold"><i class="fa-solid fa-mug-hot text-indigo-400 mr-2"></i> Daily Ledger Khata (Doodh & Monthly Items)</h3>
+                <button onclick="openDailyModal()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold rounded-xl">+ Add Daily Item</button>
             </div>
-            <div id="dailyLedgerContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+            <div id="dailyItemsContainer" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
         </div>
 
-        <!-- Recent Transactions Table -->
-        <div class="bg-cardBg p-6 rounded-2xl border border-slate-700 space-y-4">
-            <h3 class="font-semibold text-white text-lg">Recent Transactions</h3>
+        <!-- RECENT TRANSACTIONS & PAGINATION -->
+        <div class="bg-cardBg border border-slate-800 p-6 rounded-2xl space-y-4">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex items-center gap-3 w-full md:w-auto">
+                    <h3 class="text-base font-semibold whitespace-nowrap">Recent Transactions</h3>
+                    <span id="recordCountBadge" class="px-2.5 py-0.5 text-xs rounded-full bg-slate-800 text-slate-300">0 records</span>
+                </div>
+                <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                    <input type="text" id="searchInput" oninput="applyFilters()" placeholder="🔍 Search category, person..." class="bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm w-full md:w-64">
+                    <select id="pageSizeSelect" onchange="applyFilters()" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm">
+                        <option value="10">Show 10</option>
+                        <option value="20">Show 20</option>
+                        <option value="30">Show 30</option>
+                        <option value="50">Show 50</option>
+                        <option value="100">Show 100</option>
+                        <option value="365">1 Year</option>
+                        <option value="730">2 Years</option>
+                        <option value="1095">3 Years</option>
+                    </select>
+                </div>
+            </div>
+
             <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm text-slate-300">
-                    <thead class="bg-slate-900 text-xs uppercase text-slate-400">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-slate-900/50 text-slate-400 uppercase text-xs">
                         <tr>
                             <th class="p-3">Date</th>
                             <th class="p-3">Type</th>
                             <th class="p-3">Category</th>
-                            <th class="p-3">Person</th>
+                            <th class="p-3">Person / Source</th>
                             <th class="p-3">Mode</th>
                             <th class="p-3">Amount</th>
                             <th class="p-3">Note</th>
-                            <th class="p-3">Action</th>
+                            <th class="p-3 text-right">Actions</th>
                         </tr>
                     </thead>
-                    <tbody id="transactionTableBody" class="divide-y divide-slate-800"></tbody>
+                    <tbody id="transTableBody" class="divide-y divide-slate-800"></tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <!-- Settings Modal -->
-    <div id="settingsModal" class="fixed inset-0 bg-slate-900/80 z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-cardBg p-6 rounded-2xl shadow-2xl w-full max-w-md border border-slate-700 space-y-4">
+    <!-- SETTINGS MODAL -->
+    <div id="settingsModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-cardBg border border-slate-800 p-6 rounded-2xl w-full max-w-md space-y-4">
             <div class="flex justify-between items-center">
-                <h3 class="text-xl font-bold text-white">Settings</h3>
-                <button onclick="closeSettings()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+                <h3 class="text-lg font-bold">⚙️ Settings & Security</h3>
+                <button onclick="closeSettings()" class="text-slate-400 hover:text-white">✕</button>
             </div>
-            <div class="space-y-4">
+            <form onsubmit="updateSettings(event)" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-medium mb-1 text-slate-300">Google Apps Script Web App URL</label>
-                    <input type="text" id="settingsApiUrl" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white">
+                    <label class="block text-xs text-slate-400 mb-1">Google Apps Script Web App URL</label>
+                    <input type="text" id="setApiUrl" required placeholder="https://script.google.com/macros/s/.../exec" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm">
                 </div>
                 <div>
-                    <label class="block text-xs font-medium mb-1 text-slate-300">New Password</label>
-                    <input type="password" id="newPasswordInput" placeholder="Enter new password" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white">
+                    <label class="block text-xs text-slate-400 mb-1">Current Password (Required for changes)</label>
+                    <div class="relative">
+                        <input type="password" id="setCurrPass" required placeholder="Current password" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 pr-10 text-sm">
+                        <button type="button" onclick="togglePass('setCurrPass', this)" class="absolute right-3 top-3 text-xs">👁️</button>
+                    </div>
                 </div>
-                <div class="flex gap-2 pt-2">
-                    <button onclick="saveSettingsChanges()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl font-medium text-sm">Save Changes</button>
-                    <button onclick="closeSettings()" class="px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2.5 rounded-xl font-medium text-sm">Cancel</button>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">New Username (Optional)</label>
+                    <input type="text" id="setNewUser" placeholder="New username" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm">
                 </div>
-            </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">New Password</label>
+                    <div class="relative">
+                        <input type="password" id="setNewPass1" placeholder="New password" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 pr-10 text-sm">
+                        <button type="button" onclick="togglePass('setNewPass1', this)" class="absolute right-3 top-3 text-xs">👁️</button>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Confirm New Password</label>
+                    <div class="relative">
+                        <input type="password" id="setNewPass2" placeholder="Confirm password" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 pr-10 text-sm">
+                        <button type="button" onclick="togglePass('setNewPass2', this)" class="absolute right-3 top-3 text-xs">👁️</button>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="closeSettings()" class="px-4 py-2 bg-slate-800 rounded-xl text-sm">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-sm font-semibold text-white">Save Changes</button>
+                </div>
+            </form>
         </div>
     </div>
 
-    <!-- Script Logic -->
-    <script>
-        let appData = { transactions: [], categories: [], dailyLedger: [] };
-        let currentApiUrl = localStorage.getItem('fin_api_url') || '';
+    <!-- DAILY ITEM MODAL -->
+    <div id="dailyModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-cardBg border border-slate-800 p-6 rounded-2xl w-full max-w-sm space-y-4">
+            <h3 class="text-base font-bold">Add Daily Item (e.g., Doodh)</h3>
+            <form onsubmit="saveDailyItem(event)" class="space-y-3">
+                <input type="text" id="dailyItemName" required placeholder="Item Name (e.g. Doodh)" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm">
+                <input type="number" id="dailyItemAmount" required min="1" placeholder="Default Cost (₹)" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm">
+                <div class="flex justify-end gap-2">
+                    <button type="button" onclick="closeDailyModal()" class="px-3 py-2 bg-slate-800 rounded-xl text-xs">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 rounded-xl text-xs font-semibold text-white">Add Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-        window.onload = function() {
-            document.getElementById('txnDate').valueAsDate = new Date();
-            const currMonth = new Date().toISOString().slice(0, 7);
-            document.getElementById('filterMonth').value = currMonth;
-            
-            if (currentApiUrl) {
-                document.getElementById('apiUrl').value = currentApiUrl;
-                document.getElementById('settingsApiUrl').value = currentApiUrl;
-                checkSavedLogin();
+    <script>
+        let apiUrl = localStorage.getItem('fin_api_url') || "";
+        let loginPass = localStorage.getItem('fin_pass') || "admin123";
+        let transactions = [];
+        let categories = [];
+        let dailyItems = [];
+        let editingId = null;
+        let pieChartInstance = null;
+
+        window.onload = () => {
+            const today = new Date().toISOString().slice(0, 10);
+            const dateInput = document.getElementById('entryDate');
+            dateInput.value = today;
+            dateInput.max = today; // Future dates blocked!
+
+            document.getElementById('filterMonth').value = today.slice(0, 7);
+            setInterval(updateClock, 1000);
+
+            if (apiUrl && localStorage.getItem('fin_logged') === 'true') {
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                syncData();
             }
         };
 
-        function checkSavedLogin() {
-            if (localStorage.getItem('fin_logged') === 'true') {
-                document.getElementById('loginScreen').classList.add('hidden');
-                document.getElementById('appContainer').classList.remove('hidden');
-                syncData();
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('liveClock').innerText = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + now.toLocaleTimeString();
+        }
+
+        function togglePass(id, btn) {
+            const input = document.getElementById(id);
+            if (input.type === "password") {
+                input.type = "text";
+                btn.innerText = "🙈";
+            } else {
+                input.type = "password";
+                btn.innerText = "👁️";
             }
         }
 
-        async function handleLogin() {
-            const urlInput = document.getElementById('apiUrl').value.trim();
-            const passInput = document.getElementById('loginPassword').value.trim();
-            const errEl = document.getElementById('loginError');
-            const btn = document.getElementById('loginBtn');
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+        }
 
-            if (!urlInput || !passInput) {
-                errEl.innerText = "Please enter API URL and Password";
-                errEl.classList.remove('hidden');
-                return;
+        async function handleLogin(e) {
+            e.preventDefault();
+            const pass = document.getElementById('loginPass').value.trim();
+            const user = document.getElementById('loginUser').value.trim();
+            const btn = document.getElementById('loginBtn');
+            const errEl = document.getElementById('loginError');
+
+            if (!apiUrl) {
+                // If no API URL in localStorage, prompt user to set it via settings or ask
+                apiUrl = prompt("Please enter your Google Apps Script Web App URL:");
+                if (!apiUrl) return;
+                localStorage.setItem('fin_api_url', apiUrl);
             }
 
             btn.disabled = true;
-            btn.innerText = "Connecting...";
+            btn.innerText = "Authenticating...";
             errEl.classList.add('hidden');
 
             try {
-                const res = await fetch(`${urlInput}?action=verifyLogin&password=${encodeURIComponent(passInput)}`);
+                const res = await fetch(`${apiUrl}?action=verifyLogin&username=${encodeURIComponent(user)}&password=${encodeURIComponent(pass)}`);
                 const data = await res.json();
-                if (data.status === 'success') {
-                    localStorage.setItem('fin_api_url', urlInput);
+                if (data.status === "success") {
+                    loginPass = pass;
+                    localStorage.setItem('fin_pass', pass);
                     localStorage.setItem('fin_logged', 'true');
-                    currentApiUrl = urlInput;
                     document.getElementById('loginScreen').classList.add('hidden');
-                    document.getElementById('appContainer').classList.remove('hidden');
-                    syncData();
+                    document.getElementById('mainApp').classList.remove('hidden');
+                    await syncData();
                 } else {
-                    errEl.innerText = "Invalid Password";
+                    errEl.innerText = "❌ Invalid Password!";
                     errEl.classList.remove('hidden');
                 }
             } catch (err) {
-                errEl.innerText = "Connection failed. Check Web App URL.";
+                errEl.innerText = "❌ Connection failed. Check Web App URL.";
                 errEl.classList.remove('hidden');
             } finally {
                 btn.disabled = false;
-                btn.innerText = "Login / Connect";
+                btn.innerText = "Login";
             }
         }
 
@@ -282,59 +369,51 @@
             location.reload();
         }
 
+        async function callApi(payload) {
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                return await response.json();
+            } catch (err) {
+                return { status: "error", message: err.toString() };
+            }
+        }
+
         async function syncData() {
+            if (!apiUrl) return;
             const syncIcon = document.getElementById('syncIcon');
             syncIcon.classList.add('fa-spin');
             try {
-                const res = await fetch(`${currentApiUrl}?action=getData`);
+                const res = await fetch(`${apiUrl}?action=getData`);
                 const data = await res.json();
-                if (data.status === 'success') {
-                    appData.transactions = data.transactions || [];
-                    appData.categories = (data.categories && data.categories.length) ? data.categories : [
+                if (data.status === "success") {
+                    transactions = data.transactions || [];
+                    categories = (data.categories && data.categories.length) ? data.categories : [
                         { name: "Salary", type: "Income", budget: 0 },
                         { name: "Doodh", type: "Expense", budget: 0 }
                     ];
-                    appData.dailyLedger = (data.dailyLedger && data.dailyLedger.length) ? data.dailyLedger : [
-                        { id: "d1", date: new Date().toISOString().slice(0, 10), itemname: "Doodh", amount: 45, status: "Pending" }
-                    ];
-                    updateUI();
-                    setConnectionStatus(true);
+                    dailyItems = data.dailyLedger || [];
+                    populateCategories();
+                    applyFilters();
+                    renderDailyLedger();
+                    document.getElementById('connStatus').className = "px-2.5 py-1 text-xs rounded-full bg-emerald-500/20 text-emerald-400";
+                    document.getElementById('connStatus').innerText = "● Connected";
                 }
             } catch (err) {
-                setConnectionStatus(false);
+                document.getElementById('connStatus').className = "px-2.5 py-1 text-xs rounded-full bg-rose-500/20 text-rose-400";
+                document.getElementById('connStatus').innerText = "● Offline";
             } finally {
                 syncIcon.classList.remove('fa-spin');
             }
         }
 
-        function setConnectionStatus(isConnected) {
-            const statusEl = document.getElementById('connStatus');
-            if (isConnected) {
-                statusEl.className = "px-3 py-1 text-xs font-semibold rounded-full bg-emerald-500/20 text-emerald-400 flex items-center gap-1.5";
-                statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Connected';
-            } else {
-                statusEl.className = "px-3 py-1 text-xs font-semibold rounded-full bg-rose-500/20 text-rose-400 flex items-center gap-1.5";
-                statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-rose-400"></span> Offline / Error';
-            }
-        }
-
-        function updateUI() {
-            updateCategoryDropdown();
-            renderTable();
-            renderDailyLedger();
-            calculateKPIs();
-            
-            document.getElementById('currentTime').innerText = new Date().toLocaleString();
-            setInterval(() => {
-                document.getElementById('currentTime').innerText = new Date().toLocaleString();
-            }, 1000);
-        }
-
-        function updateCategoryDropdown() {
-            const type = document.getElementById('txnType').value;
-            const select = document.getElementById('txnCategory');
+        function populateCategories() {
+            const type = document.getElementById('entryType').value;
+            const select = document.getElementById('entryCategory');
             select.innerHTML = '';
-            const filtered = appData.categories.filter(c => String(c.type).toLowerCase() === type.toLowerCase());
+            const filtered = categories.filter(c => String(c.type).toLowerCase() === type.toLowerCase());
             filtered.forEach(c => {
                 const opt = document.createElement('option');
                 opt.value = c.name;
@@ -343,243 +422,414 @@
             });
         }
 
-        async function saveTransaction() {
-            const btn = document.getElementById('saveTxnBtn');
-            const txn = {
-                action: "saveTransaction",
-                id: 't_' + Date.now(),
-                date: document.getElementById('txnDate').value,
-                type: document.getElementById('txnType').value,
-                category: document.getElementById('txnCategory').value,
-                person: document.getElementById('txnPerson').value || 'Self',
-                amount: parseFloat(document.getElementById('txnAmount').value) || 0,
-                paymentMode: document.getElementById('txnMode').value,
-                note: document.getElementById('txnNote').value
-            };
-
-            if (!txn.amount) {
-                alert("Please enter a valid amount");
-                return;
-            }
-
-            btn.disabled = true;
-            btn.innerText = "Saving...";
-
-            try {
-                await fetch(currentApiUrl, {
-                    method: 'POST',
-                    body: JSON.stringify(txn)
-                });
-                document.getElementById('txnAmount').value = '';
-                document.getElementById('txnNote').value = '';
-                await syncData();
-            } catch (err) {
-                alert("Failed to save transaction");
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "Save Record";
-            }
-        }
+        document.getElementById('entryType').addEventListener('change', populateCategories);
 
         async function saveCategory() {
+            const name = document.getElementById('newCatName').value.trim();
+            const type = document.getElementById('newCatType').value;
+            const budget = parseFloat(document.getElementById('newCatBudget').value) || 0;
             const btn = document.getElementById('saveCatBtn');
-            const cat = {
-                action: "addCategory",
-                name: document.getElementById('catName').value.trim(),
-                type: document.getElementById('catType').value,
-                budget: parseFloat(document.getElementById('catBudget').value) || 0
-            };
 
-            if (!cat.name) {
-                alert("Enter category name");
+            if (!name) {
+                alert("Please enter category name");
                 return;
             }
 
             btn.disabled = true;
             btn.innerText = "Adding...";
 
-            try {
-                await fetch(currentApiUrl, {
-                    method: 'POST',
-                    body: JSON.stringify(cat)
-                });
-                document.getElementById('catName').value = '';
-                document.getElementById('catBudget').value = '';
+            const res = await callApi({ action: "addCategory", name, type, budget });
+            if (res && res.status === "success") {
+                document.getElementById('newCatName').value = '';
+                document.getElementById('newCatBudget').value = '';
                 await syncData();
-            } catch (err) {
+            } else {
                 alert("Failed to add category");
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "Add Category";
+            }
+            btn.disabled = false;
+            btn.innerText = "Add Category";
+        }
+
+        async function saveTransaction(e) {
+            e.preventDefault();
+            const saveBtn = document.getElementById('saveBtn');
+            saveBtn.disabled = true;
+            saveBtn.innerText = "Saving Record...";
+
+            const payload = {
+                action: 'saveTransaction',
+                isEdit: !!editingId,
+                id: editingId || ('t_' + Date.now()),
+                date: document.getElementById('entryDate').value,
+                type: document.getElementById('entryType').value,
+                category: document.getElementById('entryCategory').value,
+                person: document.getElementById('entryPerson').value.trim() || 'Self',
+                amount: parseFloat(document.getElementById('entryAmount').value),
+                paymentMode: document.getElementById('entryPayMode').value,
+                note: document.getElementById('entryNote').value.trim() || '-'
+            };
+
+            // Duplicate check
+            if (!editingId) {
+                const isDup = transactions.some(t => t.date === payload.date && t.category === payload.category && t.amount === payload.amount);
+                if (isDup) {
+                    if (!confirm("⚠️ Is date par is category aur amount ki entry pehle se maujood hai! Kya aap fir bhi save karna chahte hain?")) {
+                        saveBtn.disabled = false;
+                        saveBtn.innerText = "Save Record";
+                        return;
+                    }
+                }
+            }
+
+            const res = await callApi(payload);
+            if (res && res.status === "success") {
+                alert(editingId ? "✅ Record updated!" : "✅ Record saved successfully!");
+                resetForm();
+                await syncData();
+            } else {
+                alert("❌ Failed to save transaction");
+            }
+            saveBtn.disabled = false;
+            saveBtn.innerText = "Save Record";
+        }
+
+        function resetForm() {
+            editingId = null;
+            document.getElementById('formTitle').innerText = "➕ Add New Transaction";
+            document.getElementById('saveBtn').innerText = "Save Record";
+            document.getElementById('cancelEditBtn').classList.add('hidden');
+            document.getElementById('entryAmount').value = '';
+            document.getElementById('entryNote').value = '';
+            document.getElementById('entryPerson').value = '';
+            document.getElementById('entryDate').value = new Date().toISOString().slice(0, 10);
+            document.getElementById('personBalanceInfo').innerText = '';
+        }
+
+        function editTransaction(id) {
+            const pass = prompt("🔐 Enter login password to edit record:");
+            if (pass !== loginPass) {
+                alert("❌ Incorrect password!");
+                return;
+            }
+            const t = transactions.find(x => String(x.id) === String(id));
+            if (!t) return;
+
+            editingId = t.id;
+            document.getElementById('entryType').value = t.type;
+            populateCategories();
+            document.getElementById('entryDate').value = t.date;
+            document.getElementById('entryCategory').value = t.category;
+            document.getElementById('entryPerson').value = t.person;
+            document.getElementById('entryAmount').value = t.amount;
+            document.getElementById('entryPayMode').value = t.paymentmode || t.paymentMode || 'Cash';
+            document.getElementById('entryNote').value = t.note;
+
+            document.getElementById('formTitle').innerText = "✏️ Edit Transaction";
+            document.getElementById('saveBtn').innerText = "Update Record";
+            document.getElementById('cancelEditBtn').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        async function deleteTransaction(id) {
+            const pass = prompt("🔐 Enter login password to delete record:");
+            if (pass !== loginPass) {
+                alert("❌ Incorrect password!");
+                return;
+            }
+            if (!confirm("Delete this transaction?")) return;
+
+            const res = await callApi({ action: "deleteTransaction", id: id });
+            if (res && res.status === "success") {
+                alert("🗑️ Record deleted successfully!");
+                await syncData();
+            } else {
+                alert("❌ Delete failed");
+            }
+        }
+
+        function checkPersonBalance(name) {
+            if (!name) {
+                document.getElementById('personBalanceInfo').innerText = '';
+                return;
+            }
+            let net = 0;
+            transactions.forEach(t => {
+                if (t.person && t.person.toLowerCase() === name.toLowerCase()) {
+                    const amt = parseFloat(t.amount) || 0;
+                    if (t.type === 'Advance Diya') net += amt;
+                    if (t.type === 'Advance Liya') net -= amt;
+                }
+            });
+            const info = document.getElementById('personBalanceInfo');
+            if (net > 0) info.innerText = `Total Given to ${name}: ₹${net}`;
+            else if (net < 0) info.innerText = `Total Taken from ${name}: ₹${Math.abs(net)}`;
+            else info.innerText = `Balance with ${name}: ₹0`;
+        }
+
+        function applyFilters() {
+            const filterType = document.getElementById('filterType').value;
+            const filterMonth = document.getElementById('filterMonth').value;
+            const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+            const pageSizeVal = document.getElementById('pageSizeSelect').value;
+
+            let filtered = transactions.filter(t => {
+                if (!t.date) return false;
+                if (filterType === 'monthly' && filterMonth) {
+                    return t.date.startsWith(filterMonth);
+                } else if (filterType === 'yearly' && filterMonth) {
+                    return t.date.startsWith(filterMonth.slice(0, 4));
+                }
+                return true;
+            });
+
+            if (searchQuery) {
+                filtered = filtered.filter(t => 
+                    String(t.category).toLowerCase().includes(searchQuery) || 
+                    String(t.person).toLowerCase().includes(searchQuery) || 
+                    String(t.note).toLowerCase().includes(searchQuery)
+                );
+            }
+
+            // Latest entries on top
+            filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            // KPIs
+            let income = 0, expense = 0;
+            filtered.forEach(t => {
+                const amt = parseFloat(t.amount) || 0;
+                const tp = String(t.type).toLowerCase();
+                if (tp === 'income' || tp === 'advance liya') income += amt;
+                if (tp === 'expense' || tp === 'advance diya' || tp === 'emi') expense += amt;
+            });
+
+            document.getElementById('lblIncome').innerText = `₹${income}`;
+            document.getElementById('lblExpense').innerText = `₹${expense}`;
+            document.getElementById('lblBalance').innerText = `₹${income - expense}`;
+
+            // Today Entry Status
+            const todayStr = new Date().toISOString().slice(0, 10);
+            const todayEntries = transactions.filter(t => t.date === todayStr);
+            const statusCard = document.getElementById('todayStatusCard');
+            const statusText = document.getElementById('todayStatusText');
+            if (todayEntries.length === 0) {
+                statusCard.className = "bg-rose-950/40 border border-rose-900/50 p-5 rounded-2xl";
+                statusText.className = "text-lg font-bold text-rose-400";
+                statusText.innerText = "❌ Aaj entry nahi hui!";
+            } else {
+                statusCard.className = "bg-emerald-950/40 border border-emerald-900/50 p-5 rounded-2xl";
+                statusText.className = "text-lg font-bold text-emerald-400";
+                statusText.innerText = `✅ ${todayEntries.length} entries ho chuki hain`;
+            }
+
+            renderBudgetAlerts(filtered);
+            renderChart(filtered);
+
+            // Pagination limit
+            const limit = pageSizeVal === 'all' ? filtered.length : parseInt(pageSizeVal) || 10;
+            const paginated = filtered.slice(0, limit);
+            document.getElementById('recordCountBadge').innerText = `${filtered.length} records`;
+
+            const tbody = document.getElementById('transTableBody');
+            tbody.innerHTML = paginated.map(t => {
+                const dt = t.date ? t.date.split('-').reverse().join('-') : '-';
+                const tp = t.type || 'Expense';
+                const cat = t.category || '-';
+                const pers = t.person || '-';
+                const mode = t.paymentmode || t.paymentMode || 'Cash';
+                const amt = t.amount || 0;
+                const nt = t.note || '-';
+                return `
+                    <tr class="hover:bg-slate-900/50">
+                        <td class="p-3">${dt}</td>
+                        <td class="p-3"><span class="px-2 py-1 text-xs rounded-lg ${tp === 'Income' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}">${tp}</span></td>
+                        <td class="p-3 font-medium">${cat}</td>
+                        <td class="p-3">${pers}</td>
+                        <td class="p-3 text-xs text-slate-400">${mode}</td>
+                        <td class="p-3 font-semibold ${tp === 'Income' ? 'text-emerald-400' : 'text-slate-100'}">₹${amt}</td>
+                        <td class="p-3 text-xs text-slate-400">${nt}</td>
+                        <td class="p-3 text-right space-x-2">
+                            <button onclick="editTransaction('${t.id}')" class="text-indigo-400 hover:text-indigo-300">✏️</button>
+                            <button onclick="deleteTransaction('${t.id}')" class="text-rose-400 hover:text-rose-300">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderBudgetAlerts(filteredTrans) {
+            const container = document.getElementById('budgetAlerts');
+            const catTotals = {};
+            filteredTrans.forEach(t => {
+                if (String(t.type).toLowerCase() === 'expense') {
+                    catTotals[t.category] = (catTotals[t.category] || 0) + (parseFloat(t.amount) || 0);
+                }
+            });
+
+            let html = '';
+            categories.forEach(c => {
+                const spent = catTotals[c.name] || 0;
+                if (c.budget > 0 && spent > c.budget) {
+                    html += `<div class="bg-amber-950/40 border border-amber-900/50 p-3 rounded-xl flex justify-between items-center text-xs">
+                        <span>⚠️ <b>${c.name}</b> budget crossed!</span>
+                        <span class="text-amber-400 font-bold">Spent: ₹${spent} / ₹${c.budget}</span>
+                    </div>`;
+                }
+            });
+            container.innerHTML = html;
+        }
+
+        function renderChart(filtered) {
+            const ctx = document.getElementById('expensePieChart').getContext('2d');
+            const catMap = {};
+            filtered.forEach(t => {
+                if (String(t.type).toLowerCase() === 'expense') {
+                    catMap[t.category] = (catMap[t.category] || 0) + (parseFloat(t.amount) || 0);
+                }
+            });
+
+            const labels = Object.keys(catMap);
+            const data = Object.values(catMap);
+
+            if (pieChartInstance) pieChartInstance.destroy();
+
+            pieChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ef4444']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'right', labels: { color: '#94a3b8', boxWidth: 10, font: { size: 10 } } } }
+                }
+            });
+        }
+
+        // Daily Ledger Functions (Khata - Doodh etc.)
+        function openDailyModal() {
+            document.getElementById('dailyModal').classList.remove('hidden');
+        }
+        function closeDailyModal() {
+            document.getElementById('dailyModal').classList.add('hidden');
+        }
+
+        async function saveDailyItem(e) {
+            e.preventDefault();
+            const name = document.getElementById('dailyItemName').value.trim();
+            const amount = parseFloat(document.getElementById('dailyItemAmount').value);
+            const res = await callApi({
+                action: "saveDailyItem",
+                id: 'dl_' + Date.now(),
+                date: new Date().toISOString().slice(0, 10),
+                itemName: name,
+                amount: amount
+            });
+            if (res && res.status === "success") {
+                closeDailyModal();
+                document.getElementById('dailyItemName').value = '';
+                document.getElementById('dailyItemAmount').value = '';
+                await syncData();
             }
         }
 
         function renderDailyLedger() {
-            const container = document.getElementById('dailyLedgerContainer');
-            container.innerHTML = '';
-            
-            appData.dailyLedger.forEach(item => {
-                const itemName = item.itemname || item.itemName || 'Daily Item';
-                const div = document.createElement('div');
-                div.className = "bg-slate-900 p-4 rounded-xl border border-slate-700 flex flex-col justify-between space-y-3";
-                div.innerHTML = `
-                    <div>
+            const container = document.getElementById('dailyItemsContainer');
+            container.innerHTML = dailyItems.map(item => {
+                const name = item.itemname || item.itemName || 'Item';
+                const status = item.status || 'Pending';
+                return `
+                    <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex flex-col justify-between gap-3">
                         <div class="flex justify-between items-start">
-                            <h4 class="font-bold text-white">${itemName}</h4>
-                            <span class="px-2 py-0.5 text-xs rounded-full ${item.status === 'Paid' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}">${item.status || 'Pending'}</span>
+                            <div>
+                                <h4 class="font-semibold text-sm">${name}</h4>
+                                <p class="text-xs text-slate-400">Daily cost: ₹${item.amount}</p>
+                            </div>
+                            <span class="px-2 py-0.5 text-xs rounded-full ${status === 'Paid' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}">${status}</span>
                         </div>
-                        <p class="text-xs text-slate-400 mt-1">Default/Set Cost: ₹${item.amount}</p>
-                        <p class="text-xs text-slate-500">Date: ${item.date || '-'}</p>
+                        ${status === 'Pending' ? `
+                            <div class="flex gap-2">
+                                <button onclick="handleDailyYes('${name}', ${item.amount}, '${item.id}')" class="flex-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 py-1.5 rounded-lg text-xs font-semibold">Yes (+₹${item.amount})</button>
+                                <button onclick="alert('Marked skipped for today')" class="px-3 bg-slate-800 hover:bg-slate-700 py-1.5 rounded-lg text-xs font-semibold">No</button>
+                            </div>
+                        ` : `<p class="text-xs text-emerald-400 font-medium">Cleared & Paid</p>`}
                     </div>
-                    ${item.status !== 'Paid' ? `
-                        <div class="flex gap-2">
-                            <button onclick="handleDailyYes('${itemName}', ${item.amount})" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs py-2 rounded-lg font-medium">Yes (+₹${item.amount})</button>
-                            <button onclick="handleDailyNo('${item.id}')" class="px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs py-2 rounded-lg">No</button>
-                        </div>
-                    ` : `<p class="text-xs text-emerald-400 font-medium">Cleared & Paid</p>`}
                 `;
-                container.appendChild(div);
-            });
+            }).join('');
         }
 
-        async function handleDailyYes(itemName, defaultAmount) {
-            let amt = prompt(`Aaj ${itemName} kitne ka aaya?`, defaultAmount);
+        async function handleDailyYes(name, defaultAmount, id) {
+            let amt = prompt(`Aaj ${name} kitne ka aaya?`, defaultAmount);
             if (amt === null) return;
             amt = parseFloat(amt) || defaultAmount;
 
-            const payload = {
+            const res = await callApi({
                 action: "payDailyLedger",
-                id: 'dl_' + Date.now(),
+                id: id,
                 date: new Date().toISOString().slice(0, 10),
-                itemName: itemName,
+                itemName: name,
                 amount: amt
-            };
-
-            await fetch(currentApiUrl, { method: 'POST', body: JSON.stringify(payload) });
-            await syncData();
-        }
-
-        async function handleDailyNo(id) {
-            alert("Marked as not delivered today.");
-        }
-
-        function addDailyItemPrompt() {
-            let name = prompt("Enter Daily Item Name (e.g. Doodh, Newspaper):");
-            if (!name) return;
-            let cost = prompt("Enter daily default cost:", "45");
-            
-            appData.dailyLedger.push({
-                id: 'dl_' + Date.now(),
-                date: new Date().toISOString().slice(0, 10),
-                itemname: name,
-                amount: parseFloat(cost) || 0,
-                status: "Pending"
             });
-            renderDailyLedger();
-        }
-
-        function renderTable() {
-            const tbody = document.getElementById('transactionTableBody');
-            tbody.innerHTML = '';
-            appData.transactions.slice().reverse().forEach(t => {
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-800/50 transition";
-                tr.innerHTML = `
-                    <td class="p-3">${t.date || '-'}</td>
-                    <td class="p-3"><span class="px-2 py-1 text-xs rounded-full ${t.type === 'Income' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}">${t.type || 'Expense'}</span></td>
-                    <td class="p-3 font-medium text-white">${t.category || '-'}</td>
-                    <td class="p-3">${t.person || 'Self'}</td>
-                    <td class="p-3">${t.paymentmode || t.paymentMode || 'Cash'}</td>
-                    <td class="p-3 font-semibold ${t.type === 'Income' ? 'text-emerald-400' : 'text-rose-400'}">₹${t.amount || 0}</td>
-                    <td class="p-3 text-slate-400">${t.note || '-'}</td>
-                    <td class="p-3"><button onclick="deleteTxn('${t.id}')" class="text-rose-400 hover:text-rose-300 text-xs"><i class="fa-solid fa-trash"></i></button></td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        async function deleteTxn(id) {
-            if (!confirm("Are you sure you want to delete this record?")) return;
-            await fetch(currentApiUrl, {
-                method: 'POST',
-                body: JSON.stringify({ action: "deleteTransaction", id: id })
-            });
-            await syncData();
-        }
-
-        function calculateKPIs() {
-            let income = 0;
-            let expense = 0;
-            const selectedMonth = document.getElementById('filterMonth').value;
-
-            appData.transactions.forEach(t => {
-                if (!selectedMonth || (t.date && t.date.startsWith(selectedMonth))) {
-                    const amt = parseFloat(t.amount) || 0;
-                    if (String(t.type).toLowerCase() === 'income') income += amt;
-                    if (String(t.type).toLowerCase() === 'expense') expense += amt;
-                }
-            });
-
-            document.getElementById('totalIncome').innerText = `₹${income}`;
-            document.getElementById('totalExpense').innerText = `₹${expense}`;
-            document.getElementById('netBalance').innerText = `₹${income - expense}`;
-
-            const todayStr = new Date().toISOString().slice(0, 10);
-            const todayHasEntry = appData.transactions.some(t => t.date === todayStr);
-            const statusEl = document.getElementById('todayStatus');
-            if (todayHasEntry) {
-                statusEl.innerText = "Aaj entry ho chuki hai!";
-                statusEl.className = "text-lg font-bold text-emerald-400 mt-2";
-            } else {
-                statusEl.innerText = "Aaj entry nahi hui!";
-                statusEl.className = "text-lg font-bold text-rose-400 mt-2";
+            if (res && res.status === "success") {
+                alert(`✅ ${name} (₹${amt}) successfully added to main expenses and cleared!`);
+                await syncData();
             }
         }
 
-        function toggleTheme() {
-            const html = document.documentElement;
-            const icon = document.getElementById('themeIcon');
-            if (html.classList.contains('dark')) {
-                html.classList.remove('dark');
-                icon.className = "fa-solid fa-sun";
-            } else {
-                html.classList.add('dark');
-                icon.className = "fa-solid fa-moon";
-            }
-        }
-
+        // Settings Modal
         function openSettings() {
-            document.getElementById('settingsApiUrl').value = currentApiUrl;
+            document.getElementById('setApiUrl').value = apiUrl;
+            document.getElementById('setCurrPass').value = loginPass;
             document.getElementById('settingsModal').classList.remove('hidden');
         }
-
         function closeSettings() {
             document.getElementById('settingsModal').classList.add('hidden');
         }
 
-        async function saveSettingsChanges() {
-            const newUrl = document.getElementById('settingsApiUrl').value.trim();
-            const newPass = document.getElementById('newPasswordInput').value.trim();
+        async function updateSettings(e) {
+            e.preventDefault();
+            const curr = document.getElementById('setCurrPass').value.trim();
+            if (curr !== loginPass) {
+                alert("❌ Current password is incorrect!");
+                return;
+            }
+            const newUrl = document.getElementById('setApiUrl').value.trim();
+            const newUser = document.getElementById('setNewUser').value.trim();
+            const newPass1 = document.getElementById('setNewPass1').value.trim();
+            const newPass2 = document.getElementById('setNewPass2').value.trim();
+
+            let finalPass = loginPass;
+            if (newPass1) {
+                if (newPass1 !== newPass2) {
+                    alert("❌ New passwords do not match!");
+                    return;
+                }
+                finalPass = newPass1;
+            }
 
             if (newUrl) {
+                apiUrl = newUrl;
                 localStorage.setItem('fin_api_url', newUrl);
-                currentApiUrl = newUrl;
             }
 
-            if (newPass) {
-                try {
-                    await fetch(currentApiUrl, {
-                        method: 'POST',
-                        body: JSON.stringify({ action: "changePassword", newPassword: newPass })
-                    });
-                    alert("Password updated successfully!");
-                } catch (err) {
-                    alert("Failed to update password on server.");
-                }
-            }
+            const res = await callApi({
+                action: "updateCredentials",
+                newUsername: newUser,
+                newPassword: newPass1 ? newPass1 : undefined
+            });
 
-            closeSettings();
-            syncData();
+            if (res && res.status === "success") {
+                alert("✅ Settings updated successfully!");
+                loginPass = finalPass;
+                localStorage.setItem('fin_pass', finalPass);
+                closeSettings();
+                await syncData();
+            } else {
+                alert("❌ Failed to update settings.");
+            }
         }
     </script>
 </body>
