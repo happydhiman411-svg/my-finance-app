@@ -730,6 +730,28 @@ if (!editingId) {
             alert("✅ Category added successfully!");
             closeCategoryModal();
         }
+        function updateApiUrlSecure() {
+            const newUrl = document.getElementById('settingsApiUrl').value.trim();
+            if (!newUrl) {
+                alert("⚠️ Please enter a valid API URL!");
+                return;
+            }
+            
+            // API update password prompt (Default: JaiShreeRam)
+            const apiPass = prompt("🔐 Enter API Security Password to update URL:");
+            if (apiPass === null) return; // User cancelled
+            
+            const savedApiPass = localStorage.getItem('finance_api_pass') || "JaiShreeRam";
+            
+            if (apiPass !== savedApiPass) {
+                alert("❌ Incorrect API password! Update cancelled.");
+                return;
+            }
+            
+            localStorage.setItem('finance_api_url', newUrl);
+            alert("✅ API URL successfully updated!");
+            location.reload(); // Page reload taaki naya API URL apply ho jaye
+        }
         
     </script>
 </body>
