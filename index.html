@@ -29,7 +29,7 @@
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium mb-1 text-slate-300">Google Apps Script Web App URL</label>
-                    <input type="text" id="apiUrl" placeholder="Paste your Web App URL here" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-indigo-500">
+                    <input type="text" id="apiUrl" placeholder="https://script.google.com/macros/s/.../exec" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-indigo-500">
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-1 text-slate-300">Password (Default: admin123)</label>
@@ -94,7 +94,7 @@
                         </select>
                     </div>
                     <div>
-                        <input type="month" id="filterMonth" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white">
+                        <input type="month" id="filterMonth" onchange="calculateKPIs()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white">
                     </div>
                 </div>
 
@@ -163,9 +163,7 @@
                 <h3 class="font-semibold text-white text-lg"><i class="fa-solid fa-mug-hot text-indigo-400 mr-2"></i> Daily Ledger Khata (Doodh & Monthly Items)</h3>
                 <button onclick="addDailyItemPrompt()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium rounded-xl">+ Add Daily Item</button>
             </div>
-            <div id="dailyLedgerContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <!-- Dynamically populated daily items -->
-            </div>
+            <div id="dailyLedgerContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
         </div>
 
         <!-- Recent Transactions Table -->
@@ -185,9 +183,7 @@
                             <th class="p-3">Action</th>
                         </tr>
                     </thead>
-                    <tbody id="transactionTableBody" class="divide-y divide-slate-800">
-                        <!-- Loaded via JS -->
-                    </tbody>
+                    <tbody id="transactionTableBody" class="divide-y divide-slate-800"></tbody>
                 </table>
             </div>
         </div>
@@ -294,12 +290,12 @@
                 const data = await res.json();
                 if (data.status === 'success') {
                     appData.transactions = data.transactions || [];
-                    appData.categories = data.categories.length ? data.categories : [
+                    appData.categories = (data.categories && data.categories.length) ? data.categories : [
                         { name: "Salary", type: "Income", budget: 0 },
                         { name: "Doodh", type: "Expense", budget: 0 }
                     ];
-                    appData.dailyLedger = data.dailyLedger || [
-                        { id: "d1", date: new Date().toISOString().slice(0, 10), itemName: "Doodh", amount: 45, status: "Pending" }
+                    appData.dailyLedger = (data.dailyLedger && data.dailyLedger.length) ? data.dailyLedger : [
+                        { id: "d1", date: new Date().toISOString().slice(0, 10), itemname: "Doodh", amount: 45, status: "Pending" }
                     ];
                     updateUI();
                     setConnectionStatus(true);
@@ -328,7 +324,7 @@
             renderDailyLedger();
             calculateKPIs();
             
-            // Update live clock
+            document.getElementById('currentTime').innerText = new Date().toLocaleString();
             setInterval(() => {
                 document.getElementById('currentTime').innerText = new Date().toLocaleString();
             }, 1000);
@@ -338,7 +334,7 @@
             const type = document.getElementById('txnType').value;
             const select = document.getElementById('txnCategory');
             select.innerHTML = '';
-            const filtered = appData.categories.filter(c => c.type === type);
+            const filtered = appData.categories.filter(c => String(c.type).toLowerCase() === type.toLowerCase());
             filtered.forEach(c => {
                 const opt = document.createElement('option');
                 opt.value = c.name;
@@ -423,20 +419,21 @@
             container.innerHTML = '';
             
             appData.dailyLedger.forEach(item => {
+                const itemName = item.itemname || item.itemName || 'Daily Item';
                 const div = document.createElement('div');
                 div.className = "bg-slate-900 p-4 rounded-xl border border-slate-700 flex flex-col justify-between space-y-3";
                 div.innerHTML = `
                     <div>
                         <div class="flex justify-between items-start">
-                            <h4 class="font-bold text-white">${item.itemName}</h4>
-                            <span class="px-2 py-0.5 text-xs rounded-full ${item.status === 'Paid' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}">${item.status}</span>
+                            <h4 class="font-bold text-white">${itemName}</h4>
+                            <span class="px-2 py-0.5 text-xs rounded-full ${item.status === 'Paid' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}">${item.status || 'Pending'}</span>
                         </div>
                         <p class="text-xs text-slate-400 mt-1">Default/Set Cost: ₹${item.amount}</p>
-                        <p class="text-xs text-slate-500">Date: ${item.date}</p>
+                        <p class="text-xs text-slate-500">Date: ${item.date || '-'}</p>
                     </div>
-                    ${item.status === 'Pending' ? `
+                    ${item.status !== 'Paid' ? `
                         <div class="flex gap-2">
-                            <button onclick="handleDailyYes('${item.itemName}', ${item.amount})" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs py-2 rounded-lg font-medium">Yes (+₹${item.amount})</button>
+                            <button onclick="handleDailyYes('${itemName}', ${item.amount})" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs py-2 rounded-lg font-medium">Yes (+₹${item.amount})</button>
                             <button onclick="handleDailyNo('${item.id}')" class="px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs py-2 rounded-lg">No</button>
                         </div>
                     ` : `<p class="text-xs text-emerald-400 font-medium">Cleared & Paid</p>`}
@@ -451,32 +448,19 @@
             amt = parseFloat(amt) || defaultAmount;
 
             const payload = {
-                action: "saveDailyLedger",
+                action: "payDailyLedger",
                 id: 'dl_' + Date.now(),
                 date: new Date().toISOString().slice(0, 10),
                 itemName: itemName,
                 amount: amt
             };
 
-            const res = await fetch(currentApiUrl, { method: 'POST', body: JSON.stringify(payload) });
+            await fetch(currentApiUrl, { method: 'POST', body: JSON.stringify(payload) });
             await syncData();
         }
 
         async function handleDailyNo(id) {
-            // Mark as ignored/paid or remove from view
             alert("Marked as not delivered today.");
-        }
-
-        async function payLedgerItem(id, itemName, amount) {
-            const payload = {
-                action: "payDailyLedger",
-                id: id,
-                date: new Date().toISOString().slice(0, 10),
-                itemName: itemName,
-                amount: amount
-            };
-            await fetch(currentApiUrl, { method: 'POST', body: JSON.stringify(payload) });
-            await syncData();
         }
 
         function addDailyItemPrompt() {
@@ -484,11 +468,10 @@
             if (!name) return;
             let cost = prompt("Enter daily default cost:", "45");
             
-            // Push locally or send to backend as a new daily rule
             appData.dailyLedger.push({
                 id: 'dl_' + Date.now(),
                 date: new Date().toISOString().slice(0, 10),
-                itemName: name,
+                itemname: name,
                 amount: parseFloat(cost) || 0,
                 status: "Pending"
             });
@@ -502,12 +485,12 @@
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-800/50 transition";
                 tr.innerHTML = `
-                    <td class="p-3">${t.date}</td>
-                    <td class="p-3"><span class="px-2 py-1 text-xs rounded-full ${t.type === 'Income' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}">${t.type}</span></td>
-                    <td class="p-3 font-medium text-white">${t.category}</td>
-                    <td class="p-3">${t.person}</td>
-                    <td class="p-3">${t.paymentMode}</td>
-                    <td class="p-3 font-semibold ${t.type === 'Income' ? 'text-emerald-400' : 'text-rose-400'}">₹${t.amount}</td>
+                    <td class="p-3">${t.date || '-'}</td>
+                    <td class="p-3"><span class="px-2 py-1 text-xs rounded-full ${t.type === 'Income' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}">${t.type || 'Expense'}</span></td>
+                    <td class="p-3 font-medium text-white">${t.category || '-'}</td>
+                    <td class="p-3">${t.person || 'Self'}</td>
+                    <td class="p-3">${t.paymentmode || t.paymentMode || 'Cash'}</td>
+                    <td class="p-3 font-semibold ${t.type === 'Income' ? 'text-emerald-400' : 'text-rose-400'}">₹${t.amount || 0}</td>
                     <td class="p-3 text-slate-400">${t.note || '-'}</td>
                     <td class="p-3"><button onclick="deleteTxn('${t.id}')" class="text-rose-400 hover:text-rose-300 text-xs"><i class="fa-solid fa-trash"></i></button></td>
                 `;
@@ -532,8 +515,8 @@
             appData.transactions.forEach(t => {
                 if (!selectedMonth || (t.date && t.date.startsWith(selectedMonth))) {
                     const amt = parseFloat(t.amount) || 0;
-                    if (t.type === 'Income') income += amt;
-                    if (t.type === 'Expense') expense += amt;
+                    if (String(t.type).toLowerCase() === 'income') income += amt;
+                    if (String(t.type).toLowerCase() === 'expense') expense += amt;
                 }
             });
 
