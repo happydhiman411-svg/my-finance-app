@@ -434,56 +434,60 @@
             }
         }
 
-        async function saveSingleEntry() {
-            const type = document.getElementById('entryType').value;
-            const date = document.getElementById('entryDate').value;
-            const category = document.getElementById('entryCategory').value.trim();
-            const person = document.getElementById('entryPerson').value.trim() || '-';
-            const amount = parseFloat(document.getElementById('entryAmount').value) || 0;
-            const note = document.getElementById('entryNote').value.trim() || '-';
+       async function saveSingleEntry() {
+    const type = document.getElementById('entryType').value;
+    const date = document.getElementById('entryDate').value;
+    const category = document.getElementById('entryCategory').value.trim();
+    const person = document.getElementById('entryPerson').value.trim() || '-';
+    const amount = parseFloat(document.getElementById('entryAmount').value) || 0;
+    const note = document.getElementById('entryNote').value.trim() || '-';
 
-            if (!date || !category || amount <= 0) {
-                alert("Please fill date, category, and valid amount!");
-                return;
-            }
-if (!editingId) {
-                // Nayi category automatic save karne ka logic
-                const categoryExists = categoriesList.some(c => c.category.toLowerCase() === category.toLowerCase());
-                if (!categoryExists && category) {
-                    syncToApi({ category: category, budget: 0 }, 'addCategory');
-                }
+    if (!date || !category || amount <= 0) {
+        alert("Please fill date, category, and valid amount!");
+        return;
+    }
 
-                // DUPLICATE ENTRY CHECK
-                const isDuplicate = entries.some(e => e.date === date && e.category.toLowerCase() === category.toLowerCase() && e.amount === amount);
-                if (isDuplicate) {
-                    const confirmDup = confirm("⚠️ Warning: Is date par is category aur amount ki entry pehle se maujood hai! Kya aap fir bhi save karna chahte hain?");
-                    if (!confirmDup) return;
-                }
-            }
-
-       if (editingId) {
-                // Password prompt yahan se hata diya hai kyunki wo pehle hi edit button par check ho chuka hai
-                await syncToApi({ id: editingId, date, type, category, person, amount, note }, 'updateTransaction');
-                editingId = null;
-                const saveBtn = document.getElementById('saveRecordBtn');
-                if (saveBtn) {
-                    saveBtn.innerHTML = "Save Record";
-                    saveBtn.classList.remove('bg-amber-600');
-                    saveBtn.classList.add('bg-indigo-600');
-                }
-            } else {
-                const newId = String(Date.now() + Math.random());
-                const newEntry = { id: newId, date, type, category, person, amount, note };
-                entries.unshift(newEntry);
-                localStorage.setItem('finance_offline_entries', JSON.stringify(entries));
-                renderTransactions();
-                await syncToApi(newEntry, 'addTransaction');
-            }
-
-            clearForm();
-            setTimeout(fetchFromSheet, 1200);
+    if (!editingId) {
+        // Nayi category automatic save karne ka logic
+        const categoryExists = categoriesList.some(c => c.category.toLowerCase() === category.toLowerCase());
+        if (!categoryExists && category) {
+            syncToApi({ category: category, budget: 0 }, 'addCategory');
         }
 
+        // DUPLICATE ENTRY CHECK
+        const isDuplicate = entries.some(e => e.date === date && e.category.toLowerCase() === category.toLowerCase() && e.amount === amount);
+        if (isDuplicate) {
+            const confirmDup = confirm("⚠️ Warning: Is date par is category aur amount ki entry pehle se maujood hai! Kya aap fir bhi save karna chahte hain?");
+            if (!confirmDup) return;
+        }
+    }
+
+    const payload = {
+        id: editingId || String(new Date().getTime()),
+        date: date,
+        type: type,
+        category: category,
+        person: person,
+        amount: amount,
+        note: note
+    };
+
+    const actionType = editingId ? 'updateTransaction' : 'addTransaction';
+    const result = await syncToApi(payload, actionType);
+
+    if (result && result.status === "success") {
+        alert(editingId ? "✅ Record updated successfully!" : "✅ Record added successfully!");
+        editingId = null;
+        
+        // Form fields clear aur button reset
+        document.getElementById('entryAmount').value = '';
+        document.getElementById('entryNote').value = '';
+        const saveBtn = document.getElementById('saveRecordBtn');
+        if (saveBtn) saveBtn.innerHTML = "Save Record";
+
+        await fetchFromSheet(); // App ka data turant refresh hoga
+    }
+}
         function editRow(id) {
             const passInput = prompt("🔒 Enter your password to edit this record:");
             const savedPass = localStorage.getItem('finance_login_pass') || "admin123";
