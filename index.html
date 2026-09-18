@@ -752,6 +752,30 @@ if (!editingId) {
             alert("✅ API URL successfully updated!");
             location.reload(); // Page reload taaki naya API URL apply ho jaye
         }
+        async function syncToApi(payload, action) {
+    const apiUrl = localStorage.getItem('finance_api_url') || DEFAULT_API_URL;
+    // Automatically attach saved password for backend security verification
+    const currentPass = localStorage.getItem('finance_login_pass') || "admin123";
+    
+    payload.action = action;
+    payload.pass = currentPass; // Backend security check ke liye password saath jayega
+
+    try {
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        if (result.status === "error") {
+            alert("❌ Security Error: " + result.message);
+            return null;
+        }
+        return result;
+    } catch (error) {
+        console.error("Sync Error:", error);
+        return null;
+    }
+}
         
     </script>
 </body>
