@@ -376,25 +376,24 @@
             }
         }
 
-        function populateCategories() {
-            const type = document.getElementById('entryType').value;
+       function populateCategories() {
             const select = document.getElementById('entryCategory');
             select.innerHTML = '';
-            const filtered = categories.filter(c => String(c.type).toLowerCase() === type.toLowerCase());
-            filtered.forEach(c => {
-                const opt = document.createElement('option');
-                opt.value = c.name;
-                opt.textContent = `${c.name} (Budget: ₹${c.budget})`;
-                select.appendChild(opt);
+            categories.forEach(c => {
+                const catName = c.category || c.name;
+                if (catName) {
+                    const opt = document.createElement('option');
+                    opt.value = catName;
+                    opt.textContent = catName;
+                    select.appendChild(opt);
+                }
             });
         }
 
         document.getElementById('entryType').addEventListener('change', populateCategories);
 
-       async function saveCategory() {
+      async function saveCategory() {
             const name = document.getElementById('newCatName').value.trim();
-            const type = document.getElementById('entryType').value; // Jo type upar select hoga, wahi category type ban jayega
-            const budget = 0; // Default budget 0
             const btn = document.getElementById('saveCatBtn');
 
             if (!name) {
@@ -405,7 +404,7 @@
             btn.disabled = true;
             btn.innerText = "Adding...";
 
-            const res = await callApi({ action: "addCategory", name, type, budget });
+            const res = await callApi({ action: "addCategory", name });
             if (res && res.status === "success") {
                 document.getElementById('newCatName').value = '';
                 await syncData();
