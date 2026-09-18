@@ -63,6 +63,7 @@
                 </button>
                 <button onclick="fetchFromSheet()" class="bg-sky-600 hover:bg-sky-700 text-white px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1"><i class="fa-solid fa-rotate"></i> Sync</button>
                 <button onclick="openExpressModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1"><i class="fa-solid fa-bolt"></i> Express</button>
+                <button onclick="openCategoryModal()" class="bg-violet-600 hover:bg-violet-700 text-white px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1"><i class="fa-solid fa-folder-plus"></i> Category</button>
                 <button onclick="openSettingsModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1"><i class="fa-solid fa-gear"></i> Settings</button>
                 <button onclick="logout()" class="bg-rose-500 hover:bg-rose-600 text-white px-3 py-2 rounded-xl text-xs font-bold">Logout</button>
             </div>
@@ -193,6 +194,27 @@
             <div class="flex justify-between pt-2">
                 <button onclick="addBulkRow()" class="bg-slate-200 dark:bg-slate-800 px-3 py-2 rounded-xl text-xs font-bold">+ Add Row</button>
                 <button id="saveBulkBtn" onclick="saveBulkEntries()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl text-xs font-bold">Save All Entries</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CATEGORY MODAL -->
+    <div id="categoryModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl w-full max-w-sm space-y-4 border border-slate-200 dark:border-slate-800">
+            <div class="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-800">
+                <h3 class="font-bold text-lg text-violet-600">📁 Add New Category</h3>
+                <button onclick="closeCategoryModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold mb-1">Category Name</label>
+                    <input type="text" id="newCategoryName" class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800" placeholder="e.g. Shopping, Rent">
+                </div>
+                <div>
+                    <label class="block font-semibold mb-1">Monthly Budget (Optional)</label>
+                    <input type="number" id="newCategoryBudget" class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800" placeholder="0">
+                </div>
+                <button onclick="saveNewCategoryFromModal()" class="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-2.5 rounded-xl transition duration-200 shadow-md">Add Category</button>
             </div>
         </div>
     </div>
@@ -679,6 +701,29 @@ if (!editingId) {
         }
 
         function handleFilterChange() { fetchFromSheet(); }
+        function openCategoryModal() {
+            document.getElementById('categoryModal').classList.remove('hidden');
+            document.getElementById('categoryModal').classList.add('flex');
+            document.getElementById('newCategoryName').value = '';
+            document.getElementById('newCategoryBudget').value = '';
+        }
+        function closeCategoryModal() {
+            document.getElementById('categoryModal').classList.remove('flex');
+            document.getElementById('categoryModal').classList.add('hidden');
+            fetchFromSheet();
+        }
+        async function saveNewCategoryFromModal() {
+            const name = document.getElementById('newCategoryName').value.trim();
+            const budget = parseFloat(document.getElementById('newCategoryBudget').value) || 0;
+            if (!name) {
+                alert("Please enter a category name!");
+                return;
+            }
+            await syncToApi({ category: name, budget: budget }, 'addCategory');
+            alert("✅ Category added successfully!");
+            closeCategoryModal();
+        }
+        
     </script>
 </body>
 </html>
