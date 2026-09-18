@@ -98,15 +98,10 @@
                     </div>
                 </div>
 
-                <!-- Add Category / Type Card -->
+              <!-- Add Category Card -->
                 <div class="bg-cardBg border border-slate-800 p-5 rounded-2xl space-y-3">
                     <h3 class="text-sm font-semibold">+ Add New Category</h3>
                     <input type="text" id="newCatName" placeholder="Category Name" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs">
-                    <select id="newCatType" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs">
-                        <option value="Expense">Expense</option>
-                        <option value="Income">Income</option>
-                    </select>
-                    <input type="number" id="newCatBudget" placeholder="Monthly Budget (₹)" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs">
                     <button onclick="saveCategory()" id="saveCatBtn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2.5 rounded-xl text-xs">Add Category</button>
                 </div>
             </div>
@@ -396,10 +391,10 @@
 
         document.getElementById('entryType').addEventListener('change', populateCategories);
 
-        async function saveCategory() {
+       async function saveCategory() {
             const name = document.getElementById('newCatName').value.trim();
-            const type = document.getElementById('newCatType').value;
-            const budget = parseFloat(document.getElementById('newCatBudget').value) || 0;
+            const type = document.getElementById('entryType').value; // Jo type upar select hoga, wahi category type ban jayega
+            const budget = 0; // Default budget 0
             const btn = document.getElementById('saveCatBtn');
 
             if (!name) {
@@ -413,7 +408,6 @@
             const res = await callApi({ action: "addCategory", name, type, budget });
             if (res && res.status === "success") {
                 document.getElementById('newCatName').value = '';
-                document.getElementById('newCatBudget').value = '';
                 await syncData();
             } else {
                 alert("Failed to add category");
