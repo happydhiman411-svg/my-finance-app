@@ -453,14 +453,7 @@ if (!editingId) {
                     syncToApi({ category: category, budget: 0 }, 'addCategory');
                 }
 
-                const isDuplicate = entries.some(e => e.date === date && e.category.toLowerCase() === category.toLowerCase() && e.amount === amount);
-                if (isDuplicate) {
-                    const confirmDup = confirm("⚠️ Warning: Is date par is category aur amount ki entry pehle se maujood hai! Kya aap fir bhi save karna chahte hain?");
-                    if (!confirmDup) return;
-                }
-            }
-            // DUPLICATE ENTRY CHECK (Agar same date, category aur amount pehle se hai aur hum edit nahi kar rahe)
-            if (!editingId) {
+                // DUPLICATE ENTRY CHECK
                 const isDuplicate = entries.some(e => e.date === date && e.category.toLowerCase() === category.toLowerCase() && e.amount === amount);
                 if (isDuplicate) {
                     const confirmDup = confirm("⚠️ Warning: Is date par is category aur amount ki entry pehle se maujood hai! Kya aap fir bhi save karna chahte hain?");
