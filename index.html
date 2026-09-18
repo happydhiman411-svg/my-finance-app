@@ -366,6 +366,7 @@
                     transactions = data.transactions || [];
                     categories = (data.categories && data.categories.length) ? data.categories : [
                         { name: "Salary", type: "Income", budget: 0 },
+                        { name: "Select Category", type: "...",},
                     ];
                     populateCategories();
                     applyFilters();
