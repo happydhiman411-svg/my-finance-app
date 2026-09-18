@@ -1,586 +1,729 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finance Manager - Google Sheets Sync</title>
+    <title>Pro Personal Finance Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        darkBg: '#0f172a',
-                        cardBg: '#1e293b',
-                    }
-                }
-            }
+        tailwind.config = { darkMode: 'class' }
+        // Check saved dark mode preference immediately
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
         }
     </script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body class="bg-slate-50 dark:bg-darkBg text-slate-800 dark:text-slate-100 min-h-screen transition-colors duration-200">
+<body class="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-full font-sans transition-colors duration-200">
 
-    <!-- Login Screen -->
-    <div id="loginScreen" class="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center p-4">
-        <div class="bg-cardBg p-8 rounded-2xl shadow-2xl w-full max-w-md border border-slate-700">
-            <h2 class="text-2xl font-bold mb-6 text-white text-center">Finance Dashboard Login</h2>
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen" class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-2xl w-full max-w-md border border-slate-200 dark:border-slate-800">
+            <div class="flex flex-col items-center mb-6">
+                <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg mb-3">
+                    <i class="fa-solid fa-wallet"></i>
+                </div>
+                <h2 class="text-2xl font-black text-slate-800 dark:text-white">Pro Finance Manager</h2>
+                <p class="text-xs text-slate-400 mt-1">Secure Cloud Dashboard</p>
+            </div>
             <div class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium mb-1 text-slate-300">Google Apps Script Web App URL</label>
-                    <input type="text" id="apiUrl" placeholder="https://script.google.com/macros/s/.../exec" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-indigo-500">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Username</label>
+                    <input type="text" id="loginUser" class="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" placeholder="Enter Username">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium mb-1 text-slate-300">Password (Default: admin123)</label>
-                    <input type="password" id="loginPassword" placeholder="Enter password" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-indigo-500">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Password</label>
+                    <div class="relative">
+                        <input type="password" id="loginPass" class="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" placeholder="Enter Password">
+                        <button type="button" onclick="togglePasswordVisibility('loginPass', 'loginEyeIcon')" class="absolute right-3 top-3.5 text-slate-400 hover:text-slate-600">
+                            <i id="loginEyeIcon" class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
                 </div>
-                <button onclick="handleLogin()" id="loginBtn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-3 rounded-lg transition duration-150">Login / Connect</button>
-                <p id="loginError" class="text-red-400 text-sm text-center hidden"></p>
+                <button onclick="handleLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl transition duration-200 shadow-lg text-sm">Dashboard Login</button>
             </div>
         </div>
     </div>
 
-    <!-- Main App Container -->
-    <div id="appContainer" class="hidden max-w-7xl mx-auto p-4 md:p-6 space-y-6">
+    <!-- MAIN DASHBOARD -->
+    <div id="dashboardApp" class="hidden max-w-7xl mx-auto p-4 md:p-6 space-y-6">
         
-        <!-- Header -->
-        <header class="flex flex-col md:flex-row justify-between items-center bg-cardBg p-4 rounded-2xl border border-slate-700 gap-4">
-            <div class="flex items-center gap-3">
-                <h1 class="text-xl font-bold text-white">Financial Dashboard</h1>
-                <span id="connStatus" class="px-3 py-1 text-xs font-semibold rounded-full bg-emerald-500/20 text-emerald-400 flex items-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Connected
-                </span>
-            </div>
-            <div id="currentTime" class="text-sm text-slate-400 font-medium"></div>
-            <div class="flex items-center gap-2">
-                <button onclick="toggleTheme()" class="p-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 transition" title="Toggle Theme"><i class="fa-solid fa-moon" id="themeIcon"></i></button>
-                <button onclick="syncData()" id="syncBtn" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-sm font-medium flex items-center gap-2 text-slate-300 transition"><i class="fa-solid fa-sync" id="syncIcon"></i> Sync</button>
-                <button onclick="openSettings()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-sm font-medium flex items-center gap-2 text-slate-300 transition"><i class="fa-solid fa-gear"></i> Settings</button>
-                <button onclick="handleLogout()" class="px-4 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 rounded-xl text-sm font-medium transition"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
-            </div>
-        </header>
-
-        <!-- KPI Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="bg-cardBg p-5 rounded-2xl border border-slate-700">
-                <p class="text-xs text-slate-400 uppercase font-semibold">Aaj Ki Entry Status</p>
-                <p id="todayStatus" class="text-lg font-bold text-rose-400 mt-2">Aaj entry nahi hui!</p>
-            </div>
-            <div class="bg-cardBg p-5 rounded-2xl border border-slate-700">
-                <p class="text-xs text-slate-400 uppercase font-semibold">Total Income</p>
-                <p id="totalIncome" class="text-2xl font-bold text-emerald-400 mt-2">₹0</p>
-            </div>
-            <div class="bg-cardBg p-5 rounded-2xl border border-slate-700">
-                <p class="text-xs text-slate-400 uppercase font-semibold">Total Expense</p>
-                <p id="totalExpense" class="text-2xl font-bold text-rose-400 mt-2">₹0</p>
-            </div>
-            <div class="bg-cardBg p-5 rounded-2xl border border-slate-700">
-                <p class="text-xs text-slate-400 uppercase font-semibold">Net Balance</p>
-                <p id="netBalance" class="text-2xl font-bold text-indigo-400 mt-2">₹0</p>
+        <!-- HEADER -->
+        <div class="flex flex-col md:flex-row justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 gap-4">
+            <h1 class="text-xl font-black text-slate-800 dark:text-white flex items-center gap-2">💰 Financial Dashboard</h1>
+            <div class="flex flex-wrap items-center gap-2">
+                <div id="cloudSyncBadge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
+                    🔄 Checking...
+                </div>
+                <!-- Dark Mode Toggle Button -->
+                <button onclick="toggleDarkMode()" class="bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1">
+                    <i id="themeIcon" class="fa-solid fa-moon"></i>
+                </button>
+                <button onclick="fetchFromSheet()" class="bg-sky-600 hover:bg-sky-700 text-white px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1"><i class="fa-solid fa-rotate"></i> Sync</button>
+                <button onclick="openExpressModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1"><i class="fa-solid fa-bolt"></i> Express</button>
+                <button onclick="openCategoryModal()" class="bg-violet-600 hover:bg-violet-700 text-white px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1"><i class="fa-solid fa-folder-plus"></i> Category</button>
+                <button onclick="openSettingsModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1"><i class="fa-solid fa-gear"></i> Settings</button>
+                <button onclick="logout()" class="bg-rose-500 hover:bg-rose-600 text-white px-3 py-2 rounded-xl text-xs font-bold">Logout</button>
             </div>
         </div>
 
-        <!-- Main Workspace -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            <!-- Filter & Category Section -->
-            <div class="space-y-6">
-                <div class="bg-cardBg p-5 rounded-2xl border border-slate-700 space-y-4">
-                    <h3 class="font-semibold text-white">Period Filter</h3>
-                    <div>
-                        <select id="periodType" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white">
-                            <option value="Monthly">Monthly</option>
-                        </select>
-                    </div>
-                    <div>
-                        <input type="month" id="filterMonth" onchange="calculateKPIs()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white">
-                    </div>
-                </div>
-
-                <!-- Add Category Card -->
-                <div class="bg-cardBg p-5 rounded-2xl border border-slate-700 space-y-4">
-                    <h3 class="font-semibold text-white">+ Add New Category</h3>
-                    <div class="space-y-3">
-                        <input type="text" id="catName" placeholder="Category Name" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white">
-                        <select id="catType" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white">
-                            <option value="Expense">Expense</option>
-                            <option value="Income">Income</option>
-                        </select>
-                        <input type="number" id="catBudget" placeholder="Budget (₹)" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white">
-                        <button onclick="saveCategory()" id="saveCatBtn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 rounded-xl text-sm transition">Add Category</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Add New Transaction Form -->
-            <div class="lg:col-span-2 bg-cardBg p-6 rounded-2xl border border-slate-700 space-y-4">
-                <h3 class="font-semibold text-white text-lg">+ Add New Transaction</h3>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs text-slate-400 mb-1">Type</label>
-                        <select id="txnType" onchange="updateCategoryDropdown()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white">
-                            <option value="Expense">Expense</option>
-                            <option value="Income">Income</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs text-slate-400 mb-1">Date</label>
-                        <input type="date" id="txnDate" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white">
-                    </div>
-                    <div>
-                        <label class="block text-xs text-slate-400 mb-1">Category</label>
-                        <select id="txnCategory" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white"></select>
-                    </div>
-                    <div>
-                        <label class="block text-xs text-slate-400 mb-1">Person / Source</label>
-                        <input type="text" id="txnPerson" placeholder="Name" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white">
-                    </div>
-                    <div>
-                        <label class="block text-xs text-slate-400 mb-1">Amount (₹)</label>
-                        <input type="number" id="txnAmount" placeholder="0.00" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white">
-                    </div>
-                    <div>
-                        <label class="block text-xs text-slate-400 mb-1">Payment Mode</label>
-                        <select id="txnMode" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white">
-                            <option value="Cash">Cash</option>
-                            <option value="Online">Online</option>
-                            <option value="Bank">Bank</option>
-                        </select>
-                    </div>
-                </div>
+        <!-- TODAY'S STATUS & STATS OVERVIEW -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+            <!-- TODAY STATUS CARD -->
+            <div id="todayStatusCard" class="bg-amber-50 dark:bg-amber-950/40 p-4 rounded-2xl border border-amber-200 dark:border-amber-800 flex flex-col justify-between">
                 <div>
-                    <label class="block text-xs text-slate-400 mb-1">Note / Description</label>
-                    <input type="text" id="txnNote" placeholder="Optional details..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white">
+                    <p class="text-xs font-semibold text-amber-600 dark:text-amber-400">📅 Aaj Ki Entry Status</p>
+                    <h3 id="todayStatusText" class="text-sm font-bold text-amber-700 dark:text-amber-300 mt-1">Checking...</h3>
                 </div>
-                <button onclick="saveTransaction()" id="saveTxnBtn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-3 rounded-xl transition">Save Record</button>
+                <span id="todayCountBadge" class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-200 dark:bg-amber-900 text-amber-800 dark:text-amber-200 w-max mt-2">0 entries today</span>
+            </div>
+            <div class="bg-emerald-50 dark:bg-emerald-950/40 p-4 rounded-2xl border border-emerald-200 dark:border-emerald-800">
+                <p class="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Total Income</p>
+                <h3 id="totalIncomeVal" class="text-xl font-black text-emerald-700 dark:text-emerald-300 mt-1">₹0</h3>
+            </div>
+            <div class="bg-rose-50 dark:bg-rose-950/40 p-4 rounded-2xl border border-rose-200 dark:border-rose-800">
+                <p class="text-xs font-semibold text-rose-600 dark:text-rose-400">Total Expense</p>
+                <h3 id="totalExpenseVal" class="text-xl font-black text-rose-700 dark:text-rose-300 mt-1">₹0</h3>
+            </div>
+            <div class="bg-indigo-50 dark:bg-indigo-950/40 p-4 rounded-2xl border border-indigo-200 dark:border-indigo-800">
+                <p class="text-xs font-semibold text-indigo-600 dark:text-indigo-400">Net Balance</p>
+                <h3 id="netBalanceVal" class="text-xl font-black text-indigo-700 dark:text-indigo-300 mt-1">₹0</h3>
             </div>
         </div>
 
-        <!-- Daily Ledger Khata -->
-        <div class="bg-cardBg p-6 rounded-2xl border border-slate-700 space-y-4">
-            <div class="flex justify-between items-center">
-                <h3 class="font-semibold text-white text-lg"><i class="fa-solid fa-mug-hot text-indigo-400 mr-2"></i> Daily Ledger Khata (Doodh & Monthly Items)</h3>
-                <button onclick="addDailyItemPrompt()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium rounded-xl">+ Add Daily Item</button>
+        <!-- TRANSACTION FORM & FILTER -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- SINGLE ENTRY FORM -->
+            <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 space-y-4">
+                <h2 class="text-lg font-bold text-indigo-600 dark:text-indigo-400">➕ Add / Edit Transaction</h2>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-semibold mb-1">Type</label>
+                        <select id="entryType" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800">
+                            <option value="Expense">Expense</option>
+                            <option value="Income">Income</option>
+                            <option value="Advance Given">Advance Given</option>
+                            <option value="Advance Taken">Advance Taken</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold mb-1">Date</label>
+                        <input type="date" id="entryDate" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold mb-1">Category</label>
+                        <input type="text" id="entryCategory" list="categoryListOptions" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800" placeholder="Select or type category">
+                        <datalist id="categoryListOptions"></datalist>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold mb-1">Person / Source</label>
+                        <input type="text" id="entryPerson" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800" placeholder="-">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold mb-1">Amount</label>
+                        <input type="number" id="entryAmount" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800" placeholder="0.00">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold mb-1">Note</label>
+                        <input type="text" id="entryNote" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800" placeholder="Optional note">
+                    </div>
+                    <button id="saveRecordBtn" onclick="saveSingleEntry()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl transition duration-200 shadow-md">Save Record</button>
+                </div>
             </div>
-            <div id="dailyLedgerContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+            <!-- FILTER & INFO -->
+            <div class="lg:col-span-2 space-y-6">
+                <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center gap-2 text-xs font-bold">
+                        <i class="fa-solid fa-filter"></i> Filter Period:
+                        <select id="filterType" onchange="handleFilterChange()" class="border dark:border-slate-700 dark:bg-slate-800 px-3 py-1.5 rounded-xl text-xs">
+                            <option value="all">All Time</option>
+                            <option value="this_month" selected>This Month</option>
+                            <option value="custom_month">Specific Month</option>
+                            <option value="custom_range">Date Range</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2" id="filterInputsContainer"></div>
+                </div>
+
+                <!-- QUICK TIP -->
+                <div class="bg-blue-50 dark:bg-blue-950/40 p-4 rounded-2xl border border-blue-200 dark:border-blue-800 text-xs text-blue-800 dark:text-blue-300 space-y-1">
+                    <p class="font-bold"><i class="fa-solid fa-shield-halved"></i> Security & Duplicate Guard Active</p>
+                    <p>Entries are protected with cloud sync. Duplicate entries on the same date with matching category & amount will trigger a warning. Edit and Delete require your account password confirmation.</p>
+                </div>
+            </div>
         </div>
 
-        <!-- Recent Transactions Table -->
-        <div class="bg-cardBg p-6 rounded-2xl border border-slate-700 space-y-4">
-            <h3 class="font-semibold text-white text-lg">Recent Transactions</h3>
+        <!-- TRANSACTIONS TABLE -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+            <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+                <h3 class="font-bold text-sm">Recent Transactions</h3>
+                <span id="recordCount" class="text-xs text-slate-400">0 records</span>
+            </div>
             <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm text-slate-300">
-                    <thead class="bg-slate-900 text-xs uppercase text-slate-400">
-                        <tr>
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
                             <th class="p-3">Date</th>
                             <th class="p-3">Type</th>
                             <th class="p-3">Category</th>
                             <th class="p-3">Person</th>
-                            <th class="p-3">Mode</th>
                             <th class="p-3">Amount</th>
                             <th class="p-3">Note</th>
-                            <th class="p-3">Action</th>
+                            <th class="p-3 text-right">Actions</th>
                         </tr>
                     </thead>
-                    <tbody id="transactionTableBody" class="divide-y divide-slate-800"></tbody>
+                    <tbody id="transactionTableBody">
+                        <tr><td colspan="7" class="text-center p-6 text-slate-400">Loading entries...</td></tr>
+                    </tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <!-- Settings Modal -->
-    <div id="settingsModal" class="fixed inset-0 bg-slate-900/80 z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-cardBg p-6 rounded-2xl shadow-2xl w-full max-w-md border border-slate-700 space-y-4">
-            <div class="flex justify-between items-center">
-                <h3 class="text-xl font-bold text-white">Settings</h3>
-                <button onclick="closeSettings()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+    <!-- EXPRESS ENTRY MODAL -->
+    <div id="expressModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto space-y-4 border border-slate-200 dark:border-slate-800">
+            <div class="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-800">
+                <h3 class="font-bold text-lg text-emerald-600">⚡ Express Bulk Entry</h3>
+                <button onclick="closeExpressModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-medium mb-1 text-slate-300">Google Apps Script Web App URL</label>
-                    <input type="text" id="settingsApiUrl" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium mb-1 text-slate-300">New Password</label>
-                    <input type="password" id="newPasswordInput" placeholder="Enter new password" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white">
-                </div>
-                <div class="flex gap-2 pt-2">
-                    <button onclick="saveSettingsChanges()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl font-medium text-sm">Save Changes</button>
-                    <button onclick="closeSettings()" class="px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2.5 rounded-xl font-medium text-sm">Cancel</button>
-                </div>
+            <div id="expressRowsContainer" class="space-y-3"></div>
+            <div class="flex justify-between pt-2">
+                <button onclick="addBulkRow()" class="bg-slate-200 dark:bg-slate-800 px-3 py-2 rounded-xl text-xs font-bold">+ Add Row</button>
+                <button id="saveBulkBtn" onclick="saveBulkEntries()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl text-xs font-bold">Save All Entries</button>
             </div>
         </div>
     </div>
 
-    <!-- Script Logic -->
+    <!-- CATEGORY MODAL -->
+    <div id="categoryModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl w-full max-w-sm space-y-4 border border-slate-200 dark:border-slate-800">
+            <div class="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-800">
+                <h3 class="font-bold text-lg text-violet-600">📁 Add New Category</h3>
+                <button onclick="closeCategoryModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold mb-1">Category Name</label>
+                    <input type="text" id="newCategoryName" class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800" placeholder="e.g. Shopping, Rent">
+                </div>
+                <div>
+                    <label class="block font-semibold mb-1">Monthly Budget (Optional)</label>
+                    <input type="number" id="newCategoryBudget" class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800" placeholder="0">
+                </div>
+                <button onclick="saveNewCategoryFromModal()" class="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-2.5 rounded-xl transition duration-200 shadow-md">Add Category</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settingsModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl w-full max-w-md space-y-4 border border-slate-200 dark:border-slate-800">
+            <div class="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-800">
+                <h3 class="font-bold text-lg text-indigo-600">⚙️ Settings & Security</h3>
+                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold mb-1">Google Apps Script API URL</label>
+                    <input type="text" id="settingsApiUrl" class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800">
+                </div>
+                <hr class="border-slate-200 dark:border-slate-800 my-2">
+                <p class="font-bold text-slate-700 dark:text-slate-300">Change Credentials (Synced with Punya Token)</p>
+                <div>
+                    <label class="block font-semibold mb-1">Current Password</label>
+                    <input type="password" id="currentPassInput" class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800" placeholder="Enter current password">
+                </div>
+                <div>
+                    <label class="block font-semibold mb-1">New Username (Optional)</label>
+                    <input type="text" id="newUsernameInput" class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800" placeholder="New username">
+                </div>
+                <div>
+                    <label class="block font-semibold mb-1">New Password (Optional)</label>
+                    <input type="password" id="newPasswordInput" class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800" placeholder="New password (min 4 chars)">
+                </div>
+                <button onclick="updateCredentials()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-xl transition duration-200">Update Credentials</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
     <script>
-        let appData = { transactions: [], categories: [], dailyLedger: [] };
-        let currentApiUrl = localStorage.getItem('fin_api_url') || '';
+        const SECRET_TOKEN = "Punya@2026";
+        const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbxi8eKxqzqSLYiCf6GVKq7pgXqNAZxPPPKGVRfFIBkIBiLIsBvYHbbCpl6C6P79KAM2/exec";
+        
+        let entries = [];
+        let categoriesList = [
+            { category: "Doodh", budget: 0 },
+            { category: "Bijli Bill", budget: 0 },
+            { category: "Petrol", budget: 0 },
+            { category: "Grocery", budget: 0 },
+            { category: "Salary", budget: 0 }
+        ];
+        let editingId = null;
 
         window.onload = function() {
-            document.getElementById('txnDate').valueAsDate = new Date();
-            const currMonth = new Date().toISOString().slice(0, 7);
-            document.getElementById('filterMonth').value = currMonth;
-            
-            if (currentApiUrl) {
-                document.getElementById('apiUrl').value = currentApiUrl;
-                document.getElementById('settingsApiUrl').value = currentApiUrl;
-                checkSavedLogin();
-            }
+            checkAuth();
+            loadCloudCredentialsOnStart();
         };
 
-        function checkSavedLogin() {
-            if (localStorage.getItem('fin_logged') === 'true') {
+        function toggleDarkMode() {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+                document.getElementById('themeIcon').className = "fa-solid fa-moon";
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+                document.getElementById('themeIcon').className = "fa-solid fa-sun";
+            }
+        }
+
+        async function loadCloudCredentialsOnStart() {
+            try {
+                const apiUrl = localStorage.getItem('finance_api_url') || DEFAULT_API_URL;
+                if (!apiUrl) return;
+                
+                const res = await fetch(`${apiUrl}?action=getCredentials&token=${SECRET_TOKEN}&t=${Date.now()}`);
+                const data = await res.json();
+                
+                if (data && data.username && data.password) {
+                    localStorage.setItem('finance_login_user', data.username);
+                    localStorage.setItem('finance_login_pass', data.password);
+                }
+            } catch (err) {
+                console.log("Cloud credential fetch error:", err);
+            }
+        }
+
+        function setTodayDate() {
+            const todayIST = new Date().toLocaleDateString('en-CA');
+            const dateEl = document.getElementById('entryDate');
+            if (dateEl) dateEl.value = todayIST;
+        }
+
+        function checkAuth() {
+            const loggedIn = localStorage.getItem('finance_logged_in');
+            if (loggedIn === 'true') {
                 document.getElementById('loginScreen').classList.add('hidden');
-                document.getElementById('appContainer').classList.remove('hidden');
-                syncData();
-            }
-        }
-
-        async function handleLogin() {
-            const urlInput = document.getElementById('apiUrl').value.trim();
-            const passInput = document.getElementById('loginPassword').value.trim();
-            const errEl = document.getElementById('loginError');
-            const btn = document.getElementById('loginBtn');
-
-            if (!urlInput || !passInput) {
-                errEl.innerText = "Please enter API URL and Password";
-                errEl.classList.remove('hidden');
-                return;
-            }
-
-            btn.disabled = true;
-            btn.innerText = "Connecting...";
-            errEl.classList.add('hidden');
-
-            try {
-                const res = await fetch(`${urlInput}?action=verifyLogin&password=${encodeURIComponent(passInput)}`);
-                const data = await res.json();
-                if (data.status === 'success') {
-                    localStorage.setItem('fin_api_url', urlInput);
-                    localStorage.setItem('fin_logged', 'true');
-                    currentApiUrl = urlInput;
-                    document.getElementById('loginScreen').classList.add('hidden');
-                    document.getElementById('appContainer').classList.remove('hidden');
-                    syncData();
-                } else {
-                    errEl.innerText = "Invalid Password";
-                    errEl.classList.remove('hidden');
-                }
-            } catch (err) {
-                errEl.innerText = "Connection failed. Check Web App URL.";
-                errEl.classList.remove('hidden');
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "Login / Connect";
-            }
-        }
-
-        function handleLogout() {
-            localStorage.removeItem('fin_logged');
-            location.reload();
-        }
-
-        async function syncData() {
-            const syncIcon = document.getElementById('syncIcon');
-            syncIcon.classList.add('fa-spin');
-            try {
-                const res = await fetch(`${currentApiUrl}?action=getData`);
-                const data = await res.json();
-                if (data.status === 'success') {
-                    appData.transactions = data.transactions || [];
-                    appData.categories = (data.categories && data.categories.length) ? data.categories : [
-                        { name: "Salary", type: "Income", budget: 0 },
-                        { name: "Doodh", type: "Expense", budget: 0 }
-                    ];
-                    appData.dailyLedger = (data.dailyLedger && data.dailyLedger.length) ? data.dailyLedger : [
-                        { id: "d1", date: new Date().toISOString().slice(0, 10), itemname: "Doodh", amount: 45, status: "Pending" }
-                    ];
-                    updateUI();
-                    setConnectionStatus(true);
-                }
-            } catch (err) {
-                setConnectionStatus(false);
-            } finally {
-                syncIcon.classList.remove('fa-spin');
-            }
-        }
-
-        function setConnectionStatus(isConnected) {
-            const statusEl = document.getElementById('connStatus');
-            if (isConnected) {
-                statusEl.className = "px-3 py-1 text-xs font-semibold rounded-full bg-emerald-500/20 text-emerald-400 flex items-center gap-1.5";
-                statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Connected';
+                document.getElementById('dashboardApp').classList.remove('hidden');
+                setTodayDate();
+                fetchFromSheet();
             } else {
-                statusEl.className = "px-3 py-1 text-xs font-semibold rounded-full bg-rose-500/20 text-rose-400 flex items-center gap-1.5";
-                statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-rose-400"></span> Offline / Error';
+                document.getElementById('loginScreen').classList.remove('hidden');
+                document.getElementById('dashboardApp').classList.add('hidden');
             }
         }
 
-        function updateUI() {
-            updateCategoryDropdown();
-            renderTable();
-            renderDailyLedger();
-            calculateKPIs();
+        function togglePasswordVisibility(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        function handleLogin() {
+            const user = document.getElementById('loginUser').value.trim();
+            const pass = document.getElementById('loginPass').value.trim();
             
-            document.getElementById('currentTime').innerText = new Date().toLocaleString();
-            setInterval(() => {
-                document.getElementById('currentTime').innerText = new Date().toLocaleString();
-            }, 1000);
+            const savedUser = localStorage.getItem('finance_login_user') || "admin";
+            const savedPass = localStorage.getItem('finance_login_pass') || "admin123";
+
+            if (user === savedUser && pass === savedPass) {
+                localStorage.setItem('finance_logged_in', 'true');
+                checkAuth();
+            } else {
+                alert("❌ Invalid Username or Password!");
+            }
         }
 
-        function updateCategoryDropdown() {
-            const type = document.getElementById('txnType').value;
-            const select = document.getElementById('txnCategory');
-            select.innerHTML = '';
-            const filtered = appData.categories.filter(c => String(c.type).toLowerCase() === type.toLowerCase());
-            filtered.forEach(c => {
-                const opt = document.createElement('option');
-                opt.value = c.name;
-                opt.textContent = `${c.name} (Budget: ₹${c.budget})`;
-                select.appendChild(opt);
-            });
+        function logout() {
+            localStorage.removeItem('finance_logged_in');
+            checkAuth();
         }
 
-        async function saveTransaction() {
-            const btn = document.getElementById('saveTxnBtn');
-            const txn = {
-                action: "saveTransaction",
-                id: 't_' + Date.now(),
-                date: document.getElementById('txnDate').value,
-                type: document.getElementById('txnType').value,
-                category: document.getElementById('txnCategory').value,
-                person: document.getElementById('txnPerson').value || 'Self',
-                amount: parseFloat(document.getElementById('txnAmount').value) || 0,
-                paymentMode: document.getElementById('txnMode').value,
-                note: document.getElementById('txnNote').value
-            };
+        async function fetchFromSheet() {
+            const apiUrl = localStorage.getItem('finance_api_url') || DEFAULT_API_URL;
+            const badge = document.getElementById('cloudSyncBadge');
+            
+            const cachedLocalData = localStorage.getItem('finance_offline_entries');
+            if (cachedLocalData) {
+                try {
+                    entries = JSON.parse(cachedLocalData);
+                    renderCategoriesDatalist();
+                    renderTransactions();
+                } catch(e) {}
+            }
 
-            if (!txn.amount) {
-                alert("Please enter a valid amount");
+            badge.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300";
+            badge.innerHTML = "🔄 Syncing...";
+
+            try {
+                const [catRes, res] = await Promise.all([
+                    fetch(`${apiUrl}?action=getCategories&token=${SECRET_TOKEN}&t=${Date.now()}`),
+                    fetch(`${apiUrl}?action=getData&token=${SECRET_TOKEN}&t=${Date.now()}`)
+                ]);
+
+                const catData = await catRes.json();
+                if (Array.isArray(catData) && catData.length > 0) {
+                    categoriesList = catData;
+                }
+
+                const data = await res.json();
+                if (Array.isArray(data)) {
+                    entries = data.map(item => ({
+                        id: String(item.id || item.ID || Date.now()),
+                        date: item.date || item.DATE || '',
+                        type: item.type || item.TYPE || 'Expense',
+                        category: item.category || item.CATEGORY || 'Other',
+                        person: item.person || item.PERSON || '-',
+                        amount: parseFloat(item.amount || item.AMOUNT || 0),
+                        note: item.note || item.NOTE || '-'
+                    }));
+                    localStorage.setItem('finance_offline_entries', JSON.stringify(entries));
+                }
+
+                badge.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300";
+                badge.innerHTML = "✅ Connected";
+                
+                renderCategoriesDatalist();
+                renderTransactions();
+            } catch (err) {
+                badge.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300";
+                badge.innerHTML = "⚠️ Offline Cached";
+                console.error(err);
+            }
+        }
+
+        function renderCategoriesDatalist() {
+            const list = document.getElementById('categoryListOptions');
+            if (!list) return;
+            list.innerHTML = categoriesList.map(c => `<option value="${c.category}">`).join('');
+        }
+
+        async function syncToApi(payload, action) {
+            const apiUrl = localStorage.getItem('finance_api_url') || DEFAULT_API_URL;
+            try {
+                payload.action = action;
+                payload.token = SECRET_TOKEN;
+                await fetch(apiUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            } catch (err) {
+                console.error("Sync error:", err);
+            }
+        }
+
+        async function saveSingleEntry() {
+            const type = document.getElementById('entryType').value;
+            const date = document.getElementById('entryDate').value;
+            const category = document.getElementById('entryCategory').value.trim();
+            const person = document.getElementById('entryPerson').value.trim() || '-';
+            const amount = parseFloat(document.getElementById('entryAmount').value) || 0;
+            const note = document.getElementById('entryNote').value.trim() || '-';
+
+            if (!date || !category || amount <= 0) {
+                alert("Please fill date, category, and valid amount!");
+                return;
+            }
+if (!editingId) {
+                // Nayi category automatic save karne ka logic
+                const categoryExists = categoriesList.some(c => c.category.toLowerCase() === category.toLowerCase());
+                if (!categoryExists && category) {
+                    syncToApi({ category: category, budget: 0 }, 'addCategory');
+                }
+
+                const isDuplicate = entries.some(e => e.date === date && e.category.toLowerCase() === category.toLowerCase() && e.amount === amount);
+                if (isDuplicate) {
+                    const confirmDup = confirm("⚠️ Warning: Is date par is category aur amount ki entry pehle se maujood hai! Kya aap fir bhi save karna chahte hain?");
+                    if (!confirmDup) return;
+                }
+            }
+            // DUPLICATE ENTRY CHECK (Agar same date, category aur amount pehle se hai aur hum edit nahi kar rahe)
+            if (!editingId) {
+                const isDuplicate = entries.some(e => e.date === date && e.category.toLowerCase() === category.toLowerCase() && e.amount === amount);
+                if (isDuplicate) {
+                    const confirmDup = confirm("⚠️ Warning: Is date par is category aur amount ki entry pehle se maujood hai! Kya aap fir bhi save karna chahte hain?");
+                    if (!confirmDup) return;
+                }
+            }
+
+       if (editingId) {
+                // Password prompt yahan se hata diya hai kyunki wo pehle hi edit button par check ho chuka hai
+                await syncToApi({ id: editingId, date, type, category, person, amount, note }, 'updateTransaction');
+                editingId = null;
+                const saveBtn = document.getElementById('saveRecordBtn');
+                if (saveBtn) {
+                    saveBtn.innerHTML = "Save Record";
+                    saveBtn.classList.remove('bg-amber-600');
+                    saveBtn.classList.add('bg-indigo-600');
+                }
+            } else {
+                const newId = String(Date.now() + Math.random());
+                const newEntry = { id: newId, date, type, category, person, amount, note };
+                entries.unshift(newEntry);
+                localStorage.setItem('finance_offline_entries', JSON.stringify(entries));
+                renderTransactions();
+                await syncToApi(newEntry, 'addTransaction');
+            }
+
+            clearForm();
+            setTimeout(fetchFromSheet, 1200);
+        }
+
+        function editRow(id) {
+            const passInput = prompt("🔒 Enter your password to edit this record:");
+            const savedPass = localStorage.getItem('finance_login_pass') || "admin123";
+            if (passInput !== savedPass) {
+                alert("❌ Incorrect password! Edit cancelled.");
                 return;
             }
 
-            btn.disabled = true;
-            btn.innerText = "Saving...";
+            const t = entries.find(x => x.id == id);
+            if (!t) return;
 
-            try {
-                await fetch(currentApiUrl, {
-                    method: 'POST',
-                    body: JSON.stringify(txn)
-                });
-                document.getElementById('txnAmount').value = '';
-                document.getElementById('txnNote').value = '';
-                await syncData();
-            } catch (err) {
-                alert("Failed to save transaction");
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "Save Record";
+            document.getElementById('entryType').value = t.type;
+            document.getElementById('entryDate').value = t.date;
+            document.getElementById('entryCategory').value = t.category;
+            document.getElementById('entryPerson').value = t.person;
+            document.getElementById('entryAmount').value = t.amount;
+            document.getElementById('entryNote').value = t.note;
+
+            editingId = id;
+            const saveBtn = document.getElementById('saveRecordBtn');
+            if (saveBtn) {
+                saveBtn.innerHTML = "Update Record";
+                saveBtn.classList.remove('bg-indigo-600');
+                saveBtn.classList.add('bg-amber-600');
             }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        async function saveCategory() {
-            const btn = document.getElementById('saveCatBtn');
-            const cat = {
-                action: "addCategory",
-                name: document.getElementById('catName').value.trim(),
-                type: document.getElementById('catType').value,
-                budget: parseFloat(document.getElementById('catBudget').value) || 0
-            };
-
-            if (!cat.name) {
-                alert("Enter category name");
+        async function deleteRow(id) {
+            const passInput = prompt("🔒 Enter your password to delete this record:");
+            const savedPass = localStorage.getItem('finance_login_pass') || "admin123";
+            if (passInput !== savedPass) {
+                alert("❌ Incorrect password! Deletion cancelled.");
                 return;
             }
 
-            btn.disabled = true;
-            btn.innerText = "Adding...";
-
-            try {
-                await fetch(currentApiUrl, {
-                    method: 'POST',
-                    body: JSON.stringify(cat)
-                });
-                document.getElementById('catName').value = '';
-                document.getElementById('catBudget').value = '';
-                await syncData();
-            } catch (err) {
-                alert("Failed to add category");
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "Add Category";
-            }
-        }
-
-        function renderDailyLedger() {
-            const container = document.getElementById('dailyLedgerContainer');
-            container.innerHTML = '';
-            
-            appData.dailyLedger.forEach(item => {
-                const itemName = item.itemname || item.itemName || 'Daily Item';
-                const div = document.createElement('div');
-                div.className = "bg-slate-900 p-4 rounded-xl border border-slate-700 flex flex-col justify-between space-y-3";
-                div.innerHTML = `
-                    <div>
-                        <div class="flex justify-between items-start">
-                            <h4 class="font-bold text-white">${itemName}</h4>
-                            <span class="px-2 py-0.5 text-xs rounded-full ${item.status === 'Paid' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}">${item.status || 'Pending'}</span>
-                        </div>
-                        <p class="text-xs text-slate-400 mt-1">Default/Set Cost: ₹${item.amount}</p>
-                        <p class="text-xs text-slate-500">Date: ${item.date || '-'}</p>
-                    </div>
-                    ${item.status !== 'Paid' ? `
-                        <div class="flex gap-2">
-                            <button onclick="handleDailyYes('${itemName}', ${item.amount})" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs py-2 rounded-lg font-medium">Yes (+₹${item.amount})</button>
-                            <button onclick="handleDailyNo('${item.id}')" class="px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs py-2 rounded-lg">No</button>
-                        </div>
-                    ` : `<p class="text-xs text-emerald-400 font-medium">Cleared & Paid</p>`}
-                `;
-                container.appendChild(div);
-            });
-        }
-
-        async function handleDailyYes(itemName, defaultAmount) {
-            let amt = prompt(`Aaj ${itemName} kitne ka aaya?`, defaultAmount);
-            if (amt === null) return;
-            amt = parseFloat(amt) || defaultAmount;
-
-            const payload = {
-                action: "payDailyLedger",
-                id: 'dl_' + Date.now(),
-                date: new Date().toISOString().slice(0, 10),
-                itemName: itemName,
-                amount: amt
-            };
-
-            await fetch(currentApiUrl, { method: 'POST', body: JSON.stringify(payload) });
-            await syncData();
-        }
-
-        async function handleDailyNo(id) {
-            alert("Marked as not delivered today.");
-        }
-
-        function addDailyItemPrompt() {
-            let name = prompt("Enter Daily Item Name (e.g. Doodh, Newspaper):");
-            if (!name) return;
-            let cost = prompt("Enter daily default cost:", "45");
-            
-            appData.dailyLedger.push({
-                id: 'dl_' + Date.now(),
-                date: new Date().toISOString().slice(0, 10),
-                itemname: name,
-                amount: parseFloat(cost) || 0,
-                status: "Pending"
-            });
-            renderDailyLedger();
-        }
-
-        function renderTable() {
-            const tbody = document.getElementById('transactionTableBody');
-            tbody.innerHTML = '';
-            appData.transactions.slice().reverse().forEach(t => {
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-800/50 transition";
-                tr.innerHTML = `
-                    <td class="p-3">${t.date || '-'}</td>
-                    <td class="p-3"><span class="px-2 py-1 text-xs rounded-full ${t.type === 'Income' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}">${t.type || 'Expense'}</span></td>
-                    <td class="p-3 font-medium text-white">${t.category || '-'}</td>
-                    <td class="p-3">${t.person || 'Self'}</td>
-                    <td class="p-3">${t.paymentmode || t.paymentMode || 'Cash'}</td>
-                    <td class="p-3 font-semibold ${t.type === 'Income' ? 'text-emerald-400' : 'text-rose-400'}">₹${t.amount || 0}</td>
-                    <td class="p-3 text-slate-400">${t.note || '-'}</td>
-                    <td class="p-3"><button onclick="deleteTxn('${t.id}')" class="text-rose-400 hover:text-rose-300 text-xs"><i class="fa-solid fa-trash"></i></button></td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        async function deleteTxn(id) {
             if (!confirm("Are you sure you want to delete this record?")) return;
-            await fetch(currentApiUrl, {
-                method: 'POST',
-                body: JSON.stringify({ action: "deleteTransaction", id: id })
-            });
-            await syncData();
+            entries = entries.filter(x => x.id != id);
+            localStorage.setItem('finance_offline_entries', JSON.stringify(entries));
+            renderTransactions();
+            await syncToApi({ id: id }, 'deleteTransaction');
+            setTimeout(fetchFromSheet, 1200);
         }
 
-        function calculateKPIs() {
-            let income = 0;
-            let expense = 0;
-            const selectedMonth = document.getElementById('filterMonth').value;
+        function clearForm() {
+            setTodayDate();
+            document.getElementById('entryCategory').value = '';
+            document.getElementById('entryPerson').value = '';
+            document.getElementById('entryAmount').value = '';
+            document.getElementById('entryNote').value = '';
+        }
 
-            appData.transactions.forEach(t => {
-                if (!selectedMonth || (t.date && t.date.startsWith(selectedMonth))) {
-                    const amt = parseFloat(t.amount) || 0;
-                    if (String(t.type).toLowerCase() === 'income') income += amt;
-                    if (String(t.type).toLowerCase() === 'expense') expense += amt;
+        function renderTransactions() {
+            const tbody = document.getElementById('transactionTableBody');
+            const countEl = document.getElementById('recordCount');
+            
+            let html = '';
+            let totalInc = 0, totalExp = 0;
+            const todayStr = new Date().toLocaleDateString('en-CA');
+            let todayCount = 0;
+
+            entries.forEach(t => {
+                if (t.type === 'Income') totalInc += t.amount;
+                if (t.type === 'Expense') totalExp += t.amount;
+                if (t.date === todayStr) todayCount++;
+
+                html += `<tr class="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                    <td class="p-3">${t.date}</td>
+                    <td class="p-3 font-semibold ${t.type === 'Income' ? 'text-emerald-600' : 'text-rose-600'}">${t.type}</td>
+                    <td class="p-3">${t.category}</td>
+                    <td class="p-3">${t.person}</td>
+                    <td class="p-3 font-bold">₹${t.amount}</td>
+                    <td class="p-3 text-slate-400">${t.note}</td>
+                    <td class="p-3 text-right">
+                        <button onclick="editRow('${t.id}')" class="text-blue-500 mr-2 hover:underline" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="deleteRow('${t.id}')" class="text-rose-500 hover:underline" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>`;
+            });
+
+            tbody.innerHTML = html || `<tr><td colspan="7" class="text-center p-6 text-slate-400">No records found.</td></tr>`;
+            countEl.innerText = `${entries.length} records`;
+
+            document.getElementById('totalIncomeVal').innerText = `₹${totalInc}`;
+            document.getElementById('totalExpenseVal').innerText = `₹${totalExp}`;
+            document.getElementById('netBalanceVal').innerText = `₹${totalInc - totalExp}`;
+
+            // Update Today Status Card
+            const todayStatusText = document.getElementById('todayStatusText');
+            const todayCountBadge = document.getElementById('todayCountBadge');
+            const todayCard = document.getElementById('todayStatusCard');
+            if (todayCount > 0) {
+                todayStatusText.innerText = "✅ Aaj entry ho chuki hai!";
+                todayCard.className = "bg-emerald-50 dark:bg-emerald-950/40 p-4 rounded-2xl border border-emerald-200 dark:border-emerald-800 flex flex-col justify-between";
+                todayCountBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-200 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 w-max mt-2";
+            } else {
+                todayStatusText.innerText = "⚠️ Aaj abhi tak koi entry nahi hui!";
+                todayCard.className = "bg-amber-50 dark:bg-amber-950/40 p-4 rounded-2xl border border-amber-200 dark:border-amber-800 flex flex-col justify-between";
+                todayCountBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded bg-amber-200 dark:bg-amber-900 text-amber-800 dark:text-amber-200 w-max mt-2";
+            }
+            todayCountBadge.innerText = `${todayCount} entries today`;
+        }
+
+        function openExpressModal() {
+            document.getElementById('expressModal').classList.remove('hidden');
+            document.getElementById('expressModal').classList.add('flex');
+            document.getElementById('expressRowsContainer').innerHTML = '';
+            addBulkRow();
+        }
+        function closeExpressModal() {
+            document.getElementById('expressModal').classList.remove('flex');
+            document.getElementById('expressModal').classList.add('hidden');
+            fetchFromSheet();
+        }
+        function addBulkRow() {
+            const container = document.getElementById('expressRowsContainer');
+            const today = new Date().toLocaleDateString('en-CA');
+            const rowDiv = document.createElement('div');
+            rowDiv.className = "bulk-row grid grid-cols-1 sm:grid-cols-6 gap-2 bg-slate-50 dark:bg-slate-800/40 p-3 rounded-xl border border-slate-200 dark:border-slate-700";
+            rowDiv.innerHTML = `
+                <select class="bulk-type px-2 py-1.5 rounded-lg border dark:bg-slate-800 text-xs">
+                    <option value="Expense">Expense</option>
+                    <option value="Income">Income</option>
+                </select>
+                <input type="date" value="${today}" class="bulk-date px-2 py-1.5 rounded-lg border dark:bg-slate-800 text-xs">
+                <input type="text" placeholder="Category" list="categoryListOptions" class="bulk-category px-2 py-1.5 rounded-lg border dark:bg-slate-800 text-xs">
+                <input type="text" placeholder="Person" class="bulk-person px-2 py-1.5 rounded-lg border dark:bg-slate-800 text-xs">
+                <input type="number" placeholder="Amount" class="bulk-amount px-2 py-1.5 rounded-lg border dark:bg-slate-800 text-xs">
+                <div class="flex gap-1">
+                    <input type="text" placeholder="Note" class="bulk-note px-2 py-1.5 rounded-lg border dark:bg-slate-800 text-xs w-full">
+                    <button onclick="this.parentElement.parentElement.remove()" class="text-rose-500 px-2 font-bold">×</button>
+                </div>
+            `;
+            container.appendChild(rowDiv);
+        }
+
+        async function saveBulkEntries() {
+            const saveBtn = document.getElementById('saveBulkBtn');
+            if (saveBtn) {
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = "⏳ Saving...";
+            }
+            const rows = document.querySelectorAll('.bulk-row');
+            let promises = [];
+            for (let row of rows) {
+                const type = row.querySelector('.bulk-type').value;
+                const date = row.querySelector('.bulk-date').value;
+                const category = row.querySelector('.bulk-category').value.trim();
+                const person = row.querySelector('.bulk-person').value.trim() || '-';
+                const amount = parseFloat(row.querySelector('.bulk-amount').value) || 0;
+                const note = row.querySelector('.bulk-note').value.trim() || '-';
+
+                if (amount > 0 && category) {
+                    const newId = String(Date.now() + Math.random());
+                    promises.push(syncToApi({ id: newId, date, type, category, person, amount, note }, 'addTransaction'));
                 }
-            });
-
-            document.getElementById('totalIncome').innerText = `₹${income}`;
-            document.getElementById('totalExpense').innerText = `₹${expense}`;
-            document.getElementById('netBalance').innerText = `₹${income - expense}`;
-
-            const todayStr = new Date().toISOString().slice(0, 10);
-            const todayHasEntry = appData.transactions.some(t => t.date === todayStr);
-            const statusEl = document.getElementById('todayStatus');
-            if (todayHasEntry) {
-                statusEl.innerText = "Aaj entry ho chuki hai!";
-                statusEl.className = "text-lg font-bold text-emerald-400 mt-2";
-            } else {
-                statusEl.innerText = "Aaj entry nahi hui!";
-                statusEl.className = "text-lg font-bold text-rose-400 mt-2";
             }
+            await Promise.all(promises);
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = "Save All Entries";
+            }
+            closeExpressModal();
         }
 
-        function toggleTheme() {
-            const html = document.documentElement;
-            const icon = document.getElementById('themeIcon');
-            if (html.classList.contains('dark')) {
-                html.classList.remove('dark');
-                icon.className = "fa-solid fa-sun";
-            } else {
-                html.classList.add('dark');
-                icon.className = "fa-solid fa-moon";
-            }
-        }
-
-        function openSettings() {
-            document.getElementById('settingsApiUrl').value = currentApiUrl;
+        function openSettingsModal() {
             document.getElementById('settingsModal').classList.remove('hidden');
+            document.getElementById('settingsModal').classList.add('flex');
+            document.getElementById('settingsApiUrl').value = localStorage.getItem('finance_api_url') || DEFAULT_API_URL;
         }
-
-        function closeSettings() {
+        function closeSettingsModal() {
+            document.getElementById('settingsModal').classList.remove('flex');
             document.getElementById('settingsModal').classList.add('hidden');
         }
 
-        async function saveSettingsChanges() {
-            const newUrl = document.getElementById('settingsApiUrl').value.trim();
-            const newPass = document.getElementById('newPasswordInput').value.trim();
+        async function updateCredentials() {
+            const currentPass = document.getElementById('currentPassInput').value.trim();
+            const newUsername = document.getElementById('newUsernameInput').value.trim();
+            const newPassword = document.getElementById('newPasswordInput').value.trim();
+            const savedPass = localStorage.getItem('finance_login_pass') || "admin123";
 
-            if (newUrl) {
-                localStorage.setItem('fin_api_url', newUrl);
-                currentApiUrl = newUrl;
+            if (currentPass !== savedPass) {
+                alert("❌ Current password is incorrect!");
+                return;
             }
 
-            if (newPass) {
-                try {
-                    await fetch(currentApiUrl, {
-                        method: 'POST',
-                        body: JSON.stringify({ action: "changePassword", newPassword: newPass })
-                    });
-                    alert("Password updated successfully!");
-                } catch (err) {
-                    alert("Failed to update password on server.");
+            let updated = false;
+            let payload = {};
+
+            if (newUsername) {
+                localStorage.setItem('finance_login_user', newUsername);
+                payload.newUsername = newUsername;
+                updated = true;
+            }
+            if (newPassword) {
+                if (newPassword.length < 4) {
+                    alert("New password must be at least 4 characters!");
+                    return;
                 }
+                localStorage.setItem('finance_login_pass', newPassword);
+                payload.newPassword = newPassword;
+                updated = true;
             }
 
-            closeSettings();
-            syncData();
+            if (updated) {
+                await syncToApi(payload, 'updateCredentials');
+                alert("✅ Credentials Successfully Updated & Synced to Cloud!");
+                document.getElementById('currentPassInput').value = '';
+                document.getElementById('newUsernameInput').value = '';
+                document.getElementById('newPasswordInput').value = '';
+                closeSettingsModal();
+            } else {
+                alert("Please enter a new username or password to update.");
+            }
         }
+
+        function handleFilterChange() { fetchFromSheet(); }
+        function openCategoryModal() {
+            document.getElementById('categoryModal').classList.remove('hidden');
+            document.getElementById('categoryModal').classList.add('flex');
+            document.getElementById('newCategoryName').value = '';
+            document.getElementById('newCategoryBudget').value = '';
+        }
+        function closeCategoryModal() {
+            document.getElementById('categoryModal').classList.remove('flex');
+            document.getElementById('categoryModal').classList.add('hidden');
+            fetchFromSheet();
+        }
+        async function saveNewCategoryFromModal() {
+            const name = document.getElementById('newCategoryName').value.trim();
+            const budget = parseFloat(document.getElementById('newCategoryBudget').value) || 0;
+            if (!name) {
+                alert("Please enter a category name!");
+                return;
+            }
+            await syncToApi({ category: name, budget: budget }, 'addCategory');
+            alert("✅ Category added successfully!");
+            closeCategoryModal();
+        }
+        
     </script>
 </body>
 </html>
