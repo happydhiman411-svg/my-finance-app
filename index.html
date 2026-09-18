@@ -427,15 +427,8 @@
                 }
             }
 
-            if (editingId) {
-                // Edit ke liye password verification
-                const passInput = prompt("🔒 Enter your password to update this record:");
-                const savedPass = localStorage.getItem('finance_login_pass') || "admin123";
-                if (passInput !== savedPass) {
-                    alert("❌ Incorrect password! Update cancelled.");
-                    return;
-                }
-
+       if (editingId) {
+                // Password prompt yahan se hata diya hai kyunki wo pehle hi edit button par check ho chuka hai
                 await syncToApi({ id: editingId, date, type, category, person, amount, note }, 'updateTransaction');
                 editingId = null;
                 const saveBtn = document.getElementById('saveRecordBtn');
