@@ -497,7 +497,7 @@
             editingId = t.id;
             document.getElementById('entryType').value = t.type;
             populateCategories();
-            document.getElementById('entryDate').value = t.date;
+            document.getElementById('entryDate').value = t.date ? String(t.date).slice(0, 10) : '';
             document.getElementById('entryCategory').value = t.category;
             document.getElementById('entryPerson').value = t.person;
             document.getElementById('entryAmount').value = t.amount;
