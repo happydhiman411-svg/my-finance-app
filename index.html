@@ -250,6 +250,14 @@
     </div>
 
     <script>
+        function getLocalDate() {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+        
         let apiUrl = localStorage.getItem('fin_api_url') || "";
         let loginPass = localStorage.getItem('fin_pass') || "admin123";
         let transactions = [];
@@ -257,8 +265,16 @@
         let editingId = null;
         let pieChartInstance = null;
 
+        function getLocalDate() {
+            const d = new Date();
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+        
         window.onload = () => {
-            const today = new Date().toISOString().slice(0, 10);
+           const today = getLocalDate();
             const dateInput = document.getElementById('entryDate');
             dateInput.value = today;
             dateInput.max = today; // Future dates blocked!
@@ -591,7 +607,8 @@
 
             const tbody = document.getElementById('transTableBody');
             tbody.innerHTML = paginated.map(t => {
-                const dt = t.date ? t.date.split('-').reverse().join('-') : '-';
+               const rawDate = t.date ? String(t.date).slice(0, 10) : '';
+const dt = rawDate ? rawDate.split('-').reverse().join('-') : '-';
                 const tp = t.type || 'Expense';
                 const cat = t.category || '-';
                 const pers = t.person || '-';
