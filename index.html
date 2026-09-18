@@ -289,6 +289,13 @@
             }
         };
 
+        window.onfocus = () => {
+            const dateInput = document.getElementById('entryDate');
+            if (!window.editingId && dateInput) {
+                dateInput.value = getLocalDate();
+            }
+        };
+        
         function updateClock() {
             const now = new Date();
             document.getElementById('liveClock').innerText = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + now.toLocaleTimeString();
