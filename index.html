@@ -167,7 +167,6 @@
             </div>
         </div>
 
-
         <!-- RECENT TRANSACTIONS & PAGINATION -->
         <div class="bg-cardBg border border-slate-800 p-6 rounded-2xl space-y-4">
             <div class="flex flex-col md:flex-row justify-between items-center gap-4">
@@ -255,27 +254,11 @@
         </div>
     </div>
 
-    <!-- DAILY ITEM MODAL -->
-    <div id="dailyModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-cardBg border border-slate-800 p-6 rounded-2xl w-full max-w-sm space-y-4">
-            <h3 class="text-base font-bold">Add Daily Item (e.g., Doodh)</h3>
-            <form onsubmit="saveDailyItem(event)" class="space-y-3">
-                <input type="text" id="dailyItemName" required placeholder="Item Name (e.g. Doodh)" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm">
-                <input type="number" id="dailyItemAmount" required min="1" placeholder="Default Cost (₹)" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm">
-                <div class="flex justify-end gap-2">
-                    <button type="button" onclick="closeDailyModal()" class="px-3 py-2 bg-slate-800 rounded-xl text-xs">Cancel</button>
-                    <button type="submit" class="px-4 py-2 bg-indigo-600 rounded-xl text-xs font-semibold text-white">Add Item</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <script>
         let apiUrl = localStorage.getItem('fin_api_url') || "";
         let loginPass = localStorage.getItem('fin_pass') || "admin123";
         let transactions = [];
         let categories = [];
-        let dailyItems = [];
         let editingId = null;
         let pieChartInstance = null;
 
@@ -323,7 +306,6 @@
             const errEl = document.getElementById('loginError');
 
             if (!apiUrl) {
-                // If no API URL in localStorage, prompt user to set it via settings or ask
                 apiUrl = prompt("Please enter your Google Apps Script Web App URL:");
                 if (!apiUrl) return;
                 localStorage.setItem('fin_api_url', apiUrl);
@@ -386,10 +368,8 @@
                         { name: "Salary", type: "Income", budget: 0 },
                         { name: "Doodh", type: "Expense", budget: 0 }
                     ];
-                    dailyItems = data.dailyLedger || [];
                     populateCategories();
                     applyFilters();
-                    renderDailyLedger();
                     document.getElementById('connStatus').className = "px-2.5 py-1 text-xs rounded-full bg-emerald-500/20 text-emerald-400";
                     document.getElementById('connStatus').innerText = "● Connected";
                 }
@@ -461,7 +441,6 @@
                 note: document.getElementById('entryNote').value.trim() || '-'
             };
 
-            // Duplicate check
             if (!editingId) {
                 const isDup = transactions.some(t => t.date === payload.date && t.category === payload.category && t.amount === payload.amount);
                 if (isDup) {
@@ -582,10 +561,8 @@
                 );
             }
 
-            // Latest entries on top
             filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-            // KPIs
             let income = 0, expense = 0;
             filtered.forEach(t => {
                 const amt = parseFloat(t.amount) || 0;
@@ -598,7 +575,6 @@
             document.getElementById('lblExpense').innerText = `₹${expense}`;
             document.getElementById('lblBalance').innerText = `₹${income - expense}`;
 
-            // Today Entry Status
             const todayStr = new Date().toISOString().slice(0, 10);
             const todayEntries = transactions.filter(t => t.date === todayStr);
             const statusCard = document.getElementById('todayStatusCard');
@@ -616,7 +592,6 @@
             renderBudgetAlerts(filtered);
             renderChart(filtered);
 
-            // Pagination limit
             const limit = pageSizeVal === 'all' ? filtered.length : parseInt(pageSizeVal) || 10;
             const paginated = filtered.slice(0, limit);
             document.getElementById('recordCountBadge').innerText = `${filtered.length} records`;
@@ -701,77 +676,6 @@
             });
         }
 
-        // Daily Ledger Functions (Khata - Doodh etc.)
-        function openDailyModal() {
-            document.getElementById('dailyModal').classList.remove('hidden');
-        }
-        function closeDailyModal() {
-            document.getElementById('dailyModal').classList.add('hidden');
-        }
-
-        async function saveDailyItem(e) {
-            e.preventDefault();
-            const name = document.getElementById('dailyItemName').value.trim();
-            const amount = parseFloat(document.getElementById('dailyItemAmount').value);
-            const res = await callApi({
-                action: "saveDailyItem",
-                id: 'dl_' + Date.now(),
-                date: new Date().toISOString().slice(0, 10),
-                itemName: name,
-                amount: amount
-            });
-            if (res && res.status === "success") {
-                closeDailyModal();
-                document.getElementById('dailyItemName').value = '';
-                document.getElementById('dailyItemAmount').value = '';
-                await syncData();
-            }
-        }
-
-        function renderDailyLedger() {
-            const container = document.getElementById('dailyItemsContainer');
-            container.innerHTML = dailyItems.map(item => {
-                const name = item.itemname || item.itemName || 'Item';
-                const status = item.status || 'Pending';
-                return `
-                    <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex flex-col justify-between gap-3">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <h4 class="font-semibold text-sm">${name}</h4>
-                                <p class="text-xs text-slate-400">Daily cost: ₹${item.amount}</p>
-                            </div>
-                            <span class="px-2 py-0.5 text-xs rounded-full ${status === 'Paid' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}">${status}</span>
-                        </div>
-                        ${status === 'Pending' ? `
-                            <div class="flex gap-2">
-                                <button onclick="handleDailyYes('${name}', ${item.amount}, '${item.id}')" class="flex-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 py-1.5 rounded-lg text-xs font-semibold">Yes (+₹${item.amount})</button>
-                                <button onclick="alert('Marked skipped for today')" class="px-3 bg-slate-800 hover:bg-slate-700 py-1.5 rounded-lg text-xs font-semibold">No</button>
-                            </div>
-                        ` : `<p class="text-xs text-emerald-400 font-medium">Cleared & Paid</p>`}
-                    </div>
-                `;
-            }).join('');
-        }
-
-        async function handleDailyYes(name, defaultAmount, id) {
-            let amt = prompt(`Aaj ${name} kitne ka aaya?`, defaultAmount);
-            if (amt === null) return;
-            amt = parseFloat(amt) || defaultAmount;
-
-            const res = await callApi({
-                action: "payDailyLedger",
-                id: id,
-                date: new Date().toISOString().slice(0, 10),
-                itemName: name,
-                amount: amt
-            });
-            if (res && res.status === "success") {
-                alert(`✅ ${name} (₹${amt}) successfully added to main expenses and cleared!`);
-                await syncData();
-            }
-        }
-
-        // Settings Modal
         function openSettings() {
             document.getElementById('setApiUrl').value = apiUrl;
             document.getElementById('setCurrPass').value = loginPass;
