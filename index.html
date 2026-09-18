@@ -251,12 +251,12 @@
 
     <script>
         function getLocalDate() {
-    const d = new Date();
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-}
+            const d = new Date();
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
         
         let apiUrl = localStorage.getItem('fin_api_url') || "";
         let loginPass = localStorage.getItem('fin_pass') || "admin123";
@@ -264,14 +264,6 @@
         let categories = [];
         let editingId = null;
         let pieChartInstance = null;
-
-        function getLocalDate() {
-            const d = new Date();
-            const year = d.getFullYear();
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        }
         
         window.onload = () => {
            const today = getLocalDate();
@@ -382,10 +374,7 @@
                 const data = await res.json();
                 if (data.status === "success") {
                     transactions = data.transactions || [];
-                    categories = (data.categories && data.categories.length) ? data.categories : [
-                        
-                        
-                    ];
+                    categories = (data.categories && data.categories.length) ? data.categories : [];
                     populateCategories();
                     applyFilters();
                     document.getElementById('connStatus').className = "px-2.5 py-1 text-xs rounded-full bg-emerald-500/20 text-emerald-400";
@@ -399,7 +388,7 @@
             }
         }
 
-       function populateCategories() {
+        function populateCategories() {
             const select = document.getElementById('entryCategory');
             select.innerHTML = '';
             categories.forEach(c => {
@@ -415,7 +404,7 @@
 
         document.getElementById('entryType').addEventListener('change', populateCategories);
 
-      async function saveCategory() {
+        async function saveCategory() {
             const name = document.getElementById('newCatName').value.trim();
             const btn = document.getElementById('saveCatBtn');
 
@@ -488,7 +477,7 @@
             document.getElementById('entryAmount').value = '';
             document.getElementById('entryNote').value = '';
             document.getElementById('entryPerson').value = '';
-            document.getElementById('entryDate').value = new Date().toISOString().slice(0, 10);
+            document.getElementById('entryDate').value = getLocalDate();
             document.getElementById('personBalanceInfo').innerText = '';
         }
 
@@ -577,7 +566,8 @@
                 );
             }
 
-            filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+            // Fixed Sorting using string localeCompare to prevent timezone date shifts
+            filtered.sort((a, b) => b.date.localeCompare(a.date));
 
             let income = 0, expense = 0;
             filtered.forEach(t => {
@@ -591,7 +581,8 @@
             document.getElementById('lblExpense').innerText = `₹${expense}`;
             document.getElementById('lblBalance').innerText = `₹${income - expense}`;
 
-            const todayStr = new Date().toISOString().slice(0, 10);
+            // Fixed todayStr using local timezone via getLocalDate()
+            const todayStr = getLocalDate();
             const todayEntries = transactions.filter(t => t.date === todayStr);
             const statusCard = document.getElementById('todayStatusCard');
             const statusText = document.getElementById('todayStatusText');
@@ -614,8 +605,8 @@
 
             const tbody = document.getElementById('transTableBody');
             tbody.innerHTML = paginated.map(t => {
-               const rawDate = t.date ? String(t.date).slice(0, 10) : '';
-const dt = rawDate ? rawDate.split('-').reverse().join('-') : '-';
+                const rawDate = t.date ? String(t.date).slice(0, 10) : '';
+                const dt = rawDate ? rawDate.split('-').reverse().join('-') : '-';
                 const tp = t.type || 'Expense';
                 const cat = t.category || '-';
                 const pers = t.person || '-';
