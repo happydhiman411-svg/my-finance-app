@@ -1,501 +1,367 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finance Manager</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        darkBg: '#0f172a',
-                        cardBg: '#1e293b',
-                        accent: '#6366f1'
-                    }
-                }
-            }
-        }
-    </script>
-</head>
-<body class="bg-darkBg text-gray-100 min-h-screen font-sans antialiased">
+// ============================================================
+//  FINANCE MANAGER - APPS SCRIPT BACKEND (SECURE)
+// ============================================================
 
-    <!-- Login Modal -->
-    <div id="loginModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md hidden">
-        <div class="bg-cardBg p-8 rounded-2xl shadow-2xl w-96 border border-gray-700">
-            <h2 class="text-2xl font-bold mb-6 text-center text-indigo-400">Finance Manager Login</h2>
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm text-gray-400 mb-1">Enter Password</label>
-                    <input type="password" id="loginPassword" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500" placeholder="Default: admin123" onkeydown="if(event.key==='Enter') handleLogin()">
-                </div>
-                <button onclick="handleLogin()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 rounded-lg transition shadow-lg">Login</button>
-                <p id="loginError" class="text-red-400 text-sm text-center hidden">Invalid Password!</p>
-            </div>
-        </div>
-    </div>
+var SHEET_TRANS    = "Transactions";
+var SHEET_CAT      = "Categories";
+var SHEET_SETTINGS = "Settings";
+var SHEET_DAILY    = "DailyLedger";
+var SHEET_AUTH     = "_AuthTokens";
 
-    <!-- App Container -->
-    <div id="appContainer" class="max-w-7xl mx-auto px-4 py-6 hidden">
-        
-        <!-- Header -->
-        <header class="flex flex-col md:flex-row justify-between items-center bg-cardBg p-4 rounded-2xl border border-gray-700 mb-6 shadow-lg">
-            <div class="flex items-center space-x-3 mb-4 md:mb-0">
-                <h1 class="text-xl font-bold text-indigo-400">Financial Dashboard</h1>
-                <span id="connectionStatus" class="px-2.5 py-1 text-xs rounded-full bg-yellow-900/50 text-yellow-400 border border-yellow-700">Connecting...</span>
-            </div>
-            <div class="flex items-center space-x-3">
-                <span id="currentDateDisplay" class="text-xs text-gray-400 hidden md:inline"></span>
-                <button onclick="syncData()" class="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 transition">
-                    <i class="fa-solid fa-sync"></i> <span>Sync</span>
-                </button>
-                <button onclick="openSettings()" class="bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded-lg text-sm font-medium border border-gray-700">Settings</button>
-                <button onclick="handleLogout()" class="bg-red-600/20 hover:bg-red-600/30 text-red-400 px-4 py-2 rounded-lg text-sm font-medium border border-red-800">Logout</button>
-            </div>
-        </header>
+var TRANS_HEADERS  = ["ID", "DATE", "TYPE", "CATEGORY", "PERSON", "AMOUNT", "PAYMENT MODE", "NOTE"];
+var SALT           = "fin_manager_salt_v2_2026"; // change if you want
+var TOKEN_DAYS     = 30;
 
-        <!-- Stats Overview -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div class="bg-cardBg p-5 rounded-2xl border border-gray-700 shadow">
-                <p class="text-sm text-gray-400">Aaj Ki Entry Status</p>
-                <p id="todayStatus" class="text-lg font-bold text-red-400 mt-1">Aaj entry nahi hui!</p>
-            </div>
-            <div class="bg-cardBg p-5 rounded-2xl border border-gray-700 shadow">
-                <p class="text-sm text-gray-400">Total Income</p>
-                <p id="totalIncome" class="text-2xl font-bold text-emerald-400 mt-1">₹0</p>
-            </div>
-            <div class="bg-cardBg p-5 rounded-2xl border border-gray-700 shadow">
-                <p class="text-sm text-gray-400">Total Expense</p>
-                <p id="totalExpense" class="text-2xl font-bold text-red-400 mt-1">₹0</p>
-            </div>
-            <div class="bg-cardBg p-5 rounded-2xl border border-gray-700 shadow">
-                <p class="text-sm text-gray-400">Net Balance</p>
-                <p id="netBalance" class="text-2xl font-bold text-indigo-400 mt-1">₹0</p>
-            </div>
-        </div>
+var DEFAULT_USER = "Amine";
+var DEFAULT_PASS = "Admin123";
 
-        <!-- Main Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            <!-- Left Panel -->
-            <div class="space-y-6">
-                <!-- Period Filter -->
-                <div class="bg-cardBg p-5 rounded-2xl border border-gray-700 shadow">
-                    <h3 class="text-md font-semibold mb-3 text-indigo-300">Period Filter & Analytics</h3>
-                    <div class="space-y-3">
-                        <select id="filterType" onchange="renderDashboard()" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-                            <option value="all">All Time</option>
-                            <option value="monthly">Monthly</option>
-                            <option value="yearly">Yearly</option>
-                        </select>
-                        <input type="month" id="filterMonth" onchange="renderDashboard()" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-                    </div>
-                </div>
+// ------------------------------------------------------------
+// ROUTER
+// ------------------------------------------------------------
+function doGet(e) {
+  return route(e.parameter || {});
+}
 
-                <!-- Add Category -->
-                <div class="bg-cardBg p-5 rounded-2xl border border-gray-700 shadow">
-                    <h3 class="text-md font-semibold mb-3 text-indigo-300">Add New Category</h3>
-                    <div class="space-y-3">
-                        <input type="text" id="newCategoryName" placeholder="Category Name" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-                        <button onclick="addCategory()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium transition">Add Category</button>
-                    </div>
-                </div>
-            </div>
+function doPost(e) {
+  var data = {};
+  try { data = JSON.parse(e.postData.contents); } catch (err) {}
+  return route(data);
+}
 
-            <!-- Right Panel: Add/Edit Transaction -->
-            <div class="lg:col-span-2 space-y-6">
-                <div class="bg-cardBg p-6 rounded-2xl border border-gray-700 shadow">
-                    <h3 id="formTitle" class="text-lg font-semibold mb-4 text-indigo-300">Add New Transaction</h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs text-gray-400 mb-1">Type</label>
-                            <select id="txType" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-                                <option value="Expense">Expense</option>
-                                <option value="Income">Income</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs text-gray-400 mb-1">Date</label>
-                            <input type="date" id="txDate" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-                        </div>
-                        <div>
-                            <label class="block text-xs text-gray-400 mb-1">Category</label>
-                            <select id="txCategory" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white"></select>
-                        </div>
-                        <div>
-                            <label class="block text-xs text-gray-400 mb-1">Person / Source</label>
-                            <input type="text" id="txPerson" value="Self" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-                        </div>
-                        <div>
-                            <label class="block text-xs text-gray-400 mb-1">Amount (₹)</label>
-                            <input type="number" id="txAmount" placeholder="0" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-                        </div>
-                        <div>
-                            <label class="block text-xs text-gray-400 mb-1">Payment Mode</label>
-                            <select id="txPaymentMode" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-                                <option value="Cash">Cash</option>
-                                <option value="UPI">UPI</option>
-                                <option value="Bank Transfer">Bank Transfer</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="mt-4">
-                        <label class="block text-xs text-gray-400 mb-1">Note / Description</label>
-                        <input type="text" id="txNote" placeholder="Optional details..." class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-                    </div>
-                    <div class="flex space-x-3 mt-4">
-                        <button id="saveTxBtn" onclick="saveTransaction()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-2.5 rounded-lg text-sm font-medium transition shadow-md">Save Record</button>
-                        <button id="cancelEditBtn" onclick="resetForm()" class="hidden bg-gray-800 hover:bg-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium border border-gray-700">Cancel</button>
-                    </div>
-                </div>
-            </div>
-        </div>
+function route(params) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  migrateSettings(ss);
 
-        <!-- Recent Transactions Table -->
-        <div class="mt-6 bg-cardBg p-6 rounded-2xl border border-gray-700 shadow">
-            <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-3">
-                <h3 class="text-lg font-semibold text-indigo-300">Recent Transactions</h3>
-                <input type="text" id="searchTx" placeholder="Search category, person, note..." oninput="renderDashboard()" class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white w-full sm:w-64">
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm">
-                    <thead>
-                        <tr class="border-b border-gray-700 text-gray-400">
-                            <th class="py-3 px-4">DATE</th>
-                            <th class="py-3 px-4">TYPE</th>
-                            <th class="py-3 px-4">CATEGORY</th>
-                            <th class="py-3 px-4">PERSON</th>
-                            <th class="py-3 px-4">MODE</th>
-                            <th class="py-3 px-4">AMOUNT</th>
-                            <th class="py-3 px-4">NOTE</th>
-                            <th class="py-3 px-4 text-right">ACTIONS</th>
-                        </tr>
-                    </thead>
-                    <tbody id="transactionTableBody" class="divide-y divide-gray-800">
-                        <tr><td colspan="8" class="text-center py-4 text-gray-500">Loading data...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+  var action = params.action;
 
-    </div>
+  // ---------- PUBLIC ----------
+  if (!action || action === "ping") return jsonRes({ status: "active" });
 
-    <!-- Settings Modal -->
-    <div id="settingsModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md hidden">
-        <div class="bg-cardBg p-6 rounded-2xl shadow-2xl w-96 border border-gray-700">
-            <h3 class="text-xl font-bold mb-4 text-indigo-400">Settings</h3>
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm text-gray-400 mb-1">Google Apps Script URL</label>
-                    <input type="text" id="settingsApiUrl" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white" placeholder="Paste Web App URL here">
-                </div>
-                <div>
-                    <label class="block text-sm text-gray-400 mb-1">New Password (Optional)</label>
-                    <input type="password" id="settingsNewPass" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white" placeholder="Leave blank to keep current">
-                </div>
-                <div class="flex space-x-3 mt-6">
-                    <button onclick="saveSettings()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium">Save</button>
-                    <button onclick="closeSettings()" class="flex-1 bg-gray-800 hover:bg-gray-700 py-2 rounded-lg text-sm font-medium border border-gray-700">Cancel</button>
-                </div>
-            </div>
-        </div>
-    </div>
+  if (action === "verifyLogin") {
+    return verifyLogin(ss, params.username, params.password);
+  }
 
-    <!-- Application JavaScript Logic -->
-    <script>
-        let API_URL = localStorage.getItem('finance_api_url') || "";
-        let appData = { transactions: [], categories: [], dailyLedger: [] };
-        let editingId = null;
+  // ---------- AUTH REQUIRED ----------
+  if (!isValidToken(ss, params.token)) {
+    return jsonRes({ status: "error", code: "AUTH", message: "Session expired. Please login again." });
+  }
 
-        window.onload = function() {
-            let today = new Date().toISOString().slice(0, 10);
-            document.getElementById('txDate').value = today;
-            document.getElementById('filterMonth').value = new Date().toISOString().slice(0, 7);
-            document.getElementById('currentDateDisplay').innerText = new Date().toLocaleString();
-            
-            if (!API_URL) {
-                openSettings();
-            } else {
-                checkLoginStatus();
-            }
-        };
+  switch (action) {
+    case "getData":            return getData(ss);
+    case "addCategory":        return addCategory(ss, params.name);
+    case "saveTransaction":    return saveTransaction(ss, params);
+    case "saveBulk":           return saveBulk(ss, params);
+    case "deleteTransaction":  return deleteTransaction(ss, params);
+    case "verifyPassword":     return jsonRes({ status: verifyPasswordOnly(ss, params.password) ? "success" : "error", message: verifyPasswordOnly(ss, params.password) ? "OK" : "Invalid password" });
+    case "updateCredentials":  return updateCredentials(ss, params);
+    case "logout":             return logout(ss, params.token);
+  }
+  return jsonRes({ status: "error", message: "Invalid action" });
+}
 
-        function checkLoginStatus() {
-            if (localStorage.getItem('finance_logged_in') === 'true') {
-                document.getElementById('loginModal').classList.add('hidden');
-                document.getElementById('appContainer').classList.remove('hidden');
-                syncData();
-            } else {
-                document.getElementById('loginModal').classList.remove('hidden');
-                document.getElementById('appContainer').classList.add('hidden');
-            }
-        }
+// ------------------------------------------------------------
+// AUTH
+// ------------------------------------------------------------
+function hashPassword(p) {
+  var digest = Utilities.computeDigest(
+    Utilities.DigestAlgorithm.SHA_256,
+    String(p) + SALT,
+    Utilities.Charset.UTF_8
+  );
+  return digest.map(function (b) {
+    return ('0' + (b & 0xFF).toString(16)).slice(-2);
+  }).join('');
+}
 
-        async function handleLogin() {
-            let pass = document.getElementById('loginPassword').value;
-            if (!API_URL) { alert("Please set Apps Script URL in Settings first."); openSettings(); return; }
-            
-            try {
-                let res = await fetch(`${API_URL}?action=verifyLogin&password=${encodeURIComponent(pass)}&_t=${Date.now()}`);
-                let data = await res.json();
-                if (data.status === 'success') {
-                    localStorage.setItem('finance_logged_in', 'true');
-                    document.getElementById('loginError').classList.add('hidden');
-                    document.getElementById('loginModal').classList.add('hidden');
-                    document.getElementById('appContainer').classList.remove('hidden');
-                    syncData();
-                } else {
-                    document.getElementById('loginError').classList.remove('hidden');
-                }
-            } catch (e) {
-                alert("Login Error: Please check internet or API URL");
-            }
-        }
+function getStoredUser(ss) {
+  var sheet = getOrCreateSheet(ss, SHEET_SETTINGS, ["Key", "Value"]);
+  var rows = sheet.getDataRange().getValues();
+  for (var i = 0; i < rows.length; i++) {
+    var k = String(rows[i][0]).toLowerCase().trim();
+    if (k === "user" || k === "username") return String(rows[i][1]).trim();
+  }
+  sheet.appendRow(["User", DEFAULT_USER]);
+  return DEFAULT_USER;
+}
 
-        function handleLogout() {
-            localStorage.removeItem('finance_logged_in');
-            location.reload();
-        }
+function getStoredPassHash(ss) {
+  var sheet = getOrCreateSheet(ss, SHEET_SETTINGS, ["Key", "Value"]);
+  var rows = sheet.getDataRange().getValues();
+  for (var i = 0; i < rows.length; i++) {
+    var k = String(rows[i][0]).toLowerCase().trim();
+    if (k.indexOf("pass") !== -1) return String(rows[i][1]).trim();
+  }
+  var h = hashPassword(DEFAULT_PASS);
+  sheet.appendRow(["Password", h]);
+  return h;
+}
 
-        async function syncData() {
-            if (!API_URL) return;
-            let statusEl = document.getElementById('connectionStatus');
-            statusEl.innerText = "Syncing...";
-            statusEl.className = "px-2.5 py-1 text-xs rounded-full bg-yellow-900/50 text-yellow-400 border border-yellow-700";
-            
-            try {
-                // Live timestamp (_t) added to completely bypass browser caching
-                let res = await fetch(`${API_URL}?action=getData&_t=${Date.now()}`);
-                let data = await res.json();
-                if (data.status === 'success') {
-                    appData.transactions = data.transactions || [];
-                    appData.categories = data.categories || [];
-                    appData.dailyLedger = data.dailyLedger || [];
-                    
-                    statusEl.innerText = "Connected";
-                    statusEl.className = "px-2.5 py-1 text-xs rounded-full bg-emerald-900/50 text-emerald-400 border border-emerald-700";
-                    renderDashboard();
-                }
-            } catch (e) {
-                statusEl.innerText = "Error / Offline";
-                statusEl.className = "px-2.5 py-1 text-xs rounded-full bg-red-900/50 text-red-400 border border-red-700";
-            }
-        }
+function migrateSettings(ss) {
+  var sheet = getOrCreateSheet(ss, SHEET_SETTINGS, ["Key", "Value"]);
+  var rows = sheet.getDataRange().getValues();
+  var hasUser = false, hasPass = false;
 
-        function editTransaction(id) {
-            let t = appData.transactions.find(x => String(x.id) === String(id));
-            if (!t) return;
-            editingId = t.id;
-            document.getElementById('txDate').value = t.date || '';
-            document.getElementById('txType').value = t.type || 'Expense';
-            document.getElementById('txCategory').value = t.category || '';
-            document.getElementById('txPerson').value = t.person || 'Self';
-            document.getElementById('txAmount').value = t.amount || '';
-            document.getElementById('txPaymentMode').value = t.paymentmode || t.paymentMode || 'Cash';
-            document.getElementById('txNote').value = (t.note === '-' || !t.note) ? '' : t.note;
-            
-            document.getElementById('formTitle').innerText = "Edit Transaction";
-            document.getElementById('saveTxBtn').innerText = "Update Record";
-            document.getElementById('cancelEditBtn').classList.remove('hidden');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
+  for (var i = 0; i < rows.length; i++) {
+    var k = String(rows[i][0]).toLowerCase().trim();
+    if (k === "user" || k === "username") hasUser = true;
+    if (k.indexOf("pass") !== -1) {
+      hasPass = true;
+      var v = String(rows[i][1]).trim();
+      // Agar purani plain text password hai to hash me badlo
+      if (!/^[a-f0-9]{64}$/.test(v)) {
+        sheet.getRange(i + 1, 2).setValue(hashPassword(DEFAULT_PASS));
+      }
+    }
+  }
+  if (!hasUser) sheet.appendRow(["User", DEFAULT_USER]);
+  if (!hasPass) sheet.appendRow(["Password", hashPassword(DEFAULT_PASS)]);
+}
 
-        function resetForm() {
-            editingId = null;
-            document.getElementById('txDate').value = new Date().toISOString().slice(0, 10);
-            document.getElementById('txAmount').value = '';
-            document.getElementById('txNote').value = '';
-            document.getElementById('formTitle').innerText = "Add New Transaction";
-            document.getElementById('saveTxBtn').innerText = "Save Record";
-            document.getElementById('cancelEditBtn').classList.add('hidden');
-        }
+function verifyLogin(ss, username, password) {
+  var storedUser = getStoredUser(ss);
+  var storedHash = getStoredPassHash(ss);
 
-        async function saveTransaction() {
-            let payload = {
-                action: "saveTransaction",
-                id: editingId || ('t_' + Date.now()),
-                isEdit: !!editingId,
-                date: document.getElementById('txDate').value,
-                type: document.getElementById('txType').value,
-                category: document.getElementById('txCategory').value,
-                person: document.getElementById('txPerson').value || 'Self',
-                amount: parseFloat(document.getElementById('txAmount').value) || 0,
-                paymentMode: document.getElementById('txPaymentMode').value,
-                note: document.getElementById('txNote').value || '-'
-            };
+  if (String(username || "").trim() !== storedUser) {
+    return jsonRes({ status: "error", message: "Invalid username or password" });
+  }
+  if (hashPassword(password || "") !== storedHash) {
+    return jsonRes({ status: "error", message: "Invalid username or password" });
+  }
 
-            if (!payload.amount) { alert("Please enter a valid amount"); return; }
+  var token = Utilities.getUuid();
+  saveToken(ss, token);
+  return jsonRes({ status: "success", token: token, user: storedUser });
+}
 
-            try {
-                let res = await fetch(API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify(payload)
-                });
-                let data = await res.json();
-                if (data.status === 'success') {
-                    resetForm();
-                    syncData();
-                }
-            } catch (e) {
-                alert("Error saving record");
-            }
-        }
+function verifyPasswordOnly(ss, password) {
+  return hashPassword(password || "") === getStoredPassHash(ss);
+}
 
-        async function deleteTransaction(id) {
-            if (!confirm("Are you sure you want to delete this record?")) return;
-            try {
-                await fetch(API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: "deleteTransaction", id: id })
-                });
-                syncData();
-            } catch (e) {
-                alert("Error deleting record");
-            }
-        }
+function saveToken(ss, token) {
+  var sheet = getOrCreateSheet(ss, SHEET_AUTH, ["Token", "Expiry"]);
+  sheet.appendRow([token, Date.now() + TOKEN_DAYS * 24 * 60 * 60 * 1000]);
 
-        async function addCategory() {
-            let name = document.getElementById('newCategoryName').value.trim();
-            if (!name) return;
-            try {
-                await fetch(API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: "addCategory", name: name })
-                });
-                document.getElementById('newCategoryName').value = '';
-                syncData();
-            } catch (e) {
-                alert("Error adding category");
-            }
-        }
+  // Cleanup expired
+  var rows = sheet.getDataRange().getValues();
+  var keep = [["Token", "Expiry"]];
+  for (var i = 1; i < rows.length; i++) {
+    if (Number(rows[i][1]) > Date.now()) keep.push(rows[i]);
+  }
+  if (keep.length !== rows.length) {
+    sheet.clear();
+    sheet.getRange(1, 1, keep.length, 2).setValues(keep);
+  }
+}
 
-        function renderDashboard() {
-            // Populate Categories
-            let catSelect = document.getElementById('txCategory');
-            let currentCatVal = catSelect.value;
-            catSelect.innerHTML = '';
-            
-            let catsList = appData.categories.map(c => c.category || c.name || Object.values(c)[0]).filter(Boolean);
-            if (catsList.length === 0) catsList = ['Doodh', 'Rashan', 'Salary Yogesh', 'Paneer', 'General'];
-            
-            catsList.forEach(c => {
-                let opt = document.createElement('option');
-                opt.value = c;
-                opt.innerText = c;
-                catSelect.appendChild(opt);
-            });
-            if (currentCatVal) catSelect.value = currentCatVal;
+function isValidToken(ss, token) {
+  if (!token) return false;
+  var sheet = ss.getSheetByName(SHEET_AUTH);
+  if (!sheet) return false;
+  var rows = sheet.getDataRange().getValues();
+  var now = Date.now();
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]) === String(token) && Number(rows[i][1]) > now) return true;
+  }
+  return false;
+}
 
-            // Filter logic
-            let filterType = document.getElementById('filterType').value;
-            let filterMonth = document.getElementById('filterMonth').value;
-            let searchQuery = document.getElementById('searchTx').value.toLowerCase();
+function logout(ss, token) {
+  var sheet = ss.getSheetByName(SHEET_AUTH);
+  if (!sheet) return jsonRes({ status: "success" });
+  var rows = sheet.getDataRange().getValues();
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]) === String(token)) {
+      sheet.deleteRow(i + 1);
+      break;
+    }
+  }
+  return jsonRes({ status: "success" });
+}
 
-            let filtered = appData.transactions.filter(t => {
-                let tDateStr = String(t.date || '');
-                if (filterType === 'monthly' && filterMonth) {
-                    if (!tDateStr.startsWith(filterMonth)) return false;
-                } else if (filterType === 'yearly' && filterMonth) {
-                    let year = filterMonth.split('-')[0];
-                    if (!tDateStr.startsWith(year)) return false;
-                }
+function invalidateAllTokens(ss) {
+  var sheet = ss.getSheetByName(SHEET_AUTH);
+  if (sheet) {
+    sheet.clear();
+    sheet.appendRow(["Token", "Expiry"]);
+  }
+}
 
-                if (searchQuery) {
-                    let match = Object.values(t).some(val => String(val).toLowerCase().includes(searchQuery));
-                    if (!match) return false;
-                }
-                return true;
-            });
+// ------------------------------------------------------------
+// DATA
+// ------------------------------------------------------------
+function getData(ss) {
+  return jsonRes({
+    status: "success",
+    transactions: sheetToJSON(ss, SHEET_TRANS),
+    categories:   sheetToJSON(ss, SHEET_CAT),
+    dailyLedger:  sheetToJSON(ss, SHEET_DAILY)
+  });
+}
 
-            // Calculate Totals
-            let totalInc = 0, totalExp = 0;
-            appData.transactions.forEach(t => {
-                let amt = parseFloat(t.amount) || 0;
-                if (String(t.type).toLowerCase() === 'income') totalInc += amt;
-                else totalExp += amt;
-            });
+function saveTransaction(ss, d) {
+  var sheet = getOrCreateSheet(ss, SHEET_TRANS, TRANS_HEADERS);
 
-            document.getElementById('totalIncome').innerText = '₹' + totalInc.toLocaleString('en-IN');
-            document.getElementById('totalExpense').innerText = '₹' + totalExp.toLocaleString('en-IN');
-            document.getElementById('netBalance').innerText = '₹' + (totalInc - totalExp).toLocaleString('en-IN');
+  if (d.isEdit) {
+    // Edit ke liye password zaroori
+    if (!verifyPasswordOnly(ss, d.password)) {
+      return jsonRes({ status: "error", message: "Invalid password" });
+    }
+    var rows = sheet.getDataRange().getValues();
+    for (var i = 1; i < rows.length; i++) {
+      if (String(rows[i][0]) === String(d.id)) {
+        sheet.getRange(i + 1, 1, 1, 8).setValues([[
+          d.id, d.date, d.type, d.category, d.person, d.amount, d.paymentMode, d.note
+        ]]);
+        return jsonRes({ status: "success" });
+      }
+    }
+    return jsonRes({ status: "error", message: "Record not found" });
+  }
 
-            // Today Entry Status
-            let todayStr = new Date().toISOString().slice(0, 10);
-            let hasToday = appData.transactions.some(t => String(t.date).startsWith(todayStr));
-            let todayStatusEl = document.getElementById('todayStatus');
-            if (hasToday) {
-                todayStatusEl.innerText = "Aaj entry ho chuki hai!";
-                todayStatusEl.className = "text-lg font-bold text-emerald-400 mt-1";
-            } else {
-                todayStatusEl.innerText = "Aaj entry nahi hui!";
-                todayStatusEl.className = "text-lg font-bold text-red-400 mt-1";
-            }
+  sheet.appendRow([
+    d.id || ('t_' + Date.now()),
+    d.date, d.type, d.category, d.person, d.amount, d.paymentMode, d.note
+  ]);
+  return jsonRes({ status: "success" });
+}
 
-            // Render Table
-            let tbody = document.getElementById('transactionTableBody');
-            tbody.innerHTML = '';
-            if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-gray-500">No records found</td></tr>`;
-                return;
-            }
+function saveBulk(ss, d) {
+  var items = d.items || [];
+  if (items.length === 0) return jsonRes({ status: "error", message: "No items" });
+  if (items.length > 500) return jsonRes({ status: "error", message: "Max 500 entries at once" });
 
-            filtered.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(t => {
-                let tr = document.createElement('tr');
-                let mode = t.paymentmode || t.paymentMode || '-';
-                let typeColor = String(t.type).toLowerCase() === 'income' ? 'text-emerald-400' : 'text-red-400';
-                tr.innerHTML = `
-                    <td class="py-3 px-4">${t.date || ''}</td>
-                    <td class="py-3 px-4 font-semibold ${typeColor}">${t.type || ''}</td>
-                    <td class="py-3 px-4">${t.category || ''}</td>
-                    <td class="py-3 px-4">${t.person || 'Self'}</td>
-                    <td class="py-3 px-4">${mode}</td>
-                    <td class="py-3 px-4 font-bold">₹${parseFloat(t.amount || 0).toLocaleString('en-IN')}</td>
-                    <td class="py-3 px-4 text-gray-400">${t.note || '-'}</td>
-                    <td class="py-3 px-4 text-right space-x-3">
-                        <button onclick="editTransaction('${t.id}')" class="text-indigo-400 hover:text-indigo-300" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button>
-                        <button onclick="deleteTransaction('${t.id}')" class="text-red-400 hover:text-red-300" title="Delete"><i class="fa-solid fa-trash"></i></button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
+  var sheet = getOrCreateSheet(ss, SHEET_TRANS, TRANS_HEADERS);
+  var rows = items.map(function (t, idx) {
+    return [
+      't_' + Date.now() + '_' + idx + '_' + Math.random().toString(36).slice(2, 6),
+      t.date, t.type, t.category, t.person, t.amount, t.paymentMode, t.note
+    ];
+  });
+  var startRow = sheet.getLastRow() + 1;
+  sheet.getRange(startRow, 1, rows.length, 8).setValues(rows);
+  return jsonRes({ status: "success", count: rows.length });
+}
 
-        function openSettings() {
-            document.getElementById('settingsApiUrl').value = API_URL;
-            document.getElementById('settingsModal').classList.remove('hidden');
-        }
+function deleteTransaction(ss, d) {
+  if (!verifyPasswordOnly(ss, d.password)) {
+    return jsonRes({ status: "error", message: "Invalid password" });
+  }
+  var sheet = ss.getSheetByName(SHEET_TRANS);
+  if (!sheet) return jsonRes({ status: "error", message: "No data" });
 
-        function closeSettings() {
-            document.getElementById('settingsModal').classList.add('hidden');
-        }
+  var rows = sheet.getDataRange().getValues();
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]) === String(d.id)) {
+      sheet.deleteRow(i + 1);
+      return jsonRes({ status: "success" });
+    }
+  }
+  return jsonRes({ status: "error", message: "Record not found" });
+}
 
-        async function saveSettings() {
-            let newUrl = document.getElementById('settingsApiUrl').value.trim();
-            let newPass = document.getElementById('settingsNewPass').value.trim();
-            
-            if (newUrl) {
-                API_URL = newUrl;
-                localStorage.setItem('finance_api_url', newUrl);
-            }
+function addCategory(ss, name) {
+  if (!name || !String(name).trim()) return jsonRes({ status: "error", message: "Empty name" });
+  var sheet = getOrCreateSheet(ss, SHEET_CAT, ["Category"]);
+  var rows = sheet.getDataRange().getValues();
+  var val = String(name).trim();
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]).trim().toLowerCase() === val.toLowerCase()) {
+      return jsonRes({ status: "error", message: "Category already exists" });
+    }
+  }
+  sheet.appendRow([val]);
+  return jsonRes({ status: "success" });
+}
 
-            if (newPass && API_URL) {
-                try {
-                    await fetch(API_URL, {
-                        method: 'POST',
-                        body: JSON.stringify({ action: "updateCredentials", newPassword: newPass })
-                    });
-                    alert("Password updated successfully!");
-                } catch (e) {
-                    alert("Failed to update password");
-                }
-            }
+function updateCredentials(ss, d) {
+  if (!verifyPasswordOnly(ss, d.currentPassword)) {
+    return jsonRes({ status: "error", message: "Current password incorrect" });
+  }
 
-            closeSettings();
-            syncData();
-        }
-    </script>
-</body>
-</html>
+  var sheet = getOrCreateSheet(ss, SHEET_SETTINGS, ["Key", "Value"]);
+  var rows = sheet.getDataRange().getValues();
+  var changedPassword = false;
+
+  // Change User
+  if (d.newUsername && String(d.newUsername).trim()) {
+    var uname = String(d.newUsername).trim();
+    var foundUser = false;
+    for (var i = 0; i < rows.length; i++) {
+      var k = String(rows[i][0]).toLowerCase().trim();
+      if (k === "user" || k === "username") {
+        sheet.getRange(i + 1, 2).setValue(uname);
+        foundUser = true;
+        break;
+      }
+    }
+    if (!foundUser) sheet.appendRow(["User", uname]);
+  }
+
+  // Change Password
+  if (d.newPassword && String(d.newPassword).trim()) {
+    var newHash = hashPassword(String(d.newPassword).trim());
+    var foundPass = false;
+    for (var i = 0; i < rows.length; i++) {
+      var k = String(rows[i][0]).toLowerCase().trim();
+      if (k.indexOf("pass") !== -1) {
+        sheet.getRange(i + 1, 2).setValue(newHash);
+        foundPass = true;
+        break;
+      }
+    }
+    if (!foundPass) sheet.appendRow(["Password", newHash]);
+    changedPassword = true;
+  }
+
+  // Agar password badla to saare tokens invalid kar do (user ko dobara login karna hoga)
+  if (changedPassword) invalidateAllTokens(ss);
+
+  return jsonRes({ status: "success", relogin: changedPassword });
+}
+
+// ------------------------------------------------------------
+// HELPERS
+// ------------------------------------------------------------
+function getOrCreateSheet(ss, name, headers) {
+  var sheet = ss.getSheetByName(name);
+  if (!sheet) {
+    sheet = ss.insertSheet(name);
+    if (headers) sheet.appendRow(headers);
+  }
+  return sheet;
+}
+
+function sheetToJSON(ss, name) {
+  var sheet = ss.getSheetByName(name);
+  if (!sheet) return [];
+  var rows = sheet.getDataRange().getValues();
+  if (rows.length <= 1) return [];
+
+  var rawHeaders = rows[0];
+  var tz = ss.getSpreadsheetTimeZone() || "Asia/Kolkata";
+  var data = [];
+
+  for (var i = 1; i < rows.length; i++) {
+    var obj = {};
+    for (var j = 0; j < rawHeaders.length; j++) {
+      var h = String(rawHeaders[j]).trim().toLowerCase().replace(/\s+/g, '');
+      var val = rows[i][j];
+      if (val instanceof Date) {
+        val = Utilities.formatDate(val, tz, "yyyy-MM-dd");
+      } else if (val !== null && val !== undefined) {
+        val = String(val).trim();
+      }
+      obj[h] = val;
+      if (h === 'paymentmode') { obj['paymentMode'] = val; }
+      if (h === 'category')    { obj['category']    = val; }
+    }
+    data.push(obj);
+  }
+  return data;
+}
+
+function jsonRes(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
