@@ -1,367 +1,878 @@
-// ============================================================
-//  FINANCE MANAGER - APPS SCRIPT BACKEND (SECURE)
-// ============================================================
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finance Manager</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: { extend: { colors: { darkBg: '#0f172a', cardBg: '#1e293b', accent: '#6366f1' } } }
+};
+</script>
+<style>
+  body { font-family: system-ui, -apple-system, sans-serif; }
+  .modal-open { overflow: hidden; }
+  .spin { animation: spin 1s linear infinite; }
+  @keyframes spin { 100% { transform: rotate(360deg); } }
+  .fade-in { animation: fadeIn .15s ease-out; }
+  @keyframes fadeIn { from{opacity:0; transform:scale(.98);} to{opacity:1; transform:scale(1);} }
+</style>
+</head>
+<body class="bg-darkBg text-gray-100 min-h-screen antialiased">
 
-var SHEET_TRANS    = "Transactions";
-var SHEET_CAT      = "Categories";
-var SHEET_SETTINGS = "Settings";
-var SHEET_DAILY    = "DailyLedger";
-var SHEET_AUTH     = "_AuthTokens";
+<!-- ============ LOGIN MODAL ============ -->
+<div id="loginModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md hidden">
+  <div class="bg-cardBg p-8 rounded-2xl shadow-2xl w-[92vw] max-w-sm border border-gray-700 fade-in">
+    <h2 class="text-2xl font-bold mb-6 text-center text-indigo-400">Finance Manager Login</h2>
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm text-gray-400 mb-1">Username</label>
+        <input type="text" id="loginUser" autocomplete="username"
+          class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500">
+      </div>
+      <div>
+        <label class="block text-sm text-gray-400 mb-1">Password</label>
+        <input type="password" id="loginPass" autocomplete="current-password"
+          class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500"
+          onkeydown="if(event.key==='Enter') handleLogin()">
+      </div>
+      <button id="loginBtn" onclick="handleLogin()"
+        class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 rounded-lg transition shadow-lg">Login</button>
+      <p id="loginError" class="text-red-400 text-sm text-center hidden"></p>
+      <button onclick="openSettingsFromLogin()" class="w-full text-xs text-gray-500 hover:text-gray-300 pt-2">⚙ Set API URL</button>
+    </div>
+  </div>
+</div>
 
-var TRANS_HEADERS  = ["ID", "DATE", "TYPE", "CATEGORY", "PERSON", "AMOUNT", "PAYMENT MODE", "NOTE"];
-var SALT           = "fin_manager_salt_v2_2026"; // change if you want
-var TOKEN_DAYS     = 30;
+<!-- ============ APP ============ -->
+<div id="appContainer" class="max-w-7xl mx-auto px-3 md:px-4 py-4 md:py-6 hidden">
 
-var DEFAULT_USER = "Amine";
-var DEFAULT_PASS = "Admin123";
+  <!-- Header -->
+  <header class="flex flex-col md:flex-row justify-between items-center bg-cardBg p-4 rounded-2xl border border-gray-700 mb-4 shadow-lg gap-3">
+    <div class="flex items-center space-x-3">
+      <h1 class="text-lg md:text-xl font-bold text-indigo-400">Financial Dashboard</h1>
+      <span id="connectionStatus" class="px-2.5 py-1 text-xs rounded-full bg-yellow-900/50 text-yellow-400 border border-yellow-700">Connecting...</span>
+    </div>
+    <div class="flex items-center gap-2 flex-wrap justify-center">
+      <span id="currentDateDisplay" class="text-xs text-gray-400 hidden md:inline"></span>
+      <button onclick="syncData(true)" class="bg-indigo-600 hover:bg-indigo-500 px-3 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 transition">
+        <i id="syncIcon" class="fa-solid fa-sync"></i><span class="hidden sm:inline">Sync</span>
+      </button>
+      <button onclick="openSettings()" class="bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-lg text-sm font-medium border border-gray-700">
+        <i class="fa-solid fa-gear"></i>
+      </button>
+      <button onclick="handleLogout()" class="bg-red-600/20 hover:bg-red-600/30 text-red-400 px-3 py-2 rounded-lg text-sm font-medium border border-red-800">
+        <i class="fa-solid fa-right-from-bracket"></i>
+      </button>
+    </div>
+  </header>
 
-// ------------------------------------------------------------
-// ROUTER
-// ------------------------------------------------------------
-function doGet(e) {
-  return route(e.parameter || {});
+  <!-- Stats -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-4">
+    <div class="bg-cardBg p-4 md:p-5 rounded-2xl border border-gray-700 shadow">
+      <p class="text-xs md:text-sm text-gray-400">Aaj Ki Entry</p>
+      <p id="todayStatus" class="text-sm md:text-lg font-bold text-red-400 mt-1">Aaj entry nahi hui!</p>
+    </div>
+    <div class="bg-cardBg p-4 md:p-5 rounded-2xl border border-gray-700 shadow">
+      <p class="text-xs md:text-sm text-gray-400">Total Income</p>
+      <p id="totalIncome" class="text-lg md:text-2xl font-bold text-emerald-400 mt-1">₹0</p>
+    </div>
+    <div class="bg-cardBg p-4 md:p-5 rounded-2xl border border-gray-700 shadow">
+      <p class="text-xs md:text-sm text-gray-400">Total Expense</p>
+      <p id="totalExpense" class="text-lg md:text-2xl font-bold text-red-400 mt-1">₹0</p>
+    </div>
+    <div class="bg-cardBg p-4 md:p-5 rounded-2xl border border-gray-700 shadow">
+      <p class="text-xs md:text-sm text-gray-400">Net Balance</p>
+      <p id="netBalance" class="text-lg md:text-2xl font-bold text-indigo-400 mt-1">₹0</p>
+    </div>
+  </div>
+
+  <!-- Main Grid -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-4">
+    <!-- Left -->
+    <div class="space-y-4 md:space-y-6">
+      <div class="bg-cardBg p-5 rounded-2xl border border-gray-700 shadow">
+        <h3 class="text-md font-semibold mb-3 text-indigo-300">Period Filter</h3>
+        <div class="space-y-3">
+          <select id="filterType" onchange="renderDashboard()" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+            <option value="all">All Time</option>
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+          <input type="month" id="filterMonth" onchange="renderDashboard()" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+        </div>
+      </div>
+
+      <div class="bg-cardBg p-5 rounded-2xl border border-gray-700 shadow">
+        <h3 class="text-md font-semibold mb-3 text-indigo-300">Add New Category</h3>
+        <div class="space-y-3">
+          <input type="text" id="newCategoryName" placeholder="Category Name" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+          <button onclick="addCategory()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium transition">Add Category</button>
+        </div>
+      </div>
+
+      <div class="bg-cardBg p-5 rounded-2xl border border-gray-700 shadow">
+        <h3 class="text-md font-semibold mb-3 text-indigo-300">Bulk Entry</h3>
+        <p class="text-xs text-gray-400 mb-3">Ek saath kai entries add karo.</p>
+        <button onclick="openBulkModal()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-2 rounded-lg text-sm font-medium transition">
+          <i class="fa-solid fa-layer-group mr-1"></i> Bulk Add
+        </button>
+      </div>
+    </div>
+
+    <!-- Right: Transaction Form -->
+    <div class="lg:col-span-2">
+      <div class="bg-cardBg p-5 md:p-6 rounded-2xl border border-gray-700 shadow">
+        <h3 id="formTitle" class="text-lg font-semibold mb-4 text-indigo-300">Add New Transaction</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Type</label>
+            <select id="txType" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+              <option value="Expense">Expense</option>
+              <option value="Income">Income</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Date</label>
+            <input type="date" id="txDate" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Category</label>
+            <select id="txCategory" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white"></select>
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Person / Source</label>
+            <input type="text" id="txPerson" value="Self" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Amount (₹)</label>
+            <input type="number" id="txAmount" min="0.01" step="0.01" placeholder="0" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Payment Mode</label>
+            <select id="txPaymentMode" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+              <option value="Cash">Cash</option>
+              <option value="UPI">UPI</option>
+              <option value="Bank Transfer">Bank Transfer</option>
+            </select>
+          </div>
+        </div>
+        <div class="mt-4">
+          <label class="block text-xs text-gray-400 mb-1">Note / Description</label>
+          <input type="text" id="txNote" placeholder="Optional details..." class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+        </div>
+        <div class="flex space-x-3 mt-4">
+          <button id="saveTxBtn" onclick="saveTransaction()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-2.5 rounded-lg text-sm font-medium transition shadow-md">Save Record</button>
+          <button id="cancelEditBtn" onclick="resetForm()" class="hidden bg-gray-800 hover:bg-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium border border-gray-700">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Transactions Table -->
+  <div class="bg-cardBg p-4 md:p-6 rounded-2xl border border-gray-700 shadow">
+    <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-3">
+      <h3 class="text-lg font-semibold text-indigo-300">Recent Transactions</h3>
+      <input type="text" id="searchTx" placeholder="Search category, person, note..." oninput="onSearch()"
+        class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white w-full sm:w-64">
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <thead>
+          <tr class="border-b border-gray-700 text-gray-400">
+            <th class="py-3 px-3">DATE</th>
+            <th class="py-3 px-3">TYPE</th>
+            <th class="py-3 px-3">CATEGORY</th>
+            <th class="py-3 px-3">PERSON</th>
+            <th class="py-3 px-3">MODE</th>
+            <th class="py-3 px-3">AMOUNT</th>
+            <th class="py-3 px-3 hidden md:table-cell">NOTE</th>
+            <th class="py-3 px-3 text-right">ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody id="transactionTableBody" class="divide-y divide-gray-800"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SETTINGS MODAL ============ -->
+<div id="settingsModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md hidden p-4">
+  <div class="bg-cardBg p-6 rounded-2xl shadow-2xl w-full max-w-md border border-gray-700 fade-in max-h-[90vh] overflow-y-auto">
+    <h3 class="text-xl font-bold mb-5 text-indigo-400">Settings</h3>
+
+    <!-- Change Username -->
+    <div class="border border-gray-700 rounded-xl p-4 mb-4">
+      <h4 class="text-sm font-semibold text-indigo-300 mb-3">Change Username</h4>
+      <input type="text" id="setNewUser" placeholder="New username" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white mb-2">
+      <input type="password" id="setUserPass" placeholder="Current password" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white mb-2">
+      <button onclick="changeUsername()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium">Update Username</button>
+    </div>
+
+    <!-- Change Password -->
+    <div class="border border-gray-700 rounded-xl p-4 mb-4">
+      <h4 class="text-sm font-semibold text-indigo-300 mb-3">Change Password</h4>
+      <input type="password" id="setCurrentPass" placeholder="Current password" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white mb-2">
+      <input type="password" id="setNewPass" placeholder="New password" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white mb-2">
+      <input type="password" id="setConfirmPass" placeholder="Confirm new password" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white mb-2">
+      <button onclick="changePassword()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium">Update Password</button>
+    </div>
+
+    <!-- API URL -->
+    <div class="border border-gray-700 rounded-xl p-4 mb-4">
+      <h4 class="text-sm font-semibold text-indigo-300 mb-3">Change API URL</h4>
+      <input type="text" id="setApiUrl" placeholder="https://script.google.com/..." class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white mb-2">
+      <input type="password" id="setApiPass" placeholder="Current password" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white mb-2">
+      <button onclick="changeApiUrl()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium">Update API URL</button>
+    </div>
+
+    <button onclick="closeSettings()" class="w-full bg-gray-800 hover:bg-gray-700 py-2 rounded-lg text-sm font-medium border border-gray-700">Close</button>
+  </div>
+</div>
+
+<!-- ============ PASSWORD CONFIRM MODAL ============ -->
+<div id="confirmModal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md hidden p-4">
+  <div class="bg-cardBg p-6 rounded-2xl shadow-2xl w-full max-w-sm border border-gray-700 fade-in">
+    <h3 class="text-lg font-bold mb-2 text-indigo-400" id="confirmTitle">Confirm</h3>
+    <p class="text-sm text-gray-400 mb-4" id="confirmMsg">Enter password to continue</p>
+    <input type="password" id="confirmPass" placeholder="Password" autocomplete="off"
+      class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white mb-3"
+      onkeydown="if(event.key==='Enter') submitConfirm()">
+    <div class="flex gap-2">
+      <button onclick="submitConfirm()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium">Confirm</button>
+      <button onclick="cancelConfirm()" class="flex-1 bg-gray-800 hover:bg-gray-700 py-2 rounded-lg text-sm font-medium border border-gray-700">Cancel</button>
+    </div>
+    <p id="confirmError" class="text-red-400 text-xs mt-2 hidden text-center"></p>
+  </div>
+</div>
+
+<!-- ============ BULK MODAL ============ -->
+<div id="bulkModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md hidden p-4">
+  <div class="bg-cardBg p-6 rounded-2xl shadow-2xl w-full max-w-2xl border border-gray-700 fade-in max-h-[90vh] overflow-y-auto">
+    <h3 class="text-lg font-bold mb-3 text-indigo-400">Bulk Entry</h3>
+    <p class="text-xs text-gray-400 mb-3">
+      Ek line me ek entry. Format: <code class="bg-gray-900 px-1 rounded">Date | Type | Category | Person | Amount | Mode | Note</code><br>
+      Example: <code class="bg-gray-900 px-1 rounded">2026-09-19 | Expense | Doodh | Self | 75 | Cash | -</code><br>
+      (Type: Income/Expense, Mode: Cash/UPI/Bank Transfer, Note optional)
+    </p>
+    <textarea id="bulkText" rows="10" spellcheck="false"
+      class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white font-mono"></textarea>
+    <p id="bulkError" class="text-red-400 text-xs mt-2 hidden"></p>
+    <div class="flex gap-2 mt-4">
+      <button onclick="submitBulk()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 py-2 rounded-lg text-sm font-medium">
+        <i class="fa-solid fa-upload mr-1"></i> Upload All
+      </button>
+      <button onclick="closeBulkModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 py-2 rounded-lg text-sm font-medium border border-gray-700">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TOAST ============ -->
+<div id="toast" class="fixed bottom-6 right-6 z-[70] hidden">
+  <div id="toastBody" class="px-4 py-3 rounded-lg shadow-lg text-sm font-medium border"></div>
+</div>
+
+<!-- ============ APP JS ============ -->
+<script>
+/* ============ STATE ============ */
+let API_URL = localStorage.getItem('fin_api_url') || "";
+let TOKEN = localStorage.getItem('fin_token') || "";
+let USERNAME = localStorage.getItem('fin_user') || "";
+let appData = { transactions: [], categories: [], dailyLedger: [] };
+let editingId = null;
+let searchTimer = null;
+
+/* ============ UTILS ============ */
+function getTodayLocal() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
-
-function doPost(e) {
-  var data = {};
-  try { data = JSON.parse(e.postData.contents); } catch (err) {}
-  return route(data);
+function getCurrentMonthLocal() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
-
-function route(params) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  migrateSettings(ss);
-
-  var action = params.action;
-
-  // ---------- PUBLIC ----------
-  if (!action || action === "ping") return jsonRes({ status: "active" });
-
-  if (action === "verifyLogin") {
-    return verifyLogin(ss, params.username, params.password);
-  }
-
-  // ---------- AUTH REQUIRED ----------
-  if (!isValidToken(ss, params.token)) {
-    return jsonRes({ status: "error", code: "AUTH", message: "Session expired. Please login again." });
-  }
-
-  switch (action) {
-    case "getData":            return getData(ss);
-    case "addCategory":        return addCategory(ss, params.name);
-    case "saveTransaction":    return saveTransaction(ss, params);
-    case "saveBulk":           return saveBulk(ss, params);
-    case "deleteTransaction":  return deleteTransaction(ss, params);
-    case "verifyPassword":     return jsonRes({ status: verifyPasswordOnly(ss, params.password) ? "success" : "error", message: verifyPasswordOnly(ss, params.password) ? "OK" : "Invalid password" });
-    case "updateCredentials":  return updateCredentials(ss, params);
-    case "logout":             return logout(ss, params.token);
-  }
-  return jsonRes({ status: "error", message: "Invalid action" });
+function escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
-
-// ------------------------------------------------------------
-// AUTH
-// ------------------------------------------------------------
-function hashPassword(p) {
-  var digest = Utilities.computeDigest(
-    Utilities.DigestAlgorithm.SHA_256,
-    String(p) + SALT,
-    Utilities.Charset.UTF_8
-  );
-  return digest.map(function (b) {
-    return ('0' + (b & 0xFF).toString(16)).slice(-2);
-  }).join('');
+function formatMoney(n) {
+  return '₹' + (Number(n) || 0).toLocaleString('en-IN');
 }
-
-function getStoredUser(ss) {
-  var sheet = getOrCreateSheet(ss, SHEET_SETTINGS, ["Key", "Value"]);
-  var rows = sheet.getDataRange().getValues();
-  for (var i = 0; i < rows.length; i++) {
-    var k = String(rows[i][0]).toLowerCase().trim();
-    if (k === "user" || k === "username") return String(rows[i][1]).trim();
-  }
-  sheet.appendRow(["User", DEFAULT_USER]);
-  return DEFAULT_USER;
+function showToast(msg, type = 'success') {
+  const el = document.getElementById('toast');
+  const body = document.getElementById('toastBody');
+  const colors = {
+    success: 'bg-emerald-900/90 text-emerald-200 border-emerald-700',
+    error:   'bg-red-900/90 text-red-200 border-red-700',
+    info:    'bg-indigo-900/90 text-indigo-200 border-indigo-700'
+  };
+  body.className = 'px-4 py-3 rounded-lg shadow-lg text-sm font-medium border ' + (colors[type] || colors.info);
+  body.textContent = msg;
+  el.classList.remove('hidden');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => el.classList.add('hidden'), 2800);
 }
-
-function getStoredPassHash(ss) {
-  var sheet = getOrCreateSheet(ss, SHEET_SETTINGS, ["Key", "Value"]);
-  var rows = sheet.getDataRange().getValues();
-  for (var i = 0; i < rows.length; i++) {
-    var k = String(rows[i][0]).toLowerCase().trim();
-    if (k.indexOf("pass") !== -1) return String(rows[i][1]).trim();
-  }
-  var h = hashPassword(DEFAULT_PASS);
-  sheet.appendRow(["Password", h]);
-  return h;
+async function apiGet(params) {
+  if (!API_URL) throw new Error("API URL not set");
+  const url = new URL(API_URL);
+  Object.keys(params).forEach(k => url.searchParams.set(k, params[k]));
+  url.searchParams.set('_t', Date.now());
+  const res = await fetch(url.toString());
+  return res.json();
 }
-
-function migrateSettings(ss) {
-  var sheet = getOrCreateSheet(ss, SHEET_SETTINGS, ["Key", "Value"]);
-  var rows = sheet.getDataRange().getValues();
-  var hasUser = false, hasPass = false;
-
-  for (var i = 0; i < rows.length; i++) {
-    var k = String(rows[i][0]).toLowerCase().trim();
-    if (k === "user" || k === "username") hasUser = true;
-    if (k.indexOf("pass") !== -1) {
-      hasPass = true;
-      var v = String(rows[i][1]).trim();
-      // Agar purani plain text password hai to hash me badlo
-      if (!/^[a-f0-9]{64}$/.test(v)) {
-        sheet.getRange(i + 1, 2).setValue(hashPassword(DEFAULT_PASS));
-      }
-    }
-  }
-  if (!hasUser) sheet.appendRow(["User", DEFAULT_USER]);
-  if (!hasPass) sheet.appendRow(["Password", hashPassword(DEFAULT_PASS)]);
+async function apiPost(body) {
+  if (!API_URL) throw new Error("API URL not set");
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    body: JSON.stringify(body)
+  });
+  return res.json();
 }
-
-function verifyLogin(ss, username, password) {
-  var storedUser = getStoredUser(ss);
-  var storedHash = getStoredPassHash(ss);
-
-  if (String(username || "").trim() !== storedUser) {
-    return jsonRes({ status: "error", message: "Invalid username or password" });
-  }
-  if (hashPassword(password || "") !== storedHash) {
-    return jsonRes({ status: "error", message: "Invalid username or password" });
-  }
-
-  var token = Utilities.getUuid();
-  saveToken(ss, token);
-  return jsonRes({ status: "success", token: token, user: storedUser });
-}
-
-function verifyPasswordOnly(ss, password) {
-  return hashPassword(password || "") === getStoredPassHash(ss);
-}
-
-function saveToken(ss, token) {
-  var sheet = getOrCreateSheet(ss, SHEET_AUTH, ["Token", "Expiry"]);
-  sheet.appendRow([token, Date.now() + TOKEN_DAYS * 24 * 60 * 60 * 1000]);
-
-  // Cleanup expired
-  var rows = sheet.getDataRange().getValues();
-  var keep = [["Token", "Expiry"]];
-  for (var i = 1; i < rows.length; i++) {
-    if (Number(rows[i][1]) > Date.now()) keep.push(rows[i]);
-  }
-  if (keep.length !== rows.length) {
-    sheet.clear();
-    sheet.getRange(1, 1, keep.length, 2).setValues(keep);
-  }
-}
-
-function isValidToken(ss, token) {
-  if (!token) return false;
-  var sheet = ss.getSheetByName(SHEET_AUTH);
-  if (!sheet) return false;
-  var rows = sheet.getDataRange().getValues();
-  var now = Date.now();
-  for (var i = 1; i < rows.length; i++) {
-    if (String(rows[i][0]) === String(token) && Number(rows[i][1]) > now) return true;
+function handleAuthError(data) {
+  if (data && data.code === 'AUTH') {
+    showToast("Session expired. Please login again.", "error");
+    setTimeout(() => handleLogout(false), 800);
+    return true;
   }
   return false;
 }
 
-function logout(ss, token) {
-  var sheet = ss.getSheetByName(SHEET_AUTH);
-  if (!sheet) return jsonRes({ status: "success" });
-  var rows = sheet.getDataRange().getValues();
-  for (var i = 1; i < rows.length; i++) {
-    if (String(rows[i][0]) === String(token)) {
-      sheet.deleteRow(i + 1);
-      break;
-    }
-  }
-  return jsonRes({ status: "success" });
-}
-
-function invalidateAllTokens(ss) {
-  var sheet = ss.getSheetByName(SHEET_AUTH);
-  if (sheet) {
-    sheet.clear();
-    sheet.appendRow(["Token", "Expiry"]);
-  }
-}
-
-// ------------------------------------------------------------
-// DATA
-// ------------------------------------------------------------
-function getData(ss) {
-  return jsonRes({
-    status: "success",
-    transactions: sheetToJSON(ss, SHEET_TRANS),
-    categories:   sheetToJSON(ss, SHEET_CAT),
-    dailyLedger:  sheetToJSON(ss, SHEET_DAILY)
+/* ============ PASSWORD CONFIRM MODAL ============ */
+let confirmResolver = null;
+function askPassword(title, msg) {
+  return new Promise(resolve => {
+    confirmResolver = resolve;
+    document.getElementById('confirmTitle').textContent = title || 'Confirm';
+    document.getElementById('confirmMsg').textContent = msg || 'Enter password to continue';
+    document.getElementById('confirmPass').value = '';
+    document.getElementById('confirmError').classList.add('hidden');
+    document.getElementById('confirmModal').classList.remove('hidden');
+    setTimeout(() => document.getElementById('confirmPass').focus(), 100);
   });
 }
-
-function saveTransaction(ss, d) {
-  var sheet = getOrCreateSheet(ss, SHEET_TRANS, TRANS_HEADERS);
-
-  if (d.isEdit) {
-    // Edit ke liye password zaroori
-    if (!verifyPasswordOnly(ss, d.password)) {
-      return jsonRes({ status: "error", message: "Invalid password" });
-    }
-    var rows = sheet.getDataRange().getValues();
-    for (var i = 1; i < rows.length; i++) {
-      if (String(rows[i][0]) === String(d.id)) {
-        sheet.getRange(i + 1, 1, 1, 8).setValues([[
-          d.id, d.date, d.type, d.category, d.person, d.amount, d.paymentMode, d.note
-        ]]);
-        return jsonRes({ status: "success" });
-      }
-    }
-    return jsonRes({ status: "error", message: "Record not found" });
+function submitConfirm() {
+  const pass = document.getElementById('confirmPass').value;
+  if (!pass) {
+    document.getElementById('confirmError').textContent = 'Password required';
+    document.getElementById('confirmError').classList.remove('hidden');
+    return;
   }
-
-  sheet.appendRow([
-    d.id || ('t_' + Date.now()),
-    d.date, d.type, d.category, d.person, d.amount, d.paymentMode, d.note
-  ]);
-  return jsonRes({ status: "success" });
+  document.getElementById('confirmModal').classList.add('hidden');
+  if (confirmResolver) { confirmResolver(pass); confirmResolver = null; }
+}
+function cancelConfirm() {
+  document.getElementById('confirmModal').classList.add('hidden');
+  if (confirmResolver) { confirmResolver(null); confirmResolver = null; }
 }
 
-function saveBulk(ss, d) {
-  var items = d.items || [];
-  if (items.length === 0) return jsonRes({ status: "error", message: "No items" });
-  if (items.length > 500) return jsonRes({ status: "error", message: "Max 500 entries at once" });
+/* ============ LOGIN ============ */
+window.onload = function () {
+  document.getElementById('txDate').value = getTodayLocal();
+  document.getElementById('filterMonth').value = getCurrentMonthLocal();
+  document.getElementById('currentDateDisplay').textContent = new Date().toLocaleString();
+  document.getElementById('setApiUrl').value = API_URL;
 
-  var sheet = getOrCreateSheet(ss, SHEET_TRANS, TRANS_HEADERS);
-  var rows = items.map(function (t, idx) {
-    return [
-      't_' + Date.now() + '_' + idx + '_' + Math.random().toString(36).slice(2, 6),
-      t.date, t.type, t.category, t.person, t.amount, t.paymentMode, t.note
-    ];
+  if (!API_URL) {
+    document.getElementById('loginModal').classList.remove('hidden');
+    document.getElementById('loginError').textContent = '⚠ API URL set karo (neeche "Set API URL" pe click karo)';
+    document.getElementById('loginError').classList.remove('hidden');
+    return;
+  }
+  if (TOKEN) {
+    showApp();
+    syncData();
+  } else {
+    document.getElementById('loginModal').classList.remove('hidden');
+    document.getElementById('loginUser').value = USERNAME || '';
+    setTimeout(() => document.getElementById('loginPass').focus(), 100);
+  }
+};
+
+function showApp() {
+  document.getElementById('loginModal').classList.add('hidden');
+  document.getElementById('appContainer').classList.remove('hidden');
+  document.body.classList.add('modal-open');
+}
+
+async function handleLogin() {
+  const user = document.getElementById('loginUser').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  const errEl = document.getElementById('loginError');
+  const btn = document.getElementById('loginBtn');
+
+  if (!user || !pass) {
+    errEl.textContent = 'Username and password required';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = 'Logging in...';
+  errEl.classList.add('hidden');
+
+  try {
+    const data = await apiGet({ action: 'verifyLogin', username: user, password: pass });
+    if (data.status === 'success') {
+      TOKEN = data.token;
+      USERNAME = data.user || user;
+      localStorage.setItem('fin_token', TOKEN);
+      localStorage.setItem('fin_user', USERNAME);
+      document.getElementById('loginPass').value = '';
+      showApp();
+      syncData();
+    } else {
+      errEl.textContent = data.message || 'Invalid credentials';
+      errEl.classList.remove('hidden');
+    }
+  } catch (e) {
+    errEl.textContent = 'Connection error. API URL check karo.';
+    errEl.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Login';
+  }
+}
+
+function handleLogout(callServer = true) {
+  if (callServer && TOKEN && API_URL) {
+    apiPost({ action: 'logout', token: TOKEN }).catch(() => {});
+  }
+  localStorage.removeItem('fin_token');
+  TOKEN = '';
+  location.reload();
+}
+
+/* ============ SYNC ============ */
+async function syncData(showSpin = false) {
+  if (!API_URL || !TOKEN) return;
+  const statusEl = document.getElementById('connectionStatus');
+  const spinIcon = document.getElementById('syncIcon');
+
+  statusEl.textContent = 'Syncing...';
+  statusEl.className = 'px-2.5 py-1 text-xs rounded-full bg-yellow-900/50 text-yellow-400 border border-yellow-700';
+  if (showSpin && spinIcon) spinIcon.classList.add('spin');
+
+  try {
+    const data = await apiGet({ action: 'getData', token: TOKEN });
+    if (handleAuthError(data)) return;
+
+    if (data.status === 'success') {
+      appData.transactions = data.transactions || [];
+      appData.categories = data.categories || [];
+      appData.dailyLedger = data.dailyLedger || [];
+      statusEl.textContent = 'Connected';
+      statusEl.className = 'px-2.5 py-1 text-xs rounded-full bg-emerald-900/50 text-emerald-400 border border-emerald-700';
+      renderDashboard();
+    } else {
+      statusEl.textContent = 'Error';
+      statusEl.className = 'px-2.5 py-1 text-xs rounded-full bg-red-900/50 text-red-400 border border-red-700';
+    }
+  } catch (e) {
+    statusEl.textContent = 'Offline';
+    statusEl.className = 'px-2.5 py-1 text-xs rounded-full bg-red-900/50 text-red-400 border border-red-700';
+  } finally {
+    if (showSpin && spinIcon) spinIcon.classList.remove('spin');
+  }
+}
+
+/* ============ RENDER ============ */
+function renderCategories() {
+  const catSelect = document.getElementById('txCategory');
+  const currentVal = catSelect.value;
+  let cats = appData.categories
+    .map(c => c.category || c.name || '')
+    .map(s => String(s).trim())
+    .filter(Boolean);
+  cats = [...new Set(cats)];
+  if (cats.length === 0) cats = ['Doodh', 'Rashan', 'Salary', 'Paneer', 'General'];
+
+  catSelect.innerHTML = cats.map(c =>
+    `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`
+  ).join('');
+  if (currentVal && cats.includes(currentVal)) catSelect.value = currentVal;
+}
+
+function renderDashboard() {
+  renderCategories();
+
+  const filterType = document.getElementById('filterType').value;
+  const filterMonth = document.getElementById('filterMonth').value;
+  const searchQuery = document.getElementById('searchTx').value.toLowerCase().trim();
+
+  // Filter
+  const filtered = appData.transactions.filter(t => {
+    const tDate = String(t.date || '');
+    if (filterType === 'monthly' && filterMonth) {
+      if (!tDate.startsWith(filterMonth)) return false;
+    } else if (filterType === 'yearly' && filterMonth) {
+      if (!tDate.startsWith(filterMonth.split('-')[0])) return false;
+    }
+    if (searchQuery) {
+      const hay = [t.category, t.person, t.note, t.type, t.paymentmode, t.paymentMode]
+        .map(x => String(x || '').toLowerCase()).join(' ');
+      if (!hay.includes(searchQuery)) return false;
+    }
+    return true;
   });
-  var startRow = sheet.getLastRow() + 1;
-  sheet.getRange(startRow, 1, rows.length, 8).setValues(rows);
-  return jsonRes({ status: "success", count: rows.length });
+
+  // Totals (of ALL transactions, not filtered - to match original)
+  let totalInc = 0, totalExp = 0;
+  appData.transactions.forEach(t => {
+    const amt = parseFloat(t.amount) || 0;
+    if (String(t.type).toLowerCase() === 'income') totalInc += amt;
+    else totalExp += amt;
+  });
+  document.getElementById('totalIncome').textContent = formatMoney(totalInc);
+  document.getElementById('totalExpense').textContent = formatMoney(totalExp);
+  document.getElementById('netBalance').textContent = formatMoney(totalInc - totalExp);
+
+  // Today
+  const todayStr = getTodayLocal();
+  const hasToday = appData.transactions.some(t => String(t.date || '').startsWith(todayStr));
+  const todayEl = document.getElementById('todayStatus');
+  if (hasToday) {
+    todayEl.textContent = "Aaj entry ho chuki hai!";
+    todayEl.className = "text-sm md:text-lg font-bold text-emerald-400 mt-1";
+  } else {
+    todayEl.textContent = "Aaj entry nahi hui!";
+    todayEl.className = "text-sm md:text-lg font-bold text-red-400 mt-1";
+  }
+
+  // Table
+  const tbody = document.getElementById('transactionTableBody');
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-gray-500">No records found</td></tr>`;
+    return;
+  }
+
+  filtered.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+
+  const frag = document.createDocumentFragment();
+  filtered.forEach(t => {
+    const tr = document.createElement('tr');
+    const mode = t.paymentmode || t.paymentMode || '-';
+    const isInc = String(t.type).toLowerCase() === 'income';
+    const typeColor = isInc ? 'text-emerald-400' : 'text-red-400';
+    const tid = escapeHtml(t.id);
+    tr.innerHTML = `
+      <td class="py-2.5 px-3 whitespace-nowrap">${escapeHtml(t.date || '')}</td>
+      <td class="py-2.5 px-3 font-semibold ${typeColor}">${escapeHtml(t.type || '')}</td>
+      <td class="py-2.5 px-3">${escapeHtml(t.category || '')}</td>
+      <td class="py-2.5 px-3">${escapeHtml(t.person || 'Self')}</td>
+      <td class="py-2.5 px-3">${escapeHtml(mode)}</td>
+      <td class="py-2.5 px-3 font-bold whitespace-nowrap">${formatMoney(t.amount)}</td>
+      <td class="py-2.5 px-3 text-gray-400 hidden md:table-cell max-w-[200px] truncate">${escapeHtml(t.note || '-')}</td>
+      <td class="py-2.5 px-3 text-right whitespace-nowrap">
+        <button data-action="edit" data-id="${tid}" class="text-indigo-400 hover:text-indigo-300 mx-1" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button>
+        <button data-action="delete" data-id="${tid}" class="text-red-400 hover:text-red-300 mx-1" title="Delete"><i class="fa-solid fa-trash"></i></button>
+      </td>
+    `;
+    frag.appendChild(tr);
+  });
+  tbody.innerHTML = '';
+  tbody.appendChild(frag);
 }
 
-function deleteTransaction(ss, d) {
-  if (!verifyPasswordOnly(ss, d.password)) {
-    return jsonRes({ status: "error", message: "Invalid password" });
-  }
-  var sheet = ss.getSheetByName(SHEET_TRANS);
-  if (!sheet) return jsonRes({ status: "error", message: "No data" });
+function onSearch() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(renderDashboard, 250);
+}
 
-  var rows = sheet.getDataRange().getValues();
-  for (var i = 1; i < rows.length; i++) {
-    if (String(rows[i][0]) === String(d.id)) {
-      sheet.deleteRow(i + 1);
-      return jsonRes({ status: "success" });
+/* ============ CRUD ============ */
+function editTransaction(id) {
+  const t = appData.transactions.find(x => String(x.id) === String(id));
+  if (!t) return;
+  editingId = t.id;
+  document.getElementById('txDate').value = t.date || getTodayLocal();
+  document.getElementById('txType').value = t.type || 'Expense';
+  renderCategories();
+  document.getElementById('txCategory').value = t.category || '';
+  document.getElementById('txPerson').value = t.person || 'Self';
+  document.getElementById('txAmount').value = t.amount || '';
+  document.getElementById('txPaymentMode').value = t.paymentmode || t.paymentMode || 'Cash';
+  document.getElementById('txNote').value = (t.note === '-' || !t.note) ? '' : t.note;
+
+  document.getElementById('formTitle').textContent = "Edit Transaction";
+  document.getElementById('saveTxBtn').textContent = "Update Record";
+  document.getElementById('cancelEditBtn').classList.remove('hidden');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function resetForm() {
+  editingId = null;
+  document.getElementById('txDate').value = getTodayLocal();
+  document.getElementById('txAmount').value = '';
+  document.getElementById('txNote').value = '';
+  document.getElementById('txPerson').value = 'Self';
+  document.getElementById('formTitle').textContent = "Add New Transaction";
+  document.getElementById('saveTxBtn').textContent = "Save Record";
+  document.getElementById('cancelEditBtn').classList.add('hidden');
+}
+
+async function saveTransaction() {
+  const amount = parseFloat(document.getElementById('txAmount').value);
+  if (!amount || amount <= 0) {
+    showToast("Valid amount (0 se zyada) daalo", "error");
+    return;
+  }
+
+  const isEdit = !!editingId;
+  let password = null;
+
+  if (isEdit) {
+    password = await askPassword("Confirm Edit", "Edit karne ke liye password daalo");
+    if (!password) return;
+  }
+
+  const payload = {
+    action: 'saveTransaction',
+    token: TOKEN,
+    id: editingId || ('t_' + Date.now()),
+    isEdit: isEdit,
+    password: password,
+    date: document.getElementById('txDate').value,
+    type: document.getElementById('txType').value,
+    category: document.getElementById('txCategory').value,
+    person: document.getElementById('txPerson').value || 'Self',
+    amount: amount,
+    paymentMode: document.getElementById('txPaymentMode').value,
+    note: document.getElementById('txNote').value || '-'
+  };
+
+  try {
+    const data = await apiPost(payload);
+    if (handleAuthError(data)) return;
+    if (data.status === 'success') {
+      showToast(isEdit ? "Updated!" : "Saved!");
+      resetForm();
+      syncData();
+    } else {
+      showToast(data.message || "Error", "error");
     }
+  } catch (e) {
+    showToast("Network error", "error");
   }
-  return jsonRes({ status: "error", message: "Record not found" });
 }
 
-function addCategory(ss, name) {
-  if (!name || !String(name).trim()) return jsonRes({ status: "error", message: "Empty name" });
-  var sheet = getOrCreateSheet(ss, SHEET_CAT, ["Category"]);
-  var rows = sheet.getDataRange().getValues();
-  var val = String(name).trim();
-  for (var i = 1; i < rows.length; i++) {
-    if (String(rows[i][0]).trim().toLowerCase() === val.toLowerCase()) {
-      return jsonRes({ status: "error", message: "Category already exists" });
+async function deleteTransaction(id) {
+  const password = await askPassword("Confirm Delete", "Delete karne ke liye password daalo");
+  if (!password) return;
+
+  try {
+    const data = await apiPost({ action: 'deleteTransaction', token: TOKEN, id: id, password: password });
+    if (handleAuthError(data)) return;
+    if (data.status === 'success') {
+      showToast("Deleted!");
+      syncData();
+    } else {
+      showToast(data.message || "Error", "error");
     }
+  } catch (e) {
+    showToast("Network error", "error");
   }
-  sheet.appendRow([val]);
-  return jsonRes({ status: "success" });
 }
 
-function updateCredentials(ss, d) {
-  if (!verifyPasswordOnly(ss, d.currentPassword)) {
-    return jsonRes({ status: "error", message: "Current password incorrect" });
+async function addCategory() {
+  const input = document.getElementById('newCategoryName');
+  const name = input.value.trim();
+  if (!name) return;
+  try {
+    const data = await apiPost({ action: 'addCategory', token: TOKEN, name: name });
+    if (handleAuthError(data)) return;
+    if (data.status === 'success') {
+      showToast("Category added!");
+      input.value = '';
+      syncData();
+    } else {
+      showToast(data.message || "Error", "error");
+    }
+  } catch (e) {
+    showToast("Network error", "error");
   }
+}
 
-  var sheet = getOrCreateSheet(ss, SHEET_SETTINGS, ["Key", "Value"]);
-  var rows = sheet.getDataRange().getValues();
-  var changedPassword = false;
+/* Event delegation for table buttons */
+document.getElementById('transactionTableBody').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-action]');
+  if (!btn) return;
+  const id = btn.getAttribute('data-id');
+  if (btn.getAttribute('data-action') === 'edit') editTransaction(id);
+  else if (btn.getAttribute('data-action') === 'delete') deleteTransaction(id);
+});
 
-  // Change User
-  if (d.newUsername && String(d.newUsername).trim()) {
-    var uname = String(d.newUsername).trim();
-    var foundUser = false;
-    for (var i = 0; i < rows.length; i++) {
-      var k = String(rows[i][0]).toLowerCase().trim();
-      if (k === "user" || k === "username") {
-        sheet.getRange(i + 1, 2).setValue(uname);
-        foundUser = true;
-        break;
+/* ============ BULK ============ */
+function openBulkModal() {
+  document.getElementById('bulkText').value = '';
+  document.getElementById('bulkError').classList.add('hidden');
+  document.getElementById('bulkModal').classList.remove('hidden');
+}
+function closeBulkModal() {
+  document.getElementById('bulkModal').classList.add('hidden');
+}
+
+async function submitBulk() {
+  const text = document.getElementById('bulkText').value.trim();
+  if (!text) { showToast("Kuch to likho", "error"); return; }
+
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  const items = [];
+  const errors = [];
+
+  lines.forEach((line, idx) => {
+    // pipe separator priority, warna comma
+    let parts = line.split('|').map(x => x.trim());
+    if (parts.length < 5) parts = line.split(',').map(x => x.trim());
+    if (parts.length < 5) {
+      errors.push(`Line ${idx + 1}: kam se kam 5 fields chahiye (Date|Type|Category|Person|Amount)`);
+      return;
+    }
+    const [date, type, category, person, amountStr, mode, note] = parts;
+    const amount = parseFloat(amountStr);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      errors.push(`Line ${idx + 1}: date format YYYY-MM-DD chahiye`);
+      return;
+    }
+    if (!amount || amount <= 0) {
+      errors.push(`Line ${idx + 1}: amount valid nahi`);
+      return;
+    }
+    const t = (type || 'Expense').toLowerCase() === 'income' ? 'Income' : 'Expense';
+    items.push({
+      date: date, type: t, category: category || 'General',
+      person: person || 'Self', amount: amount,
+      paymentMode: mode || 'Cash', note: note || '-'
+    });
+  });
+
+  if (errors.length) {
+    const errEl = document.getElementById('bulkError');
+    errEl.textContent = errors.slice(0, 5).join('\n') + (errors.length > 5 ? `\n...aur ${errors.length - 5} errors` : '');
+    errEl.classList.remove('hidden');
+    return;
+  }
+  if (items.length === 0) { showToast("Koi valid entry nahi mili", "error"); return; }
+
+  try {
+    const data = await apiPost({ action: 'saveBulk', token: TOKEN, items: items });
+    if (handleAuthError(data)) return;
+    if (data.status === 'success') {
+      showToast(`${data.count} entries added!`);
+      closeBulkModal();
+      syncData();
+    } else {
+      showToast(data.message || "Error", "error");
+    }
+  } catch (e) {
+    showToast("Network error", "error");
+  }
+}
+
+/* ============ SETTINGS ============ */
+function openSettings() {
+  document.getElementById('setApiUrl').value = API_URL;
+  document.getElementById('setNewUser').value = '';
+  document.getElementById('setUserPass').value = '';
+  document.getElementById('setCurrentPass').value = '';
+  document.getElementById('setNewPass').value = '';
+  document.getElementById('setConfirmPass').value = '';
+  document.getElementById('setApiPass').value = '';
+  document.getElementById('settingsModal').classList.remove('hidden');
+}
+function closeSettings() {
+  document.getElementById('settingsModal').classList.add('hidden');
+}
+
+async function changeUsername() {
+  const newUser = document.getElementById('setNewUser').value.trim();
+  const pass = document.getElementById('setUserPass').value;
+  if (!newUser) { showToast("New username daalo", "error"); return; }
+  if (!pass) { showToast("Current password daalo", "error"); return; }
+
+  try {
+    const data = await apiPost({
+      action: 'updateCredentials', token: TOKEN,
+      currentPassword: pass, newUsername: newUser
+    });
+    if (handleAuthError(data)) return;
+    if (data.status === 'success') {
+      USERNAME = newUser;
+      localStorage.setItem('fin_user', newUser);
+      showToast("Username updated!");
+      document.getElementById('setNewUser').value = '';
+      document.getElementById('setUserPass').value = '';
+    } else {
+      showToast(data.message || "Error", "error");
+    }
+  } catch (e) { showToast("Network error", "error"); }
+}
+
+async function changePassword() {
+  const current = document.getElementById('setCurrentPass').value;
+  const np = document.getElementById('setNewPass').value;
+  const cp = document.getElementById('setConfirmPass').value;
+
+  if (!current) { showToast("Current password daalo", "error"); return; }
+  if (!np || np.length < 4) { showToast("New password kam se kam 4 characters", "error"); return; }
+  if (np !== cp) { showToast("New passwords match nahi kar rahe", "error"); return; }
+
+  try {
+    const data = await apiPost({
+      action: 'updateCredentials', token: TOKEN,
+      currentPassword: current, newPassword: np
+    });
+    if (data.status === 'success') {
+      showToast("Password changed! Please login again.", "success");
+      setTimeout(() => handleLogout(false), 1200);
+    } else {
+      showToast(data.message || "Error", "error");
+    }
+  } catch (e) { showToast("Network error", "error"); }
+}
+
+async function changeApiUrl() {
+  const newUrl = document.getElementById('setApiUrl').value.trim();
+  const pass = document.getElementById('setApiPass').value;
+
+  if (!newUrl || !/^https:\/\/script\.google\.com\//.test(newUrl)) {
+    showToast("Valid Apps Script URL daalo", "error"); return;
+  }
+  if (!pass) { showToast("Current password daalo", "error"); return; }
+
+  // Verify password against current server (agar current API reachable hai)
+  if (API_URL && TOKEN) {
+    try {
+      const data = await apiPost({ action: 'verifyPassword', token: TOKEN, password: pass });
+      if (data.status !== 'success') {
+        showToast("Password galat hai", "error"); return;
       }
+    } catch (e) {
+      // Purana server down — allow kar do
+      console.warn("Current API unreachable, skipping verification");
     }
-    if (!foundUser) sheet.appendRow(["User", uname]);
   }
 
-  // Change Password
-  if (d.newPassword && String(d.newPassword).trim()) {
-    var newHash = hashPassword(String(d.newPassword).trim());
-    var foundPass = false;
-    for (var i = 0; i < rows.length; i++) {
-      var k = String(rows[i][0]).toLowerCase().trim();
-      if (k.indexOf("pass") !== -1) {
-        sheet.getRange(i + 1, 2).setValue(newHash);
-        foundPass = true;
-        break;
-      }
-    }
-    if (!foundPass) sheet.appendRow(["Password", newHash]);
-    changedPassword = true;
+  API_URL = newUrl;
+  localStorage.setItem('fin_api_url', newUrl);
+  // Token purane server ka tha, clear kar do
+  localStorage.removeItem('fin_token');
+  showToast("API URL updated! Login karo.", "success");
+  setTimeout(() => location.reload(), 1000);
+}
+
+function openSettingsFromLogin() {
+  const url = prompt("Apps Script Web App URL paste karo:");
+  if (url && url.trim()) {
+    localStorage.setItem('fin_api_url', url.trim());
+    location.reload();
   }
-
-  // Agar password badla to saare tokens invalid kar do (user ko dobara login karna hoga)
-  if (changedPassword) invalidateAllTokens(ss);
-
-  return jsonRes({ status: "success", relogin: changedPassword });
 }
-
-// ------------------------------------------------------------
-// HELPERS
-// ------------------------------------------------------------
-function getOrCreateSheet(ss, name, headers) {
-  var sheet = ss.getSheetByName(name);
-  if (!sheet) {
-    sheet = ss.insertSheet(name);
-    if (headers) sheet.appendRow(headers);
-  }
-  return sheet;
-}
-
-function sheetToJSON(ss, name) {
-  var sheet = ss.getSheetByName(name);
-  if (!sheet) return [];
-  var rows = sheet.getDataRange().getValues();
-  if (rows.length <= 1) return [];
-
-  var rawHeaders = rows[0];
-  var tz = ss.getSpreadsheetTimeZone() || "Asia/Kolkata";
-  var data = [];
-
-  for (var i = 1; i < rows.length; i++) {
-    var obj = {};
-    for (var j = 0; j < rawHeaders.length; j++) {
-      var h = String(rawHeaders[j]).trim().toLowerCase().replace(/\s+/g, '');
-      var val = rows[i][j];
-      if (val instanceof Date) {
-        val = Utilities.formatDate(val, tz, "yyyy-MM-dd");
-      } else if (val !== null && val !== undefined) {
-        val = String(val).trim();
-      }
-      obj[h] = val;
-      if (h === 'paymentmode') { obj['paymentMode'] = val; }
-      if (h === 'category')    { obj['category']    = val; }
-    }
-    data.push(obj);
-  }
-  return data;
-}
-
-function jsonRes(obj) {
-  return ContentService
-    .createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON);
-}
+</script>
+</body>
+</html>
