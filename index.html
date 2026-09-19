@@ -24,31 +24,31 @@
 <body class="bg-darkBg text-gray-100 min-h-screen font-sans antialiased">
 
     <!-- Login Modal -->
-    <div id="loginModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm hidden">
+    <div id="loginModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md hidden">
         <div class="bg-cardBg p-8 rounded-2xl shadow-2xl w-96 border border-gray-700">
-            <h2 class="text-2xl font-bold mb-6 text-center text-indigo-400">Finance Login</h2>
+            <h2 class="text-2xl font-bold mb-6 text-center text-indigo-400">Finance Manager Login</h2>
             <div class="space-y-4">
                 <div>
-                    <label class="block text-sm text-gray-400 mb-1">Password</label>
-                    <input type="password" id="loginPassword" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500" placeholder="Enter password (default: admin123)">
+                    <label class="block text-sm text-gray-400 mb-1">Enter Password</label>
+                    <input type="password" id="loginPassword" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500" placeholder="Default: admin123" onkeydown="if(event.key==='Enter') handleLogin()">
                 </div>
-                <button onclick="handleLogin()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 rounded-lg transition">Login</button>
-                <p id="loginError" class="text-red-400 text-sm text-center hidden">Invalid Password</p>
+                <button onclick="handleLogin()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 rounded-lg transition shadow-lg">Login</button>
+                <p id="loginError" class="text-red-400 text-sm text-center hidden">Invalid Password!</p>
             </div>
         </div>
     </div>
 
     <!-- App Container -->
-    <div id="appContainer" class="max-w-7xl mx-auto px-4 py-6">
+    <div id="appContainer" class="max-w-7xl mx-auto px-4 py-6 hidden">
         
         <!-- Header -->
         <header class="flex flex-col md:flex-row justify-between items-center bg-cardBg p-4 rounded-2xl border border-gray-700 mb-6 shadow-lg">
             <div class="flex items-center space-x-3 mb-4 md:mb-0">
                 <h1 class="text-xl font-bold text-indigo-400">Financial Dashboard</h1>
-                <span id="connectionStatus" class="px-2.5 py-1 text-xs rounded-full bg-red-900/50 text-red-400 border border-red-700">Disconnected</span>
+                <span id="connectionStatus" class="px-2.5 py-1 text-xs rounded-full bg-yellow-900/50 text-yellow-400 border border-yellow-700">Connecting...</span>
             </div>
             <div class="flex items-center space-x-3">
-                <span id="currentDateDisplay" class="text-sm text-gray-400"></span>
+                <span id="currentDateDisplay" class="text-xs text-gray-400 hidden md:inline"></span>
                 <button onclick="syncData()" class="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 transition">
                     <i class="fa-solid fa-sync"></i> <span>Sync</span>
                 </button>
@@ -80,16 +80,16 @@
         <!-- Main Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
-            <!-- Left Panel: Filters & Add Category -->
+            <!-- Left Panel -->
             <div class="space-y-6">
                 <!-- Period Filter -->
                 <div class="bg-cardBg p-5 rounded-2xl border border-gray-700 shadow">
                     <h3 class="text-md font-semibold mb-3 text-indigo-300">Period Filter & Analytics</h3>
                     <div class="space-y-3">
                         <select id="filterType" onchange="renderDashboard()" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+                            <option value="all">All Time</option>
                             <option value="monthly">Monthly</option>
                             <option value="yearly">Yearly</option>
-                            <option value="all">All Time</option>
                         </select>
                         <input type="month" id="filterMonth" onchange="renderDashboard()" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
                     </div>
@@ -105,10 +105,10 @@
                 </div>
             </div>
 
-            <!-- Right Panel: Add Transaction Form -->
+            <!-- Right Panel: Add/Edit Transaction -->
             <div class="lg:col-span-2 space-y-6">
                 <div class="bg-cardBg p-6 rounded-2xl border border-gray-700 shadow">
-                    <h3 class="text-lg font-semibold mb-4 text-indigo-300">Add New Transaction</h3>
+                    <h3 id="formTitle" class="text-lg font-semibold mb-4 text-indigo-300">Add New Transaction</h3>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs text-gray-400 mb-1">Type</label>
@@ -146,7 +146,10 @@
                         <label class="block text-xs text-gray-400 mb-1">Note / Description</label>
                         <input type="text" id="txNote" placeholder="Optional details..." class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
                     </div>
-                    <button onclick="saveTransaction()" class="mt-4 w-full bg-indigo-600 hover:bg-indigo-500 py-2.5 rounded-lg text-sm font-medium transition">Save Record</button>
+                    <div class="flex space-x-3 mt-4">
+                        <button id="saveTxBtn" onclick="saveTransaction()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-2.5 rounded-lg text-sm font-medium transition shadow-md">Save Record</button>
+                        <button id="cancelEditBtn" onclick="resetForm()" class="hidden bg-gray-800 hover:bg-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium border border-gray-700">Cancel</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -155,7 +158,7 @@
         <div class="mt-6 bg-cardBg p-6 rounded-2xl border border-gray-700 shadow">
             <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-3">
                 <h3 class="text-lg font-semibold text-indigo-300">Recent Transactions</h3>
-                <input type="text" id="searchTx" placeholder="Search transactions..." oninput="renderDashboard()" class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white w-full sm:w-64">
+                <input type="text" id="searchTx" placeholder="Search category, person, note..." oninput="renderDashboard()" class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white w-full sm:w-64">
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-sm">
@@ -172,7 +175,7 @@
                         </tr>
                     </thead>
                     <tbody id="transactionTableBody" class="divide-y divide-gray-800">
-                        <tr><td colspan="8" class="text-center py-4 text-gray-500">No records found</td></tr>
+                        <tr><td colspan="8" class="text-center py-4 text-gray-500">Loading data...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -181,7 +184,7 @@
     </div>
 
     <!-- Settings Modal -->
-    <div id="settingsModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm hidden">
+    <div id="settingsModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md hidden">
         <div class="bg-cardBg p-6 rounded-2xl shadow-2xl w-96 border border-gray-700">
             <h3 class="text-xl font-bold mb-4 text-indigo-400">Settings</h3>
             <div class="space-y-4">
@@ -201,14 +204,17 @@
         </div>
     </div>
 
-    <!-- Script Logic -->
+    <!-- Application JavaScript Logic -->
     <script>
         let API_URL = localStorage.getItem('finance_api_url') || "";
         let appData = { transactions: [], categories: [], dailyLedger: [] };
+        let editingId = null;
 
         window.onload = function() {
-            document.getElementById('txDate').valueAsDate = new Date();
+            let today = new Date().toISOString().slice(0, 10);
+            document.getElementById('txDate').value = today;
             document.getElementById('filterMonth').value = new Date().toISOString().slice(0, 7);
+            document.getElementById('currentDateDisplay').innerText = new Date().toLocaleString();
             
             if (!API_URL) {
                 openSettings();
@@ -224,6 +230,7 @@
                 syncData();
             } else {
                 document.getElementById('loginModal').classList.remove('hidden');
+                document.getElementById('appContainer').classList.add('hidden');
             }
         }
 
@@ -232,10 +239,11 @@
             if (!API_URL) { alert("Please set Apps Script URL in Settings first."); openSettings(); return; }
             
             try {
-                let res = await fetch(`${API_URL}?action=verifyLogin&password=${encodeURIComponent(pass)}`);
+                let res = await fetch(`${API_URL}?action=verifyLogin&password=${encodeURIComponent(pass)}&_t=${Date.now()}`);
                 let data = await res.json();
                 if (data.status === 'success') {
                     localStorage.setItem('finance_logged_in', 'true');
+                    document.getElementById('loginError').classList.add('hidden');
                     document.getElementById('loginModal').classList.add('hidden');
                     document.getElementById('appContainer').classList.remove('hidden');
                     syncData();
@@ -243,7 +251,7 @@
                     document.getElementById('loginError').classList.remove('hidden');
                 }
             } catch (e) {
-                alert("Login failed: " + e.message);
+                alert("Login Error: Please check internet or API URL");
             }
         }
 
@@ -254,29 +262,62 @@
 
         async function syncData() {
             if (!API_URL) return;
-            document.getElementById('connectionStatus').innerText = "Syncing...";
+            let statusEl = document.getElementById('connectionStatus');
+            statusEl.innerText = "Syncing...";
+            statusEl.className = "px-2.5 py-1 text-xs rounded-full bg-yellow-900/50 text-yellow-400 border border-yellow-700";
+            
             try {
-                let res = await fetch(`${API_URL}?action=getData`);
+                // Live timestamp (_t) added to completely bypass browser caching
+                let res = await fetch(`${API_URL}?action=getData&_t=${Date.now()}`);
                 let data = await res.json();
                 if (data.status === 'success') {
                     appData.transactions = data.transactions || [];
                     appData.categories = data.categories || [];
                     appData.dailyLedger = data.dailyLedger || [];
                     
-                    document.getElementById('connectionStatus').innerText = "Connected";
-                    document.getElementById('connectionStatus').className = "px-2.5 py-1 text-xs rounded-full bg-emerald-900/50 text-emerald-400 border border-emerald-700";
+                    statusEl.innerText = "Connected";
+                    statusEl.className = "px-2.5 py-1 text-xs rounded-full bg-emerald-900/50 text-emerald-400 border border-emerald-700";
                     renderDashboard();
                 }
             } catch (e) {
-                document.getElementById('connectionStatus').innerText = "Offline / Error";
-                document.getElementById('connectionStatus').className = "px-2.5 py-1 text-xs rounded-full bg-red-900/50 text-red-400 border border-red-700";
+                statusEl.innerText = "Error / Offline";
+                statusEl.className = "px-2.5 py-1 text-xs rounded-full bg-red-900/50 text-red-400 border border-red-700";
             }
+        }
+
+        function editTransaction(id) {
+            let t = appData.transactions.find(x => String(x.id) === String(id));
+            if (!t) return;
+            editingId = t.id;
+            document.getElementById('txDate').value = t.date || '';
+            document.getElementById('txType').value = t.type || 'Expense';
+            document.getElementById('txCategory').value = t.category || '';
+            document.getElementById('txPerson').value = t.person || 'Self';
+            document.getElementById('txAmount').value = t.amount || '';
+            document.getElementById('txPaymentMode').value = t.paymentmode || t.paymentMode || 'Cash';
+            document.getElementById('txNote').value = (t.note === '-' || !t.note) ? '' : t.note;
+            
+            document.getElementById('formTitle').innerText = "Edit Transaction";
+            document.getElementById('saveTxBtn').innerText = "Update Record";
+            document.getElementById('cancelEditBtn').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function resetForm() {
+            editingId = null;
+            document.getElementById('txDate').value = new Date().toISOString().slice(0, 10);
+            document.getElementById('txAmount').value = '';
+            document.getElementById('txNote').value = '';
+            document.getElementById('formTitle').innerText = "Add New Transaction";
+            document.getElementById('saveTxBtn').innerText = "Save Record";
+            document.getElementById('cancelEditBtn').classList.add('hidden');
         }
 
         async function saveTransaction() {
             let payload = {
                 action: "saveTransaction",
-                id: 't_' + Date.now(),
+                id: editingId || ('t_' + Date.now()),
+                isEdit: !!editingId,
                 date: document.getElementById('txDate').value,
                 type: document.getElementById('txType').value,
                 category: document.getElementById('txCategory').value,
@@ -295,12 +336,11 @@
                 });
                 let data = await res.json();
                 if (data.status === 'success') {
-                    document.getElementById('txAmount').value = '';
-                    document.getElementById('txNote').value = '';
+                    resetForm();
                     syncData();
                 }
             } catch (e) {
-                alert("Error saving transaction");
+                alert("Error saving record");
             }
         }
 
@@ -333,19 +373,23 @@
         }
 
         function renderDashboard() {
+            // Populate Categories
             let catSelect = document.getElementById('txCategory');
+            let currentCatVal = catSelect.value;
             catSelect.innerHTML = '';
-            let cats = appData.categories.map(c => c.category || c.name || Object.values(c)[0]);
-            if (cats.length === 0) cats = ['General', 'Food', 'Travel', 'Bills'];
-            cats.forEach(c => {
-                if (c) {
-                    let opt = document.createElement('option');
-                    opt.value = c;
-                    opt.innerText = c;
-                    catSelect.appendChild(opt);
-                }
+            
+            let catsList = appData.categories.map(c => c.category || c.name || Object.values(c)[0]).filter(Boolean);
+            if (catsList.length === 0) catsList = ['Doodh', 'Rashan', 'Salary Yogesh', 'Paneer', 'General'];
+            
+            catsList.forEach(c => {
+                let opt = document.createElement('option');
+                opt.value = c;
+                opt.innerText = c;
+                catSelect.appendChild(opt);
             });
+            if (currentCatVal) catSelect.value = currentCatVal;
 
+            // Filter logic
             let filterType = document.getElementById('filterType').value;
             let filterMonth = document.getElementById('filterMonth').value;
             let searchQuery = document.getElementById('searchTx').value.toLowerCase();
@@ -366,6 +410,7 @@
                 return true;
             });
 
+            // Calculate Totals
             let totalInc = 0, totalExp = 0;
             appData.transactions.forEach(t => {
                 let amt = parseFloat(t.amount) || 0;
@@ -377,6 +422,7 @@
             document.getElementById('totalExpense').innerText = '₹' + totalExp.toLocaleString('en-IN');
             document.getElementById('netBalance').innerText = '₹' + (totalInc - totalExp).toLocaleString('en-IN');
 
+            // Today Entry Status
             let todayStr = new Date().toISOString().slice(0, 10);
             let hasToday = appData.transactions.some(t => String(t.date).startsWith(todayStr));
             let todayStatusEl = document.getElementById('todayStatus');
@@ -388,6 +434,7 @@
                 todayStatusEl.className = "text-lg font-bold text-red-400 mt-1";
             }
 
+            // Render Table
             let tbody = document.getElementById('transactionTableBody');
             tbody.innerHTML = '';
             if (filtered.length === 0) {
@@ -405,10 +452,11 @@
                     <td class="py-3 px-4">${t.category || ''}</td>
                     <td class="py-3 px-4">${t.person || 'Self'}</td>
                     <td class="py-3 px-4">${mode}</td>
-                    <td class="py-3 px-4 font-bold">₹${t.amount || 0}</td>
+                    <td class="py-3 px-4 font-bold">₹${parseFloat(t.amount || 0).toLocaleString('en-IN')}</td>
                     <td class="py-3 px-4 text-gray-400">${t.note || '-'}</td>
-                    <td class="py-3 px-4 text-right">
-                        <button onclick="deleteTransaction('${t.id}')" class="text-red-400 hover:text-red-300"><i class="fa-solid fa-trash"></i></button>
+                    <td class="py-3 px-4 text-right space-x-3">
+                        <button onclick="editTransaction('${t.id}')" class="text-indigo-400 hover:text-indigo-300" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button onclick="deleteTransaction('${t.id}')" class="text-red-400 hover:text-red-300" title="Delete"><i class="fa-solid fa-trash"></i></button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -441,7 +489,7 @@
                     });
                     alert("Password updated successfully!");
                 } catch (e) {
-                    alert("Failed to update password on server");
+                    alert("Failed to update password");
                 }
             }
 
