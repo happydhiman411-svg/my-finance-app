@@ -30,7 +30,7 @@
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm text-gray-400 mb-1">Password</label>
-                    <input type="password" id="loginPassword" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500" placeholder="Enter password">
+                    <input type="password" id="loginPassword" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500" placeholder="Enter password (default: admin123)">
                 </div>
                 <button onclick="handleLogin()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 rounded-lg transition">Login</button>
                 <p id="loginError" class="text-red-400 text-sm text-center hidden">Invalid Password</p>
@@ -105,9 +105,8 @@
                 </div>
             </div>
 
-            <!-- Right Panel: Add Transaction Form & Recent Transactions -->
+            <!-- Right Panel: Add Transaction Form -->
             <div class="lg:col-span-2 space-y-6">
-                <!-- Add Transaction Form -->
                 <div class="bg-cardBg p-6 rounded-2xl border border-gray-700 shadow">
                     <h3 class="text-lg font-semibold mb-4 text-indigo-300">Add New Transaction</h3>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -149,7 +148,6 @@
                     </div>
                     <button onclick="saveTransaction()" class="mt-4 w-full bg-indigo-600 hover:bg-indigo-500 py-2.5 rounded-lg text-sm font-medium transition">Save Record</button>
                 </div>
-
             </div>
         </div>
 
@@ -335,7 +333,6 @@
         }
 
         function renderDashboard() {
-            // Render Categories dropdown
             let catSelect = document.getElementById('txCategory');
             catSelect.innerHTML = '';
             let cats = appData.categories.map(c => c.category || c.name || Object.values(c)[0]);
@@ -349,7 +346,6 @@
                 }
             });
 
-            // Filter transactions
             let filterType = document.getElementById('filterType').value;
             let filterMonth = document.getElementById('filterMonth').value;
             let searchQuery = document.getElementById('searchTx').value.toLowerCase();
@@ -370,7 +366,6 @@
                 return true;
             });
 
-            // Calculate totals
             let totalInc = 0, totalExp = 0;
             appData.transactions.forEach(t => {
                 let amt = parseFloat(t.amount) || 0;
@@ -382,7 +377,6 @@
             document.getElementById('totalExpense').innerText = '₹' + totalExp.toLocaleString('en-IN');
             document.getElementById('netBalance').innerText = '₹' + (totalInc - totalExp).toLocaleString('en-IN');
 
-            // Today entry check
             let todayStr = new Date().toISOString().slice(0, 10);
             let hasToday = appData.transactions.some(t => String(t.date).startsWith(todayStr));
             let todayStatusEl = document.getElementById('todayStatus');
@@ -394,7 +388,6 @@
                 todayStatusEl.className = "text-lg font-bold text-red-400 mt-1";
             }
 
-            // Render table
             let tbody = document.getElementById('transactionTableBody');
             tbody.innerHTML = '';
             if (filtered.length === 0) {
