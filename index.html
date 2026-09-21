@@ -572,16 +572,15 @@ function renderDashboard() {
 
   // Table
   const tbody = document.getElementById('transactionTableBody');
-    const limit = parseInt(document.getElementById('rowsLimit').value) || 10;
+      const limit = parseInt(document.getElementById('rowsLimit').value) || 10;
+  filtered.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
   const limited = filtered.slice(0, limit);
   if (filtered.length === 0) {
     tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-gray-500">No records found</td></tr>`;
     return;
   }
 
-    limited.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
-
-  const frag = document.createDocumentFragment();
+    const frag = document.createDocumentFragment();
   limited.forEach(t => {
     const tr = document.createElement('tr');
     const mode = t.paymentmode || t.paymentMode || '-';
