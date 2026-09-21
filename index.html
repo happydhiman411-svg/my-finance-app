@@ -267,21 +267,37 @@ tailwind.config = {
 
 <!-- ============ BULK MODAL ============ -->
 <div id="bulkModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md hidden p-4">
-  <div class="bg-cardBg p-6 rounded-2xl shadow-2xl w-full max-w-2xl border border-gray-700 fade-in max-h-[90vh] overflow-y-auto">
-    <h3 class="text-lg font-bold mb-3 text-indigo-400">Bulk Entry</h3>
-    <p class="text-xs text-gray-400 mb-3">
-      Ek line me ek entry. Format: <code class="bg-gray-900 px-1 rounded">Date | Type | Category | Person | Amount | Mode | Note</code><br>
-      Example: <code class="bg-gray-900 px-1 rounded">2026-09-19 | Expense | Doodh | Self | 75 | Cash | -</code><br>
-      (Type: Income/Expense, Mode: Cash/UPI/Bank Transfer, Note optional)
-    </p>
-    <textarea id="bulkText" rows="10" spellcheck="false"
-      class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white font-mono"></textarea>
-    <p id="bulkError" class="text-red-400 text-xs mt-2 hidden"></p>
-    <div class="flex gap-2 mt-4">
-      <button onclick="submitBulk()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 py-2 rounded-lg text-sm font-medium">
+  <div class="bg-cardBg p-4 md:p-6 rounded-2xl shadow-2xl w-full max-w-7xl border border-gray-700 fade-in max-h-[92vh] flex flex-col">
+    <div class="flex justify-between items-center mb-4 flex-shrink-0">
+      <h3 class="text-lg font-bold text-indigo-400">Bulk Entry</h3>
+      <button onclick="addBulkRow()" class="bg-indigo-600 hover:bg-indigo-500 px-3 md:px-4 py-2 rounded-lg text-sm font-medium">
+        <i class="fa-solid fa-plus mr-1"></i> Add Row
+      </button>
+    </div>
+
+    <div class="overflow-auto flex-1">
+      <div class="min-w-[900px]">
+        <div class="grid grid-cols-12 gap-2 px-2 py-2 text-xs text-gray-400 border-b border-gray-700 mb-2">
+          <div class="col-span-1">TYPE</div>
+          <div class="col-span-2">DATE</div>
+          <div class="col-span-2">CATEGORY</div>
+          <div class="col-span-1">PERSON</div>
+          <div class="col-span-1">AMOUNT</div>
+          <div class="col-span-2">MODE</div>
+          <div class="col-span-2">NOTE</div>
+          <div class="col-span-1 text-center">X</div>
+        </div>
+        <div id="bulkRows" class="space-y-2"></div>
+      </div>
+    </div>
+
+    <p id="bulkError" class="text-red-400 text-xs mt-3 hidden whitespace-pre-line flex-shrink-0"></p>
+
+    <div class="flex gap-2 mt-4 flex-shrink-0">
+      <button onclick="submitBulk()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 py-2.5 rounded-lg text-sm font-medium">
         <i class="fa-solid fa-upload mr-1"></i> Upload All
       </button>
-      <button onclick="closeBulkModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 py-2 rounded-lg text-sm font-medium border border-gray-700">Cancel</button>
+      <button onclick="closeBulkModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 py-2.5 rounded-lg text-sm font-medium border border-gray-700">Cancel</button>
     </div>
   </div>
 </div>
@@ -778,55 +794,93 @@ document.getElementById('transactionTableBody').addEventListener('click', e => {
 
 /* ============ BULK ============ */
 function openBulkModal() {
-  document.getElementById('bulkText').value = '';
+  document.getElementById('bulkRows').innerHTML = '';
   document.getElementById('bulkError').classList.add('hidden');
   document.getElementById('bulkModal').classList.remove('hidden');
+  document.body.classList.add('no-scroll');
+  addBulkRow();
 }
+
 function closeBulkModal() {
   document.getElementById('bulkModal').classList.add('hidden');
+  document.body.classList.remove('no-scroll');
+}
+
+function getCategoryOptions(selected) {
+  let cats = appData.categories
+    .map(c => String(c.category || c.name || '').trim())
+    .filter(Boolean);
+  cats = [...new Set(cats)];
+  if (cats.length === 0) cats = ['Doodh', 'Rashan', 'Salary', 'Paneer', 'General'];
+  return cats.map(c =>
+    `<option value="${escapeHtml(c)}" ${c === selected ? 'selected' : ''}>${escapeHtml(c)}</option>`
+  ).join('');
+}
+
+function addBulkRow() {
+  const container = document.getElementById('bulkRows');
+  const today = getTodayLocal();
+  const row = document.createElement('div');
+  row.className = 'bulk-row grid grid-cols-12 gap-2 items-center bg-gray-900/50 p-2 rounded-lg border border-gray-700';
+  row.innerHTML = `
+    <select class="bulk-type col-span-1 bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-white">
+      <option value="Expense">Expense</option>
+      <option value="Income">Income</option>
+    </select>
+    <input type="date" class="bulk-date col-span-2 bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-white" value="${today}">
+    <select class="bulk-category col-span-2 bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-white">${getCategoryOptions('')}</select>
+    <input type="text" class="bulk-person col-span-1 bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-white" value="Self" placeholder="Person">
+    <input type="number" class="bulk-amount col-span-1 bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-white" placeholder="Amt" min="0.01" step="0.01">
+    <select class="bulk-mode col-span-2 bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-white">
+      <option value="Cash">Cash</option>
+      <option value="UPI">UPI</option>
+      <option value="Bank Transfer">Bank Transfer</option>
+    </select>
+    <input type="text" class="bulk-note col-span-2 bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-white" placeholder="Note">
+    <button onclick="removeBulkRow(this)" class="col-span-1 text-red-400 hover:text-red-300 flex justify-center">
+      <i class="fa-solid fa-trash text-xs"></i>
+    </button>
+  `;
+  container.appendChild(row);
+  setTimeout(() => row.querySelector('.bulk-amount').focus(), 50);
+}
+
+function removeBulkRow(btn) {
+  const rows = document.querySelectorAll('.bulk-row');
+  if (rows.length <= 1) {
+    showToast("Kam se kam 1 row chahiye", "error");
+    return;
+  }
+  btn.closest('.bulk-row').remove();
 }
 
 async function submitBulk() {
-  const text = document.getElementById('bulkText').value.trim();
-  if (!text) { showToast("Kuch to likho", "error"); return; }
-
-  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  const rows = document.querySelectorAll('.bulk-row');
   const items = [];
   const errors = [];
 
-  lines.forEach((line, idx) => {
-    // pipe separator priority, warna comma
-    let parts = line.split('|').map(x => x.trim());
-    if (parts.length < 5) parts = line.split(',').map(x => x.trim());
-    if (parts.length < 5) {
-      errors.push(`Line ${idx + 1}: kam se kam 5 fields chahiye (Date|Type|Category|Person|Amount)`);
-      return;
-    }
-    const [date, type, category, person, amountStr, mode, note] = parts;
-    const amount = parseFloat(amountStr);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      errors.push(`Line ${idx + 1}: date format YYYY-MM-DD chahiye`);
-      return;
-    }
-    if (!amount || amount <= 0) {
-      errors.push(`Line ${idx + 1}: amount valid nahi`);
-      return;
-    }
-    const t = (type || 'Expense').toLowerCase() === 'income' ? 'Income' : 'Expense';
-    items.push({
-      date: date, type: t, category: category || 'General',
-      person: person || 'Self', amount: amount,
-      paymentMode: mode || 'Cash', note: note || '-'
-    });
+  rows.forEach((row, idx) => {
+    const date = row.querySelector('.bulk-date').value;
+    const type = row.querySelector('.bulk-type').value;
+    const category = row.querySelector('.bulk-category').value;
+    const person = row.querySelector('.bulk-person').value.trim() || 'Self';
+    const amount = parseFloat(row.querySelector('.bulk-amount').value);
+    const mode = row.querySelector('.bulk-mode').value;
+    const note = row.querySelector('.bulk-note').value.trim() || '-';
+
+    if (!date) { errors.push(`Row ${idx + 1}: Date required`); return; }
+    if (!amount || amount <= 0) { errors.push(`Row ${idx + 1}: Amount valid nahi`); return; }
+
+    items.push({ date, type, category, person, amount, paymentMode: mode, note });
   });
 
   if (errors.length) {
     const errEl = document.getElementById('bulkError');
-    errEl.textContent = errors.slice(0, 5).join('\n') + (errors.length > 5 ? `\n...aur ${errors.length - 5} errors` : '');
+    errEl.textContent = errors.slice(0, 8).join('\n');
     errEl.classList.remove('hidden');
     return;
   }
-  if (items.length === 0) { showToast("Koi valid entry nahi mili", "error"); return; }
+  if (items.length === 0) { showToast("Koi valid entry nahi", "error"); return; }
 
   try {
     const data = await apiPost({ action: 'saveBulk', token: TOKEN, items: items });
