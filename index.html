@@ -107,12 +107,13 @@ tailwind.config = {
       </div>
 
       <div class="bg-cardBg p-5 rounded-2xl border border-gray-700 shadow">
-        <h3 class="text-md font-semibold mb-3 text-indigo-300">Add New Category</h3>
-        <div class="space-y-3">
-          <input type="text" id="newCategoryName" placeholder="Category Name" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-          <button onclick="addCategory()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium transition">Add Category</button>
-        </div>
-      </div>
+  <h3 class="text-md font-semibold mb-3 text-indigo-300">Categories</h3>
+  <div class="space-y-3 mb-4">
+    <input type="text" id="newCategoryName" placeholder="New category name" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+    <button onclick="addCategory()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium transition">Add Category</button>
+  </div>
+  <div id="categoryList" class="space-y-2 max-h-64 overflow-y-auto"></div>
+</div>
 
       <div class="bg-cardBg p-5 rounded-2xl border border-gray-700 shadow">
         <h3 class="text-md font-semibold mb-3 text-indigo-300">Bulk Entry</h3>
@@ -500,6 +501,7 @@ function renderCategories() {
 
 function renderDashboard() {
   renderCategories();
+    renderCategoryList();
 
   const filterType = document.getElementById('filterType').value;
   const filterMonth = document.getElementById('filterMonth').value;
@@ -695,6 +697,49 @@ async function addCategory() {
   } catch (e) {
     showToast("Network error", "error");
   }
+}
+  function renderCategoryList() {
+  const listEl = document.getElementById('categoryList');
+  let cats = appData.categories
+    .map(c => String(c.category || c.name || '').trim())
+    .filter(Boolean);
+  cats = [...new Set(cats)];
+
+  if (cats.length === 0) {
+    listEl.innerHTML = '<p class="text-xs text-gray-500">No categories yet</p>';
+    return;
+  }
+
+  listEl.innerHTML = cats.map(c => `
+    <div class="flex items-center justify-between bg-gray-900 border border-gray-700 rounded-lg px-3 py-2">
+      <span class="text-sm text-white truncate">${escapeHtml(c)}</span>
+      <button onclick="editCategory('${escapeHtml(c).replace(/'/g, "\\'")}')" class="text-indigo-400 hover:text-indigo-300 ml-2">
+        <i class="fa-solid fa-pen-to-square text-xs"></i>
+      </button>
+    </div>
+  `).join('');
+}
+
+async function editCategory(oldName) {
+  const password = await askPassword("Confirm Edit", "Category edit karne ke liye password daalo");
+  if (!password) return;
+
+  const newName = prompt(`Category ka naya naam likho:\n(abhi: ${oldName})`, oldName);
+  if (!newName || !newName.trim() || newName.trim() === oldName) return;
+
+  try {
+    const data = await apiPost({
+      action: 'updateCategory', token: TOKEN,
+      oldName: oldName, newName: newName.trim(), password: password
+    });
+    if (handleAuthError(data)) return;
+    if (data.status === 'success') {
+      showToast("Category updated!");
+      syncData();
+    } else {
+      showToast(data.message || "Error", "error");
+    }
+  } catch (e) { showToast("Network error", "error"); }
 }
 
 /* Event delegation for table buttons */
