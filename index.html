@@ -114,7 +114,10 @@ tailwind.config = {
       <div class="bg-cardBg p-5 rounded-2xl border border-gray-700 shadow">
   <h3 class="text-md font-semibold mb-3 text-indigo-300">Categories</h3>
   <div class="space-y-3 mb-4">
-    <input type="text" id="newCategoryName" placeholder="New category name" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+    <select id="newCategoryType" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+  <option value="Expense">Expense</option>
+  <option value="Income">Income</option>
+</select>
     <button onclick="addCategory()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium transition">Add Category</button>
   </div>
   <div id="categoryList" class="space-y-2 max-h-64 overflow-y-auto"></div>
@@ -136,7 +139,7 @@ tailwind.config = {
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-xs text-gray-400 mb-1">Type</label>
-            <select id="txType" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+            <select id="txType" onchange="onTypeChange()" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
               <option value="Expense">Expense</option>
               <option value="Income">Income</option>
             </select>
@@ -536,21 +539,45 @@ async function syncData(showSpin = false) {
   }
 }
 
+  function getCategoriesForType(type) {
+  const isIncome = String(type).toLowerCase() === 'income';
+  const wanted = isIncome ? 'income' : 'expense';
+
+  let cats = appData.categories
+    .map(c => ({
+      name: String(c.category || c.name || '').trim(),
+      type: String(c.type || '').toLowerCase().trim()
+    }))
+    .filter(c => c.name);
+
+  const seen = new Set();
+  cats = cats.filter(c => {
+    if (seen.has(c.name)) return false;
+    seen.add(c.name);
+    return true;
+  });
+
+  return cats
+    .filter(c => c.type === wanted)
+    .map(c => c.name);
+}
+
 /* ============ RENDER ============ */
 function renderCategories() {
   const catSelect = document.getElementById('txCategory');
+  if (!catSelect) return;
   const currentVal = catSelect.value;
-  let cats = appData.categories
-    .map(c => c.category || c.name || '')
-    .map(s => String(s).trim())
-    .filter(Boolean);
-  cats = [...new Set(cats)];
-  if (cats.length === 0) cats = ['Doodh', 'Rashan', 'Salary', 'Paneer', 'General'];
+  const currentType = document.getElementById('txType').value;
+  const cats = getCategoriesForType(currentType);
 
   catSelect.innerHTML = cats.map(c =>
     `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`
   ).join('');
   if (currentVal && cats.includes(currentVal)) catSelect.value = currentVal;
+}
+
+function onTypeChange() {
+  renderCategories();
 }
 
 function renderDashboard() {
@@ -811,10 +838,12 @@ async function deleteTransaction(id) {
 
 async function addCategory() {
   const input = document.getElementById('newCategoryName');
+  const typeEl = document.getElementById('newCategoryType');
   const name = input.value.trim();
-  if (!name) return;
+  const type = typeEl.value;
+  if (!name) { showToast("Category name daalo", "error"); return; }
   try {
-    const data = await apiPost({ action: 'addCategory', token: TOKEN, name: name });
+    const data = await apiPost({ action: 'addCategory', token: TOKEN, name: name, type: type });
     if (handleAuthError(data)) return;
     if (data.status === 'success') {
       showToast("Category added!");
@@ -894,15 +923,22 @@ function closeBulkModal() {
   document.body.classList.remove('no-scroll');
 }
 
-function getCategoryOptions(selected) {
-  let cats = appData.categories
-    .map(c => String(c.category || c.name || '').trim())
-    .filter(Boolean);
-  cats = [...new Set(cats)];
-  if (cats.length === 0) cats = ['Doodh', 'Rashan', 'Salary', 'Paneer', 'General'];
+function getCategoryOptions(selected, type) {
+  const cats = getCategoriesForType(type || 'Expense');
   return cats.map(c =>
     `<option value="${escapeHtml(c)}" ${c === selected ? 'selected' : ''}>${escapeHtml(c)}</option>`
   ).join('');
+}
+
+function onBulkTypeChange(selectEl) {
+  const row = selectEl.closest('.bulk-row');
+  const catSelect = row.querySelector('.bulk-category');
+  const currentVal = catSelect.value;
+  const cats = getCategoriesForType(selectEl.value);
+  catSelect.innerHTML = cats.map(c =>
+    `<option value="${escapeHtml(c)}" ${c === currentVal ? 'selected' : ''}>${escapeHtml(c)}</option>`
+  ).join('');
+  if (!cats.includes(currentVal)) catSelect.value = cats[0];
 }
 
 function addBulkRow() {
