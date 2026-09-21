@@ -35,9 +35,15 @@ tailwind.config = {
       </div>
       <div>
         <label class="block text-sm text-gray-400 mb-1">Password</label>
-        <input type="password" id="loginPass" autocomplete="current-password"
-          class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500"
-          onkeydown="if(event.key==='Enter') handleLogin()">
+        <div class="relative">
+  <input type="password" id="loginPass" autocomplete="current-password"
+    class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 pr-10 text-white focus:outline-none focus:border-indigo-500"
+    onkeydown="if(event.key==='Enter') handleLogin()">
+  <button type="button" onclick="togglePass('loginPass', this)"
+    class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-400">
+    <i class="fa-solid fa-eye"></i>
+  </button>
+</div>
       </div>
       <button id="loginBtn" onclick="handleLogin()"
         class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 rounded-lg transition shadow-lg">Login</button>
@@ -437,6 +443,20 @@ async function handleLogin() {
   } finally {
     btn.disabled = false;
     btn.textContent = 'Login';
+  }
+}
+
+  function togglePass(inputId, btn) {
+  const input = document.getElementById(inputId);
+  const icon = btn.querySelector('i');
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.classList.remove('fa-eye');
+    icon.classList.add('fa-eye-slash');
+  } else {
+    input.type = 'password';
+    icon.classList.remove('fa-eye-slash');
+    icon.classList.add('fa-eye');
   }
 }
 
