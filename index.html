@@ -180,11 +180,21 @@ tailwind.config = {
 
   <!-- Transactions Table -->
   <div class="bg-cardBg p-4 md:p-6 rounded-2xl border border-gray-700 shadow">
-    <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-3">
-      <h3 class="text-lg font-semibold text-indigo-300">Recent Transactions</h3>
-      <input type="text" id="searchTx" placeholder="Search category, person, note..." oninput="onSearch()"
-        class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white w-full sm:w-64">
-    </div>
+   <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-3">
+  <h3 class="text-lg font-semibold text-indigo-300">Recent Transactions</h3>
+  <div class="flex gap-2 w-full sm:w-auto">
+    <input type="text" id="searchTx" placeholder="Search category, person, note..." oninput="onSearch()"
+      class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white flex-1 sm:w-64">
+    <select id="rowsLimit" onchange="renderDashboard()"
+      class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white">
+      <option value="10" selected>10</option>
+      <option value="20">20</option>
+      <option value="50">50</option>
+      <option value="100">100</option>
+      <option value="200">200</option>
+    </select>
+  </div>
+</div>
     <div class="overflow-x-auto">
       <table class="w-full text-left text-sm">
         <thead>
@@ -562,15 +572,17 @@ function renderDashboard() {
 
   // Table
   const tbody = document.getElementById('transactionTableBody');
+    const limit = parseInt(document.getElementById('rowsLimit').value) || 10;
+  const limited = filtered.slice(0, limit);
   if (filtered.length === 0) {
     tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-gray-500">No records found</td></tr>`;
     return;
   }
 
-  filtered.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+    limited.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
 
   const frag = document.createDocumentFragment();
-  filtered.forEach(t => {
+  limited.forEach(t => {
     const tr = document.createElement('tr');
     const mode = t.paymentmode || t.paymentMode || '-';
     const isInc = String(t.type).toLowerCase() === 'income';
