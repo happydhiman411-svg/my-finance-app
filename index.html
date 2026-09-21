@@ -559,14 +559,14 @@ function renderDashboard() {
   document.getElementById('netBalance').textContent = formatMoney(totalInc - totalExp);
 
   // Today
-  const todayStr = getTodayLocal();
-  const hasToday = appData.transactions.some(t => String(t.date || '').startsWith(todayStr));
+    const todayStr = getTodayLocal();
+  const todayCount = appData.transactions.filter(t => String(t.date || '').startsWith(todayStr)).length;
   const todayEl = document.getElementById('todayStatus');
-  if (hasToday) {
-    todayEl.textContent = "Aaj entry ho chuki hai!";
+  if (todayCount > 0) {
+    todayEl.textContent = `Aaj Ki Entry ho chuki hai! (${todayCount})`;
     todayEl.className = "text-sm md:text-lg font-bold text-emerald-400 mt-1";
   } else {
-    todayEl.textContent = "Aaj entry nahi hui!";
+    todayEl.textContent = "Aaj Ki Entry (0)";
     todayEl.className = "text-sm md:text-lg font-bold text-red-400 mt-1";
   }
 
