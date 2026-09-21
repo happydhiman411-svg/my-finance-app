@@ -178,6 +178,20 @@ tailwind.config = {
     </div>
   </div>
 
+  <!-- Category-wise Total -->
+<div class="bg-cardBg p-5 rounded-2xl border border-gray-700 shadow mb-4">
+  <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-3">
+    <h3 class="text-lg font-semibold text-indigo-300">Category-wise Total</h3>
+    <select id="catWiseType" onchange="renderCategoryWise()"
+      class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white w-full sm:w-auto">
+      <option value="expense" selected>Expense</option>
+      <option value="income">Income</option>
+      <option value="both">Both</option>
+    </select>
+  </div>
+  <div id="categoryWiseList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+</div>
+  
   <!-- Transactions Table -->
   <div class="bg-cardBg p-4 md:p-6 rounded-2xl border border-gray-700 shadow">
    <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-3">
@@ -542,6 +556,7 @@ function renderCategories() {
 function renderDashboard() {
   renderCategories();
     renderCategoryList();
+    renderCategoryWise();
 
   const filterType = document.getElementById('filterType').value;
   const filterMonth = document.getElementById('filterMonth').value;
@@ -620,6 +635,79 @@ function renderDashboard() {
   });
   tbody.innerHTML = '';
   tbody.appendChild(frag);
+}
+
+  function renderCategoryWise() {
+  const container = document.getElementById('categoryWiseList');
+  if (!container) return;
+
+  const typeFilter = document.getElementById('catWiseType').value;
+  const filterType = document.getElementById('filterType').value;
+  const filterMonth = document.getElementById('filterMonth').value;
+
+  // Period filter apply
+  const filtered = appData.transactions.filter(t => {
+    const tDate = String(t.date || '');
+    if (filterType === 'monthly' && filterMonth && !tDate.startsWith(filterMonth)) return false;
+    if (filterType === 'yearly' && filterMonth && !tDate.startsWith(filterMonth.split('-')[0])) return false;
+    return true;
+  });
+
+  // Group by category
+  const map = {};
+  filtered.forEach(t => {
+    const cat = String(t.category || 'Unknown').trim() || 'Unknown';
+    const type = String(t.type || '').toLowerCase();
+    const amt = parseFloat(t.amount) || 0;
+    if (!map[cat]) map[cat] = { income: 0, expense: 0 };
+    if (type === 'income') map[cat].income += amt;
+    else map[cat].expense += amt;
+  });
+
+  let entries = Object.keys(map).map(cat => ({ cat: cat, income: map[cat].income, expense: map[cat].expense }));
+
+  // Filter visible
+  entries = entries.filter(e => {
+    if (typeFilter === 'income') return e.income > 0;
+    if (typeFilter === 'expense') return e.expense > 0;
+    return e.income > 0 || e.expense > 0;
+  });
+
+  // Sort
+  if (typeFilter === 'income') entries.sort((a, b) => b.income - a.income);
+  else if (typeFilter === 'expense') entries.sort((a, b) => b.expense - a.expense);
+  else entries.sort((a, b) => (b.income + b.expense) - (a.income + a.expense));
+
+  if (entries.length === 0) {
+    container.innerHTML = '<p class="text-sm text-gray-500 col-span-full text-center py-4">Is period mein koi data nahi hai</p>';
+    return;
+  }
+
+  container.innerHTML = entries.map(e => {
+    let amountHtml = '';
+    if (typeFilter === 'income') {
+      amountHtml = `<p class="text-lg font-bold text-emerald-400">${formatMoney(e.income)}</p>`;
+    } else if (typeFilter === 'expense') {
+      amountHtml = `<p class="text-lg font-bold text-red-400">${formatMoney(e.expense)}</p>`;
+    } else {
+      amountHtml = `
+        <div class="flex justify-between items-center">
+          <span class="text-xs text-gray-400">Income</span>
+          <span class="text-sm font-semibold text-emerald-400">${formatMoney(e.income)}</span>
+        </div>
+        <div class="flex justify-between items-center mt-1">
+          <span class="text-xs text-gray-400">Expense</span>
+          <span class="text-sm font-semibold text-red-400">${formatMoney(e.expense)}</span>
+        </div>
+      `;
+    }
+    return `
+      <div class="bg-gray-900 border border-gray-700 rounded-xl p-3">
+        <p class="text-sm font-medium text-white truncate mb-2">${escapeHtml(e.cat)}</p>
+        ${amountHtml}
+      </div>
+    `;
+  }).join('');
 }
 
 function onSearch() {
