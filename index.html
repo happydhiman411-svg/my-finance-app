@@ -48,7 +48,6 @@ tailwind.config = {
       <button id="loginBtn" onclick="handleLogin()"
         class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 rounded-lg transition shadow-lg">Login</button>
       <p id="loginError" class="text-red-400 text-sm text-center hidden"></p>
-      <button onclick="openSettingsFromLogin()" class="w-full text-xs text-gray-500 hover:text-gray-300 pt-2">⚙ Set API URL</button>
     </div>
   </div>
 </div>
@@ -285,7 +284,7 @@ tailwind.config = {
 <!-- ============ APP JS ============ -->
 <script>
 /* ============ STATE ============ */
-let API_URL = localStorage.getItem('fin_api_url') || "";
+let API_URL = "https://script.google.com/macros/s/AKfycbxNx6VOcjtmfCeefeNR-BO2N6PqhQu1fna1fZUDpK2u_wPpDADkoae4GlYsl7gR1jaB/exec";
 let TOKEN = localStorage.getItem('fin_token') || "";
 let USERNAME = localStorage.getItem('fin_user') || "";
 let appData = { transactions: [], categories: [], dailyLedger: [] };
@@ -387,12 +386,7 @@ window.onload = function () {
   document.getElementById('currentDateDisplay').textContent = new Date().toLocaleString();
   document.getElementById('setApiUrl').value = API_URL;
 
-  if (!API_URL) {
-    document.getElementById('loginModal').classList.remove('hidden');
-    document.getElementById('loginError').textContent = '⚠ API URL set karo (neeche "Set API URL" pe click karo)';
-    document.getElementById('loginError').classList.remove('hidden');
-    return;
-  }
+
   if (TOKEN) {
     showApp();
     syncData();
@@ -923,20 +917,14 @@ async function changeApiUrl() {
   }
 
   API_URL = newUrl;
-  localStorage.setItem('fin_api_url', newUrl);
+  
   // Token purane server ka tha, clear kar do
   localStorage.removeItem('fin_token');
   showToast("API URL updated! Login karo.", "success");
   setTimeout(() => location.reload(), 1000);
 }
 
-function openSettingsFromLogin() {
-  const url = prompt("Apps Script Web App URL paste karo:");
-  if (url && url.trim()) {
-    localStorage.setItem('fin_api_url', url.trim());
-    location.reload();
-  }
-}
+
 </script>
 </body>
 </html>
