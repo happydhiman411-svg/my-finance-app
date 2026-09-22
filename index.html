@@ -114,12 +114,18 @@ tailwind.config = {
       <div class="bg-cardBg p-5 rounded-2xl border border-gray-700 shadow">
   <h3 class="text-md font-semibold mb-3 text-indigo-300">Categories</h3>
   <div class="space-y-3 mb-4">
-    <select id="newCategoryType" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-  <option value="Expense">Expense</option>
-  <option value="Income">Income</option>
-</select>
-    <button onclick="addCategory()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium transition">Add Category</button>
-  </div>
+  <input type="text" id="newCategoryName" placeholder="New category name"
+    class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+  <select id="newCategoryType"
+    class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+    <option value="Expense">Expense</option>
+    <option value="Income">Income</option>
+  </select>
+  <button onclick="addCategory()"
+    class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium transition">
+    Add Category
+  </button>
+</div>
   <div id="categoryList" class="space-y-2 max-h-64 overflow-y-auto"></div>
 </div>
 
