@@ -62,7 +62,7 @@ tailwind.config = {
       <span id="connectionStatus" class="px-2.5 py-1 text-xs rounded-full bg-yellow-900/50 text-yellow-400 border border-yellow-700">Connecting...</span>
     </div>
     <div class="flex items-center gap-2 flex-wrap justify-center">
-      <span id="currentDateDisplay" class="text-xs text-gray-400 hidden md:inline"></span>
+      <span id="currentDateDisplay" class="text-xs text-gray-400 whitespace-nowrap"></span>
       <button onclick="syncData(true)" class="bg-indigo-600 hover:bg-indigo-500 px-3 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 transition">
         <i id="syncIcon" class="fa-solid fa-sync"></i><span class="hidden sm:inline">Sync</span>
       </button>
@@ -464,7 +464,7 @@ function cancelConfirm() {
 window.onload = function () {
   document.getElementById('txDate').value = getTodayLocal();
   document.getElementById('filterMonth').value = getCurrentMonthLocal();
-  document.getElementById('currentDateDisplay').textContent = new Date().toLocaleString();
+  startLiveClock();
   document.getElementById('setApiUrl').value = API_URL;
 
 
@@ -477,6 +477,26 @@ window.onload = function () {
     setTimeout(() => document.getElementById('loginPass').focus(), 100);
   }
 };
+
+  function startLiveClock() {
+  const el = document.getElementById('currentDateDisplay');
+  if (!el) return;
+  function tick() {
+    const now = new Date();
+    el.textContent = now.toLocaleString('en-IN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    });
+  }
+  tick();
+  setInterval(tick, 1000);
+}
+
 
 function showApp() {
   document.getElementById('loginModal').classList.add('hidden');
