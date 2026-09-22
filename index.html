@@ -76,7 +76,7 @@ tailwind.config = {
   </header>
 
   <!-- Stats -->
-  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-4">
+  <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4 mb-4">
     <div class="bg-cardBg p-4 md:p-5 rounded-2xl border border-gray-700 shadow">
       <p class="text-xs md:text-sm text-gray-400">Today's Status</p>
       <p id="todayStatus" class="text-sm md:text-lg font-bold text-red-400 mt-1">Aaj entry nahi hui!</p>
@@ -88,6 +88,10 @@ tailwind.config = {
     <div class="bg-cardBg p-4 md:p-5 rounded-2xl border border-gray-700 shadow">
       <p class="text-xs md:text-sm text-gray-400">Total Expense</p>
       <p id="totalExpense" class="text-lg md:text-2xl font-bold text-red-400 mt-1">₹0</p>
+    </div>
+    <div class="bg-cardBg p-4 md:p-5 rounded-2xl border border-gray-700 shadow">
+  <p class="text-xs md:text-sm text-gray-400">Total Savings</p>
+  <p id="totalSavings" class="text-lg md:text-2xl font-bold text-blue-400 mt-1">₹0</p>
     </div>
     <div class="bg-cardBg p-4 md:p-5 rounded-2xl border border-gray-700 shadow">
       <p class="text-xs md:text-sm text-gray-400">Net Balance</p>
@@ -116,11 +120,11 @@ tailwind.config = {
   <div class="space-y-3 mb-4">
   <input type="text" id="newCategoryName" placeholder="New category name"
     class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-  <select id="newCategoryType"
-    class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-    <option value="Expense">Expense</option>
-    <option value="Income">Income</option>
-  </select>
+  <select id="newCategoryType" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+  <option value="Expense">Expense</option>
+  <option value="Income">Income</option>
+  <option value="Savings">Savings</option>
+</select>
   <button onclick="addCategory()"
     class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium transition">
     Add Category
@@ -146,8 +150,9 @@ tailwind.config = {
           <div>
             <label class="block text-xs text-gray-400 mb-1">Type</label>
             <select id="txType" onchange="onTypeChange()" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-              <option value="Expense">Expense</option>
-              <option value="Income">Income</option>
+             <option value="Expense">Expense</option>
+             <option value="Income">Income</option>
+             <option value="Savings">Savings</option>
             </select>
           </div>
           <div>
@@ -192,10 +197,11 @@ tailwind.config = {
   <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-3">
     <h3 class="text-lg font-semibold text-indigo-300">Category-wise Total</h3>
     <select id="catWiseType" onchange="renderCategoryWise()"
-      class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white w-full sm:w-auto">
-      <option value="expense" selected>Expense</option>
-      <option value="income">Income</option>
-      <option value="both">Both</option>
+  class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white w-full sm:w-auto">
+  <option value="expense" selected>Expense</option>
+  <option value="income">Income</option>
+  <option value="savings">Savings</option>
+  <option value="both">Both</option>
     </select>
   </div>
   <div id="categoryWiseList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
@@ -546,8 +552,8 @@ async function syncData(showSpin = false) {
 }
 
   function getCategoriesForType(type) {
-  const isIncome = String(type).toLowerCase() === 'income';
-  const wanted = isIncome ? 'income' : 'expense';
+  const t = String(type).toLowerCase();
+  const wanted = t === 'income' ? 'income' : (t === 'savings' ? 'savings' : 'expense');
 
   let cats = appData.categories
     .map(c => ({
@@ -612,15 +618,19 @@ function renderDashboard() {
   });
 
   // Totals (of ALL transactions, not filtered - to match original)
-  let totalInc = 0, totalExp = 0;
-  appData.transactions.forEach(t => {
-    const amt = parseFloat(t.amount) || 0;
-    if (String(t.type).toLowerCase() === 'income') totalInc += amt;
-    else totalExp += amt;
-  });
-  document.getElementById('totalIncome').textContent = formatMoney(totalInc);
-  document.getElementById('totalExpense').textContent = formatMoney(totalExp);
-  document.getElementById('netBalance').textContent = formatMoney(totalInc - totalExp);
+  let totalInc = 0, totalExp = 0, totalSav = 0;
+appData.transactions.forEach(t => {
+  const amt = parseFloat(t.amount) || 0;
+  const type = String(t.type).toLowerCase();
+  if (type === 'income') totalInc += amt;
+  else if (type === 'savings') totalSav += amt;
+  else totalExp += amt;
+});
+document.getElementById('totalIncome').textContent = formatMoney(totalInc);
+document.getElementById('totalExpense').textContent = formatMoney(totalExp);
+const savEl = document.getElementById('totalSavings');
+if (savEl) savEl.textContent = formatMoney(totalSav);
+document.getElementById('netBalance').textContent = formatMoney(totalInc - totalExp - totalSav);
 
   // Today
     const todayStr = getTodayLocal();
@@ -678,7 +688,6 @@ function renderDashboard() {
   const filterType = document.getElementById('filterType').value;
   const filterMonth = document.getElementById('filterMonth').value;
 
-  // Period filter apply
   const filtered = appData.transactions.filter(t => {
     const tDate = String(t.date || '');
     if (filterType === 'monthly' && filterMonth && !tDate.startsWith(filterMonth)) return false;
@@ -686,30 +695,35 @@ function renderDashboard() {
     return true;
   });
 
-  // Group by category
   const map = {};
   filtered.forEach(t => {
     const cat = String(t.category || 'Unknown').trim() || 'Unknown';
     const type = String(t.type || '').toLowerCase();
     const amt = parseFloat(t.amount) || 0;
-    if (!map[cat]) map[cat] = { income: 0, expense: 0 };
+    if (!map[cat]) map[cat] = { income: 0, expense: 0, savings: 0 };
     if (type === 'income') map[cat].income += amt;
+    else if (type === 'savings') map[cat].savings += amt;
     else map[cat].expense += amt;
   });
 
-  let entries = Object.keys(map).map(cat => ({ cat: cat, income: map[cat].income, expense: map[cat].expense }));
+  let entries = Object.keys(map).map(cat => ({
+    cat: cat,
+    income: map[cat].income,
+    expense: map[cat].expense,
+    savings: map[cat].savings
+  }));
 
-  // Filter visible
   entries = entries.filter(e => {
     if (typeFilter === 'income') return e.income > 0;
     if (typeFilter === 'expense') return e.expense > 0;
-    return e.income > 0 || e.expense > 0;
+    if (typeFilter === 'savings') return e.savings > 0;
+    return e.income > 0 || e.expense > 0 || e.savings > 0;
   });
 
-  // Sort
   if (typeFilter === 'income') entries.sort((a, b) => b.income - a.income);
   else if (typeFilter === 'expense') entries.sort((a, b) => b.expense - a.expense);
-  else entries.sort((a, b) => (b.income + b.expense) - (a.income + a.expense));
+  else if (typeFilter === 'savings') entries.sort((a, b) => b.savings - a.savings);
+  else entries.sort((a, b) => (b.income + b.expense + b.savings) - (a.income + a.expense + a.savings));
 
   if (entries.length === 0) {
     container.innerHTML = '<p class="text-sm text-gray-500 col-span-full text-center py-4">Is period mein koi data nahi hai</p>';
@@ -722,6 +736,8 @@ function renderDashboard() {
       amountHtml = `<p class="text-lg font-bold text-emerald-400">${formatMoney(e.income)}</p>`;
     } else if (typeFilter === 'expense') {
       amountHtml = `<p class="text-lg font-bold text-red-400">${formatMoney(e.expense)}</p>`;
+    } else if (typeFilter === 'savings') {
+      amountHtml = `<p class="text-lg font-bold text-blue-400">${formatMoney(e.savings)}</p>`;
     } else {
       amountHtml = `
         <div class="flex justify-between items-center">
@@ -731,6 +747,10 @@ function renderDashboard() {
         <div class="flex justify-between items-center mt-1">
           <span class="text-xs text-gray-400">Expense</span>
           <span class="text-sm font-semibold text-red-400">${formatMoney(e.expense)}</span>
+        </div>
+        <div class="flex justify-between items-center mt-1">
+          <span class="text-xs text-gray-400">Savings</span>
+          <span class="text-sm font-semibold text-blue-400">${formatMoney(e.savings)}</span>
         </div>
       `;
     }
@@ -953,9 +973,10 @@ function addBulkRow() {
   const row = document.createElement('div');
   row.className = 'bulk-row grid grid-cols-12 gap-2 items-center bg-gray-900/50 p-2 rounded-lg border border-gray-700';
   row.innerHTML = `
-    <select class="bulk-type col-span-1 bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-white">
+    <select onchange="onBulkTypeChange(this)" class="bulk-type col-span-1 bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-white">
       <option value="Expense">Expense</option>
       <option value="Income">Income</option>
+      <option value="Savings">Savings</option>
     </select>
     <input type="date" class="bulk-date col-span-2 bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-white" value="${today}">
     <select class="bulk-category col-span-2 bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-white">${getCategoryOptions('')}</select>
