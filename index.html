@@ -125,10 +125,7 @@ tailwind.config = {
   <option value="Income">Income</option>
   <option value="Savings">Savings</option>
 </select>
-  <button onclick="addCategory()"
-    class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium transition">
-    Add Category
-  </button>
+  <button onclick="addCategory(this)" class="w-full bg-indigo-600 ...">Add Category</button>
 </div>
   <div id="categoryList" class="space-y-2 max-h-64 overflow-y-auto"></div>
 </div>
@@ -323,9 +320,7 @@ tailwind.config = {
     <p id="bulkError" class="text-red-400 text-xs mt-3 hidden whitespace-pre-line flex-shrink-0"></p>
 
     <div class="flex gap-2 mt-4 flex-shrink-0">
-      <button onclick="submitBulk()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 py-2.5 rounded-lg text-sm font-medium">
-        <i class="fa-solid fa-upload mr-1"></i> Upload All
-      </button>
+      <button onclick="submitBulk(this)" class="flex-1 bg-emerald-600 ...">Upload All</button>
       <button onclick="closeBulkModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 py-2.5 rounded-lg text-sm font-medium border border-gray-700">Cancel</button>
     </div>
   </div>
@@ -367,6 +362,26 @@ function escapeHtml(s) {
 function formatMoney(n) {
   return '₹' + (Number(n) || 0).toLocaleString('en-IN');
 }
+
+function btnLoading(btn, text) {
+  if (!btn || btn.disabled) return;
+  btn.dataset.orig = btn.innerHTML;
+  btn.disabled = true;
+  btn.classList.add('opacity-60', 'cursor-not-allowed');
+  const label = text || '';
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin' + (label ? ' mr-2' : '') + '"></i>' + label;
+}
+
+function btnReset(btn) {
+  if (!btn) return;
+  btn.disabled = false;
+  btn.classList.remove('opacity-60', 'cursor-not-allowed');
+  if (btn.dataset.orig) {
+    btn.innerHTML = btn.dataset.orig;
+    delete btn.dataset.orig;
+  }
+}
+  
 function showToast(msg, type = 'success') {
   const el = document.getElementById('toast');
   const body = document.getElementById('toastBody');
@@ -801,11 +816,16 @@ function resetForm() {
   document.getElementById('txNote').value = '';
   document.getElementById('txPerson').value = 'Self';
   document.getElementById('formTitle').textContent = "Add New Transaction";
-  document.getElementById('saveTxBtn').textContent = "Save Record";
+  const saveBtn = document.getElementById('saveTxBtn');
+  saveBtn.textContent = "Save Record";
+  delete saveBtn.dataset.orig;
+  saveBtn.disabled = false;
+  saveBtn.classList.remove('opacity-60', 'cursor-not-allowed');
   document.getElementById('cancelEditBtn').classList.add('hidden');
 }
 
 async function saveTransaction() {
+  const btn = document.getElementById('saveTxBtn');
   const amount = parseFloat(document.getElementById('txAmount').value);
   if (!amount || amount <= 0) {
     showToast("Valid amount (0 se zyada) daalo", "error");
@@ -814,7 +834,6 @@ async function saveTransaction() {
 
   const isEdit = !!editingId;
   let password = null;
-
   if (isEdit) {
     password = await askPassword("Confirm Edit", "Edit karne ke liye password daalo");
     if (!password) return;
@@ -835,10 +854,11 @@ async function saveTransaction() {
     note: document.getElementById('txNote').value || '-'
   };
 
+  btnLoading(btn, isEdit ? 'Updating...' : 'Saving...');
   try {
     const data = await apiPost(payload);
     if (handleAuthError(data)) return;
-        if (data.status === 'success') {
+    if (data.status === 'success') {
       showToast(isEdit ? "Updated!" : "Saved!");
       resetForm();
       if (data.transactions) {
@@ -852,18 +872,22 @@ async function saveTransaction() {
       showToast(data.message || "Error", "error");
     }
   } catch (e) {
-    showToast("Network error", "error");
+    console.error("saveTransaction error:", e);
+    showToast(e.message || "Network error", "error");
+  } finally {
+    btnReset(btn);
   }
 }
 
-async function deleteTransaction(id) {
+async function deleteTransaction(id, btn) {
   const password = await askPassword("Confirm Delete", "Delete karne ke liye password daalo");
   if (!password) return;
 
+  btnLoading(btn);
   try {
     const data = await apiPost({ action: 'deleteTransaction', token: TOKEN, id: id, password: password });
     if (handleAuthError(data)) return;
-        if (data.status === 'success') {
+    if (data.status === 'success') {
       showToast("Deleted!");
       if (data.transactions) {
         appData.transactions = data.transactions;
@@ -875,22 +899,26 @@ async function deleteTransaction(id) {
     } else {
       showToast(data.message || "Error", "error");
     }
-   } catch (e) {
+  } catch (e) {
     console.error("deleteTransaction error:", e);
     showToast(e.message || "Network error", "error");
+  } finally {
+    btnReset(btn);
   }
 }
 
-async function addCategory() {
+async function addCategory(btn) {
   const input = document.getElementById('newCategoryName');
   const typeEl = document.getElementById('newCategoryType');
   const name = input.value.trim();
   const type = typeEl.value;
   if (!name) { showToast("Category name daalo", "error"); return; }
+
+  btnLoading(btn, 'Adding...');
   try {
     const data = await apiPost({ action: 'addCategory', token: TOKEN, name: name, type: type });
     if (handleAuthError(data)) return;
-        if (data.status === 'success') {
+    if (data.status === 'success') {
       showToast("Category added!");
       input.value = '';
       if (data.transactions) {
@@ -905,6 +933,8 @@ async function addCategory() {
     }
   } catch (e) {
     showToast("Network error", "error");
+  } finally {
+    btnReset(btn);
   }
 }
   function renderCategoryList() {
@@ -957,7 +987,7 @@ document.getElementById('transactionTableBody').addEventListener('click', e => {
   if (!btn) return;
   const id = btn.getAttribute('data-id');
   if (btn.getAttribute('data-action') === 'edit') editTransaction(id);
-  else if (btn.getAttribute('data-action') === 'delete') deleteTransaction(id);
+    else if (btn.getAttribute('data-action') === 'delete') deleteTransaction(id, btn);
 });
 
 /* ============ BULK ============ */
@@ -1030,7 +1060,7 @@ function removeBulkRow(btn) {
   btn.closest('.bulk-row').remove();
 }
 
-async function submitBulk() {
+async function submitBulk(btn) {
   const rows = document.querySelectorAll('.bulk-row');
   const items = [];
   const errors = [];
@@ -1058,10 +1088,11 @@ async function submitBulk() {
   }
   if (items.length === 0) { showToast("Koi valid entry nahi", "error"); return; }
 
+  btnLoading(btn, 'Uploading...');
   try {
     const data = await apiPost({ action: 'saveBulk', token: TOKEN, items: items });
     if (handleAuthError(data)) return;
-        if (data.status === 'success') {
+    if (data.status === 'success') {
       showToast(`${data.count} entries added!`);
       closeBulkModal();
       if (data.transactions) {
@@ -1076,6 +1107,8 @@ async function submitBulk() {
     }
   } catch (e) {
     showToast("Network error", "error");
+  } finally {
+    btnReset(btn);
   }
 }
 
