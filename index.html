@@ -832,10 +832,16 @@ async function saveTransaction() {
   try {
     const data = await apiPost(payload);
     if (handleAuthError(data)) return;
-    if (data.status === 'success') {
+        if (data.status === 'success') {
       showToast(isEdit ? "Updated!" : "Saved!");
       resetForm();
-      syncData();
+      if (data.transactions) {
+        appData.transactions = data.transactions;
+        appData.categories = data.categories || appData.categories;
+        renderDashboard();
+      } else {
+        syncData();
+      }
     } else {
       showToast(data.message || "Error", "error");
     }
@@ -851,9 +857,15 @@ async function deleteTransaction(id) {
   try {
     const data = await apiPost({ action: 'deleteTransaction', token: TOKEN, id: id, password: password });
     if (handleAuthError(data)) return;
-    if (data.status === 'success') {
+        if (data.status === 'success') {
       showToast("Deleted!");
-      syncData();
+      if (data.transactions) {
+        appData.transactions = data.transactions;
+        appData.categories = data.categories || appData.categories;
+        renderDashboard();
+      } else {
+        syncData();
+      }
     } else {
       showToast(data.message || "Error", "error");
     }
@@ -871,10 +883,16 @@ async function addCategory() {
   try {
     const data = await apiPost({ action: 'addCategory', token: TOKEN, name: name, type: type });
     if (handleAuthError(data)) return;
-    if (data.status === 'success') {
+        if (data.status === 'success') {
       showToast("Category added!");
       input.value = '';
-      syncData();
+      if (data.transactions) {
+        appData.transactions = data.transactions;
+        appData.categories = data.categories || appData.categories;
+        renderDashboard();
+      } else {
+        syncData();
+      }
     } else {
       showToast(data.message || "Error", "error");
     }
@@ -1036,10 +1054,16 @@ async function submitBulk() {
   try {
     const data = await apiPost({ action: 'saveBulk', token: TOKEN, items: items });
     if (handleAuthError(data)) return;
-    if (data.status === 'success') {
+        if (data.status === 'success') {
       showToast(`${data.count} entries added!`);
       closeBulkModal();
-      syncData();
+      if (data.transactions) {
+        appData.transactions = data.transactions;
+        appData.categories = data.categories || appData.categories;
+        renderDashboard();
+      } else {
+        syncData();
+      }
     } else {
       showToast(data.message || "Error", "error");
     }
