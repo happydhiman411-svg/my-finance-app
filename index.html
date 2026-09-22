@@ -395,7 +395,13 @@ async function apiPost(body) {
     method: 'POST',
     body: JSON.stringify(body)
   });
-  return res.json();
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    console.error("Server response:", text);
+    throw new Error("Server error: " + text.slice(0, 200));
+  }
 }
 function handleAuthError(data) {
   if (data && data.code === 'AUTH') {
@@ -869,8 +875,9 @@ async function deleteTransaction(id) {
     } else {
       showToast(data.message || "Error", "error");
     }
-  } catch (e) {
-    showToast("Network error", "error");
+   } catch (e) {
+    console.error("deleteTransaction error:", e);
+    showToast(e.message || "Network error", "error");
   }
 }
 
