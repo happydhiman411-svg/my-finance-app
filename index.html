@@ -1233,6 +1233,18 @@ function closeBulkModal() {
   document.body.classList.remove('no-scroll');
 }
 
+function getPersonOptions(selected) {
+  let persons = (appData.persons || [])
+    .map(p => String(p.person || p.name || '').trim())
+    .filter(Boolean);
+  persons = [...new Set(persons)];
+  if (persons.length === 0) persons = ['Self'];
+
+  return persons.map(p =>
+    `<option value="${escapeHtml(p)}" ${p === selected ? 'selected' : ''}>${escapeHtml(p)}</option>`
+  ).join('');
+}
+
 function getCategoryOptions(selected, type) {
   const cats = getCategoriesForType(type || 'Expense');
   return cats.map(c =>
@@ -1271,7 +1283,7 @@ function addBulkRow() {
 </select>
     <input type="date" class="bulk-date col-span-2 bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-white" value="${today}">
     <select class="bulk-category col-span-2 bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-white">${getCategoryOptions('')}</select>
-    <input type="text" class="bulk-person col-span-1 bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-white" value="Self" placeholder="Person">
+    <select class="bulk-person col-span-1 bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-white">${getPersonOptions('Self')}</select>
     <input type="number" class="bulk-amount col-span-1 bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-white" placeholder="Amt" min="0.01" step="0.01">
     <select class="bulk-mode col-span-2 bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-white">
       <option value="Cash">Cash</option>
