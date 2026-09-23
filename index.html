@@ -393,6 +393,10 @@ tailwind.config = {
     <h3 class="text-lg font-bold mb-1 text-indigo-400">Pay Udhar</h3>
     <p id="payPersonName" class="text-sm text-gray-400 mb-4"></p>
     <div class="space-y-3">
+           <div>
+        <label class="block text-xs text-gray-400 mb-1">Category</label>
+        <select id="payCategory" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white"></select>
+      </div>
       <div>
         <label class="block text-xs text-gray-400 mb-1">Amount (₹)</label>
         <input type="number" id="payAmount" min="0.01" step="0.01" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
@@ -429,6 +433,10 @@ tailwind.config = {
     <h3 class="text-lg font-bold mb-1 text-blue-400">Receive Udhar</h3>
     <p id="receivePersonName" class="text-sm text-gray-400 mb-4"></p>
     <div class="space-y-3">
+            <div>
+        <label class="block text-xs text-gray-400 mb-1">Category</label>
+        <select id="receiveCategory" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white"></select>
+      </div>
       <div>
         <label class="block text-xs text-gray-400 mb-1">Amount (₹)</label>
         <input type="number" id="receiveAmount" min="0.01" step="0.01" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
@@ -1643,14 +1651,30 @@ function openReceiveModal(idx) {
   const p = udharPersonsCache[idx];
   if (!p) return;
   receivePersonCache = p;
+
+  const cats = getPersonCategories(p.name, 'receivable');
+  const catSelect = document.getElementById('receiveCategory');
+  if (cats.length === 0) {
+    showToast("Koi pending category nahi mili", "error");
+    return;
+  }
+  catSelect.innerHTML = cats.map(c =>
+    `<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)} — Pending ${formatMoney(c.pending)}</option>`
+  ).join('');
+
   document.getElementById('receivePersonName').textContent = p.name + ' — They owe: ' + formatMoney(p.netReceivable);
   const amountEl = document.getElementById('receiveAmount');
-  amountEl.value = p.netReceivable;
+  amountEl.value = cats[0].pending;
   amountEl.removeAttribute('max');
   document.getElementById('receiveDate').value = getTodayLocal();
   document.getElementById('receiveNote').value = '';
   document.getElementById('receiveModal').classList.remove('hidden');
   document.body.classList.add('no-scroll');
+
+  catSelect.onchange = function() {
+    const selectedCat = cats.find(c => c.name === catSelect.value);
+    if (selectedCat) amountEl.value = selectedCat.pending;
+  };
 }
 
 function closeReceiveModal() {
@@ -1666,7 +1690,8 @@ async function submitReceive(btn) {
 
   const date = document.getElementById('receiveDate').value;
   if (!date) { showToast("Date daalo", "error"); return; }
-
+  const category = document.getElementById('receiveCategory').value;
+  if (!category) { showToast("Category select karo", "error"); return; }
   const mode = document.getElementById('receiveMode').value;
   const note = document.getElementById('receiveNote').value.trim();
 
@@ -1676,6 +1701,7 @@ async function submitReceive(btn) {
       action: 'receiveUdhar',
       token: TOKEN,
       person: receivePersonCache.name,
+      category: category,
       amount: amount,
       date: date,
       paymentMode: mode,
@@ -1704,19 +1730,68 @@ async function submitReceive(btn) {
   }
 }
 
+  function getPersonCategories(person, mode) {
+  // mode: 'payable' (udhar liya) ya 'receivable' (udhar diya)
+  const ledger = appData.udharLedger || [];
+  const map = {};
+  const isPayable = mode !== 'receivable';
+
+  ledger.forEach(e => {
+    if (String(e.person || '').trim() !== String(person).trim()) return;
+    const cat = String(e.category || '').trim();
+    if (!cat) return;
+    const amt = parseFloat(e.amount) || 0;
+    const type = String(e.type || '').toLowerCase();
+
+    // Skip "Udhar Payment" / "Udhar Received" — ye meta entries hain
+    if (cat === 'Udhar Payment' || cat === 'Udhar Received') return;
+
+    if (!map[cat]) map[cat] = 0;
+
+    if (isPayable) {
+      if (type === 'udhar') map[cat] += amt;
+      else if (type === 'payment') map[cat] -= amt;
+    } else {
+      if (type === 'udhardiya') map[cat] += amt;
+      else if (type === 'received') map[cat] -= amt;
+    }
+  });
+
+  return Object.keys(map)
+    .filter(cat => map[cat] > 0.001)
+    .map(cat => ({ name: cat, pending: map[cat] }))
+    .sort((a, b) => b.pending - a.pending);
+}
 
 function openPayModal(idx) {
   const p = udharPersonsCache[idx];
   if (!p) return;
   payPersonCache = p;
+
+  const cats = getPersonCategories(p.name, 'payable');
+  const catSelect = document.getElementById('payCategory');
+  if (cats.length === 0) {
+    showToast("Koi pending category nahi mili", "error");
+    return;
+  }
+  catSelect.innerHTML = cats.map(c =>
+    `<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)} — Pending ${formatMoney(c.pending)}</option>`
+  ).join('');
+
   document.getElementById('payPersonName').textContent = p.name + ' — You owe: ' + formatMoney(p.netPayable);
   const amountEl = document.getElementById('payAmount');
-  amountEl.value = p.netPayable > 0 ? p.netPayable : '';
+  amountEl.value = cats[0].pending;
   amountEl.removeAttribute('max');
   document.getElementById('payDate').value = getTodayLocal();
   document.getElementById('payNote').value = '';
   document.getElementById('payModal').classList.remove('hidden');
   document.body.classList.add('no-scroll');
+
+  // Category change hone pe amount auto-update
+  catSelect.onchange = function() {
+    const selectedCat = cats.find(c => c.name === catSelect.value);
+    if (selectedCat) amountEl.value = selectedCat.pending;
+  };
 }
 
 function closePayModal() {
@@ -1733,7 +1808,8 @@ async function submitPay(btn) {
 
   const date = document.getElementById('payDate').value;
   if (!date) { showToast("Date daalo", "error"); return; }
-
+    const category = document.getElementById('payCategory').value;
+  if (!category) { showToast("Category select karo", "error"); return; }
   const mode = document.getElementById('payMode').value;
   const note = document.getElementById('payNote').value.trim();
 
@@ -1743,6 +1819,7 @@ async function submitPay(btn) {
       action: 'payUdhar',
       token: TOKEN,
       person: payPersonCache.name,
+      category: category,
       amount: amount,
       date: date,
       paymentMode: mode,
