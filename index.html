@@ -114,7 +114,7 @@ tailwind.config = {
   <option value="Income">Income</option>
   <option value="Savings">Savings</option>
 </select>
-  <button onclick="addCategory(this)" class="w-full bg-indigo-600 ...">Add Category</button>
+  <button onclick="addCategory(this)" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium transition">Add Category</button>
 </div>
   <div id="categoryList" class="space-y-2 max-h-64 overflow-y-auto"></div>
 </div>
@@ -342,7 +342,7 @@ tailwind.config = {
     <p id="bulkError" class="text-red-400 text-xs mt-3 hidden whitespace-pre-line flex-shrink-0"></p>
 
     <div class="flex gap-2 mt-4 flex-shrink-0">
-      <button onclick="submitBulk(this)" class="flex-1 bg-emerald-600 ...">Upload All</button>
+      <button onclick="submitBulk(this)" class="flex-1 bg-emerald-600 hover:bg-emerald-500 py-2.5 rounded-lg text-sm font-medium">Upload All</button>
       <button onclick="closeBulkModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 py-2.5 rounded-lg text-sm font-medium border border-gray-700">Cancel</button>
     </div>
   </div>
@@ -1196,7 +1196,7 @@ async function submitBulk(btn) {
         const isUdharRow = String(type).toLowerCase() === 'udhar';
     const finalMode = isUdharRow ? 'Udhar' : mode;
    items.push({ date, type, category, person, amount, paymentMode: finalMode, note });
-
+   });
   if (errors.length) {
     const errEl = document.getElementById('bulkError');
     errEl.textContent = errors.slice(0, 8).join('\n');
@@ -1480,6 +1480,7 @@ async function changeApiUrl() {
   }
 
   API_URL = newUrl;
+    localStorage.setItem('fin_api_url', newUrl);
   
   // Token purane server ka tha, clear kar do
   localStorage.removeItem('fin_token');
