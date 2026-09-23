@@ -891,7 +891,12 @@ document.getElementById('netBalance').textContent = formatMoney(totalInc - total
   // Table
   const tbody = document.getElementById('transactionTableBody');
       const limit = parseInt(document.getElementById('rowsLimit').value) || 10;
-  filtered.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+    filtered.sort((a, b) => {
+    const d = String(b.date || '').localeCompare(String(a.date || ''));
+    if (d !== 0) return d;
+    // Same date — ID ke aakhir ke timestamp se newest pehle
+    return String(b.id || '').localeCompare(String(a.id || ''));
+  });
   const limited = filtered.slice(0, limit);
   if (filtered.length === 0) {
     tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-gray-500">No records found</td></tr>`;
