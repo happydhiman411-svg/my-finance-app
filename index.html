@@ -903,8 +903,9 @@ document.getElementById('netBalance').textContent = formatMoney(totalInc - total
     const type = String(t.type || '').toLowerCase();
     const amt = parseFloat(t.amount) || 0;
     if (!map[cat]) map[cat] = { income: 0, expense: 0, savings: 0 };
-    if (type === 'income') map[cat].income += amt;
+        if (type === 'income') map[cat].income += amt;
     else if (type === 'savings') map[cat].savings += amt;
+    else if (type === 'udhar') { /* skip — abhi paisa nahi diya */ }
     else map[cat].expense += amt;
   });
 
