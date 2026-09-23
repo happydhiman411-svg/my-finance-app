@@ -958,7 +958,7 @@ document.getElementById('netBalance').textContent = formatMoney(totalInc - total
     if (!map[cat]) map[cat] = { income: 0, expense: 0, savings: 0 };
         if (type === 'income') map[cat].income += amt;
     else if (type === 'savings') map[cat].savings += amt;
-    else if (type === 'udhar') { /* skip — abhi paisa nahi diya */ }
+        else if (type === 'udhar' || type === 'udhardiya' || type === 'udharreceived') { /* skip */ }
     else map[cat].expense += amt;
   });
 
