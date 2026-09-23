@@ -148,37 +148,57 @@ tailwind.config = {
 </div>
 
 <!-- Bulk Entry / Categories / Persons (3 columns) -->
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-4">
-  <div class="bg-cardBg p-5 rounded-2xl border border-gray-700 shadow">
-    <h3 class="text-md font-semibold mb-3 text-indigo-300">Bulk Entry</h3>
-    <p class="text-xs text-gray-400 mb-3">Ek saath kai entries add karo.</p>
-    <button onclick="openBulkModal()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-2 rounded-lg text-sm font-medium transition">
-      <i class="fa-solid fa-layer-group mr-1"></i> Bulk Add
-    </button>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-4 items-start">
+
+  <!-- Bulk Entry -->
+  <div class="bg-cardBg rounded-2xl border border-gray-700 shadow collapsible-card" data-card-id="bulk" data-default="closed">
+    <div class="flex items-center justify-between p-5 cursor-pointer select-none" onclick="toggleCollapsible('bulk')">
+      <h3 class="text-md font-semibold text-indigo-300">Bulk Entry</h3>
+      <i class="fa-solid fa-plus text-gray-400 toggle-icon"></i>
+    </div>
+    <div class="card-content px-5 pb-5">
+      <p class="text-xs text-gray-400 mb-3">Ek saath kai entries add karo.</p>
+      <button onclick="openBulkModal()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-2 rounded-lg text-sm font-medium transition">
+        <i class="fa-solid fa-layer-group mr-1"></i> Bulk Add
+      </button>
+    </div>
   </div>
 
-  <div class="bg-cardBg p-5 rounded-2xl border border-gray-700 shadow">
-    <h3 class="text-md font-semibold mb-3 text-indigo-300">Categories</h3>
-    <div class="space-y-3 mb-4">
-      <input type="text" id="newCategoryName" placeholder="New category name" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-      <select id="newCategoryType" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-        <option value="Expense">Expense</option>
-        <option value="Income">Income</option>
-        <option value="Savings">Savings</option>
-      </select>
-      <button onclick="addCategory(this)" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium transition">Add Category</button>
+  <!-- Categories -->
+  <div class="bg-cardBg rounded-2xl border border-gray-700 shadow collapsible-card" data-card-id="categories" data-default="closed">
+    <div class="flex items-center justify-between p-5 cursor-pointer select-none" onclick="toggleCollapsible('categories')">
+      <h3 class="text-md font-semibold text-indigo-300">Categories</h3>
+      <i class="fa-solid fa-plus text-gray-400 toggle-icon"></i>
     </div>
-    <div id="categoryList" class="space-y-2 max-h-64 overflow-y-auto"></div>
+    <div class="card-content px-5 pb-5">
+      <div class="space-y-3 mb-4">
+        <input type="text" id="newCategoryName" placeholder="New category name" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+        <select id="newCategoryType" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+          <option value="Expense">Expense</option>
+          <option value="Income">Income</option>
+          <option value="Savings">Savings</option>
+        </select>
+        <button onclick="addCategory(this)" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium transition">Add Category</button>
+      </div>
+      <div id="categoryList" class="space-y-2 max-h-64 overflow-y-auto"></div>
+    </div>
   </div>
 
-  <div class="bg-cardBg p-5 rounded-2xl border border-gray-700 shadow">
-    <h3 class="text-md font-semibold mb-3 text-indigo-300">Persons / Sources</h3>
-    <div class="space-y-3 mb-4">
-      <input type="text" id="newPersonName" placeholder="New person name" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-      <button onclick="addPerson(this)" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium transition">Add Person</button>
+  <!-- Persons / Sources -->
+  <div class="bg-cardBg rounded-2xl border border-gray-700 shadow collapsible-card" data-card-id="persons" data-default="closed">
+    <div class="flex items-center justify-between p-5 cursor-pointer select-none" onclick="toggleCollapsible('persons')">
+      <h3 class="text-md font-semibold text-indigo-300">Persons / Sources</h3>
+      <i class="fa-solid fa-plus text-gray-400 toggle-icon"></i>
     </div>
-    <div id="personList" class="space-y-2 max-h-64 overflow-y-auto"></div>
+    <div class="card-content px-5 pb-5">
+      <div class="space-y-3 mb-4">
+        <input type="text" id="newPersonName" placeholder="New person name" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+        <button onclick="addPerson(this)" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium transition">Add Person</button>
+      </div>
+      <div id="personList" class="space-y-2 max-h-64 overflow-y-auto"></div>
+    </div>
   </div>
+
 </div>
 
   <!-- Period Filter -->
@@ -198,27 +218,37 @@ tailwind.config = {
 
   
   <!-- Category-wise Total -->
-<div class="bg-cardBg p-5 rounded-2xl border border-gray-700 shadow mb-4">
-  <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-3">
+<div class="bg-cardBg rounded-2xl border border-gray-700 shadow mb-4 collapsible-card" data-card-id="catwise" data-default="closed">
+  <div class="flex items-center justify-between p-5 cursor-pointer select-none" onclick="toggleCollapsible('catwise')">
     <h3 class="text-lg font-semibold text-indigo-300">Category-wise Total</h3>
-    <select id="catWiseType" onchange="renderCategoryWise()"
-  class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white w-full sm:w-auto">
-  <option value="expense" selected>Expense</option>
-  <option value="income">Income</option>
-  <option value="savings">Savings</option>
-  <option value="both">Both</option>
-    </select>
+    <i class="fa-solid fa-plus text-gray-400 toggle-icon"></i>
   </div>
-  <div id="categoryWiseList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+  <div class="card-content px-5 pb-5">
+    <div class="flex justify-end mb-4">
+      <select id="catWiseType" onchange="renderCategoryWise()"
+        class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white w-full sm:w-auto">
+        <option value="expense" selected>Expense</option>
+        <option value="income">Income</option>
+        <option value="savings">Savings</option>
+        <option value="both">Both</option>
+      </select>
+    </div>
+    <div id="categoryWiseList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+  </div>
 </div>
 
   <!-- Udhar Register -->
-<div class="bg-cardBg p-5 rounded-2xl border border-gray-700 shadow mb-4">
-  <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-3">
-    <h3 class="text-lg font-semibold text-amber-300">Udhar Register</h3>
-    <span id="udharTotalBadge" class="text-xs text-amber-400 bg-amber-900/40 border border-amber-700 px-3 py-1 rounded-full">Total: ₹0</span>
+<div class="bg-cardBg rounded-2xl border border-gray-700 shadow mb-4 collapsible-card" data-card-id="udhar" data-default="closed">
+  <div class="flex items-center justify-between p-5 cursor-pointer select-none" onclick="toggleCollapsible('udhar')">
+    <div class="flex items-center gap-3">
+      <h3 class="text-lg font-semibold text-amber-300">Udhar Register</h3>
+      <span id="udharTotalBadge" class="text-xs text-amber-400 bg-amber-900/40 border border-amber-700 px-3 py-1 rounded-full">Total: ₹0</span>
+    </div>
+    <i class="fa-solid fa-plus text-gray-400 toggle-icon"></i>
   </div>
-  <div id="udharList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+  <div class="card-content px-5 pb-5">
+    <div id="udharList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+  </div>
 </div>
 
   
@@ -453,6 +483,49 @@ function btnReset(btn) {
     delete btn.dataset.orig;
   }
 }
+
+  function toggleCollapsible(id) {
+  const card = document.querySelector(`.collapsible-card[data-card-id="${id}"]`);
+  if (!card) return;
+  const content = card.querySelector('.card-content');
+  const icon = card.querySelector('.toggle-icon');
+  const isOpen = content.style.display !== 'none';
+
+  if (isOpen) {
+    content.style.display = 'none';
+    icon.classList.remove('fa-minus');
+    icon.classList.add('fa-plus');
+    localStorage.setItem('card_state_' + id, 'closed');
+  } else {
+    content.style.display = '';
+    icon.classList.remove('fa-plus');
+    icon.classList.add('fa-minus');
+    localStorage.setItem('card_state_' + id, 'open');
+  }
+}
+
+function initCollapsibles() {
+  document.querySelectorAll('.collapsible-card').forEach(card => {
+    const id = card.getAttribute('data-card-id');
+    const defaultState = card.getAttribute('data-default') || 'closed';
+    const saved = localStorage.getItem('card_state_' + id);
+    const state = saved || defaultState;
+    const content = card.querySelector('.card-content');
+    const icon = card.querySelector('.toggle-icon');
+    if (!content || !icon) return;
+
+    if (state === 'open') {
+      content.style.display = '';
+      icon.classList.remove('fa-plus');
+      icon.classList.add('fa-minus');
+    } else {
+      content.style.display = 'none';
+      icon.classList.remove('fa-minus');
+      icon.classList.add('fa-plus');
+    }
+  });
+}
+
   
 function showToast(msg, type = 'success') {
   const el = document.getElementById('toast');
@@ -532,6 +605,7 @@ window.onload = function () {
   document.getElementById('txDate').value = getTodayLocal();
   document.getElementById('filterMonth').value = getCurrentMonthLocal();
   startLiveClock();
+    initCollapsibles();
   document.getElementById('setApiUrl').value = API_URL;
 
 
