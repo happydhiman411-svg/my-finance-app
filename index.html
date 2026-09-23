@@ -225,8 +225,14 @@ tailwind.config = {
    <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-3">
   <h3 class="text-lg font-semibold text-indigo-300">Recent Transactions</h3>
   <div class="flex gap-2 w-full sm:w-auto">
-    <input type="text" id="searchTx" placeholder="Search category, person, note..." oninput="onSearch()"
-      class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white flex-1 sm:w-64">
+    <div class="relative flex-1 sm:w-64">
+  <input type="text" id="searchTx" placeholder="Search category, person, note..." oninput="onSearch()"
+    class="w-full bg-gray-900 border border-gray-700 rounded-lg pl-3 pr-9 py-1.5 text-sm text-white">
+  <button id="clearSearchBtn" onclick="clearSearch()" title="Clear"
+    class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-400 hidden">
+    <i class="fa-solid fa-circle-xmark"></i>
+  </button>
+    </div>
     <select id="rowsLimit" onchange="renderDashboard()"
       class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white">
       <option value="10" selected>10</option>
@@ -881,10 +887,21 @@ document.getElementById('netBalance').textContent = formatMoney(totalInc - total
 }
 
 function onSearch() {
+  const btn = document.getElementById('clearSearchBtn');
+  const val = document.getElementById('searchTx').value;
+  if (val.length > 0) btn.classList.remove('hidden');
+  else btn.classList.add('hidden');
   clearTimeout(searchTimer);
   searchTimer = setTimeout(renderDashboard, 250);
 }
 
+function clearSearch() {
+  const el = document.getElementById('searchTx');
+  el.value = '';
+  document.getElementById('clearSearchBtn').classList.add('hidden');
+  renderDashboard();
+}
+  
 /* ============ CRUD ============ */
 function editTransaction(id) {
   const t = appData.transactions.find(x => String(x.id) === String(id));
