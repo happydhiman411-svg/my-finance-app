@@ -335,9 +335,15 @@ tailwind.config = {
   <div class="bg-cardBg p-6 rounded-2xl shadow-2xl w-full max-w-sm border border-gray-700 fade-in">
     <h3 class="text-lg font-bold mb-2 text-indigo-400" id="confirmTitle">Confirm</h3>
     <p class="text-sm text-gray-400 mb-4" id="confirmMsg">Enter password to continue</p>
-    <input type="password" id="confirmPass" placeholder="Password" autocomplete="off"
-      class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white mb-3"
-      onkeydown="if(event.key==='Enter') submitConfirm()">
+    <div class="relative mb-3">
+  <input type="password" id="confirmPass" placeholder="Password" autocomplete="off"
+    class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 pr-10 text-sm text-white"
+    onkeydown="if(event.key==='Enter') submitConfirm()">
+  <button type="button" onclick="togglePass('confirmPass', this)"
+    class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-400">
+    <i class="fa-solid fa-eye"></i>
+  </button>
+</div>
     <div class="flex gap-2">
       <button onclick="submitConfirm()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium">Confirm</button>
       <button onclick="cancelConfirm()" class="flex-1 bg-gray-800 hover:bg-gray-700 py-2 rounded-lg text-sm font-medium border border-gray-700">Cancel</button>
