@@ -99,94 +99,87 @@ tailwind.config = {
     </div>
   </div>
 
-  <!-- Main Grid -->
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-4">
-    <!-- Left -->
-    <div class="space-y-4 md:space-y-6">
-      
-      <div class="bg-cardBg p-5 rounded-2xl border border-gray-700 shadow">
-  <h3 class="text-md font-semibold mb-3 text-indigo-300">Categories</h3>
-  <div class="space-y-3 mb-4">
-  <input type="text" id="newCategoryName" placeholder="New category name"
-    class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-  <select id="newCategoryType" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-  <option value="Expense">Expense</option>
-  <option value="Income">Income</option>
-  <option value="Savings">Savings</option>
-</select>
-  <button onclick="addCategory(this)" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium transition">Add Category</button>
-</div>
-  
-      <div id="categoryList" class="space-y-2 max-h-64 overflow-y-auto"></div></div>
-              <div class="bg-cardBg p-5 rounded-2xl border border-gray-700 shadow">
-        <h3 class="text-md font-semibold mb-3 text-indigo-300">Persons / Sources</h3>
-        <div class="space-y-3 mb-4">
-          <input type="text" id="newPersonName" placeholder="New person name"
-            class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-          <button onclick="addPerson(this)" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium transition">Add Person</button>
-        </div>
-        <div id="personList" class="space-y-2 max-h-64 overflow-y-auto"></div>
-      </div>
-
-      <div class="bg-cardBg p-5 rounded-2xl border border-gray-700 shadow">
-        <h3 class="text-md font-semibold mb-3 text-indigo-300">Bulk Entry</h3>
-        <p class="text-xs text-gray-400 mb-3">Ek saath kai entries add karo.</p>
-        <button onclick="openBulkModal()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-2 rounded-lg text-sm font-medium transition">
-          <i class="fa-solid fa-layer-group mr-1"></i> Bulk Add
-        </button>
-      </div>
+  <!-- Add New Transaction (Full Width) -->
+<div class="bg-cardBg p-5 md:p-6 rounded-2xl border border-gray-700 shadow mb-4">
+  <h3 id="formTitle" class="text-lg font-semibold mb-4 text-indigo-300">Add New Transaction</h3>
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div>
+      <label class="block text-xs text-gray-400 mb-1">Type</label>
+      <select id="txType" onchange="onTypeChange()" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+        <option value="Expense">Expense</option>
+        <option value="Income">Income</option>
+        <option value="Savings">Savings</option>
+        <option value="Udhar">Udhar</option>
+      </select>
     </div>
-
-    <!-- Right: Transaction Form -->
-    <div class="lg:col-span-2">
-      <div class="bg-cardBg p-5 md:p-6 rounded-2xl border border-gray-700 shadow">
-        <h3 id="formTitle" class="text-lg font-semibold mb-4 text-indigo-300">Add New Transaction</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">Type</label>
-            <select id="txType" onchange="onTypeChange()" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-              <option value="Expense">Expense</option>
-              <option value="Income">Income</option>
-              <option value="Savings">Savings</option>
-              <option value="Udhar">Udhar</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">Date</label>
-            <input type="date" id="txDate" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-          </div>
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">Category</label>
-            <select id="txCategory" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white"></select>
-          </div>
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">Person / Source</label>
-            <select id="txPerson" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white"></select>
-          </div>
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">Amount (₹)</label>
-            <input type="number" id="txAmount" min="0.01" step="0.01" placeholder="0" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-          </div>
-          <div id="paymentModeWrap">
-  <label class="block text-xs text-gray-400 mb-1">Payment Mode</label>
-  <select id="txPaymentMode" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-    <option value="Cash">Cash</option>
-    <option value="UPI">UPI</option>
-    <option value="Bank Transfer">Bank Transfer</option>
-  </select>
-</div>
-        </div>
-        <div class="mt-4">
-          <label class="block text-xs text-gray-400 mb-1">Note / Description</label>
-          <input type="text" id="txNote" placeholder="Optional details..." class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-        </div>
-        <div class="flex space-x-3 mt-4">
-          <button id="saveTxBtn" onclick="saveTransaction()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-2.5 rounded-lg text-sm font-medium transition shadow-md">Save Record</button>
-          <button id="cancelEditBtn" onclick="resetForm()" class="hidden bg-gray-800 hover:bg-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium border border-gray-700">Cancel</button>
-        </div>
-      </div>
+    <div>
+      <label class="block text-xs text-gray-400 mb-1">Date</label>
+      <input type="date" id="txDate" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+    </div>
+    <div>
+      <label class="block text-xs text-gray-400 mb-1">Category</label>
+      <select id="txCategory" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white"></select>
+    </div>
+    <div>
+      <label class="block text-xs text-gray-400 mb-1">Person / Source</label>
+      <select id="txPerson" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white"></select>
+    </div>
+    <div>
+      <label class="block text-xs text-gray-400 mb-1">Amount (₹)</label>
+      <input type="number" id="txAmount" min="0.01" step="0.01" placeholder="0" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+    </div>
+    <div id="paymentModeWrap">
+      <label class="block text-xs text-gray-400 mb-1">Payment Mode</label>
+      <select id="txPaymentMode" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+        <option value="Cash">Cash</option>
+        <option value="UPI">UPI</option>
+        <option value="Bank Transfer">Bank Transfer</option>
+      </select>
     </div>
   </div>
+  <div class="mt-4">
+    <label class="block text-xs text-gray-400 mb-1">Note / Description</label>
+    <input type="text" id="txNote" placeholder="Optional details..." class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+  </div>
+  <div class="flex space-x-3 mt-4">
+    <button id="saveTxBtn" onclick="saveTransaction()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-2.5 rounded-lg text-sm font-medium transition shadow-md">Save Record</button>
+    <button id="cancelEditBtn" onclick="resetForm()" class="hidden bg-gray-800 hover:bg-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium border border-gray-700">Cancel</button>
+  </div>
+</div>
+
+<!-- Bulk Entry / Categories / Persons (3 columns) -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-4">
+  <div class="bg-cardBg p-5 rounded-2xl border border-gray-700 shadow">
+    <h3 class="text-md font-semibold mb-3 text-indigo-300">Bulk Entry</h3>
+    <p class="text-xs text-gray-400 mb-3">Ek saath kai entries add karo.</p>
+    <button onclick="openBulkModal()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-2 rounded-lg text-sm font-medium transition">
+      <i class="fa-solid fa-layer-group mr-1"></i> Bulk Add
+    </button>
+  </div>
+
+  <div class="bg-cardBg p-5 rounded-2xl border border-gray-700 shadow">
+    <h3 class="text-md font-semibold mb-3 text-indigo-300">Categories</h3>
+    <div class="space-y-3 mb-4">
+      <input type="text" id="newCategoryName" placeholder="New category name" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+      <select id="newCategoryType" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+        <option value="Expense">Expense</option>
+        <option value="Income">Income</option>
+        <option value="Savings">Savings</option>
+      </select>
+      <button onclick="addCategory(this)" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium transition">Add Category</button>
+    </div>
+    <div id="categoryList" class="space-y-2 max-h-64 overflow-y-auto"></div>
+  </div>
+
+  <div class="bg-cardBg p-5 rounded-2xl border border-gray-700 shadow">
+    <h3 class="text-md font-semibold mb-3 text-indigo-300">Persons / Sources</h3>
+    <div class="space-y-3 mb-4">
+      <input type="text" id="newPersonName" placeholder="New person name" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+      <button onclick="addPerson(this)" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium transition">Add Person</button>
+    </div>
+    <div id="personList" class="space-y-2 max-h-64 overflow-y-auto"></div>
+  </div>
+</div>
 
   <!-- Period Filter -->
 <div class="bg-cardBg p-5 rounded-2xl border border-gray-700 shadow mb-4">
