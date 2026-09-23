@@ -1135,6 +1135,12 @@ function onBulkTypeChange(selectEl) {
     `<option value="${escapeHtml(c)}" ${c === currentVal ? 'selected' : ''}>${escapeHtml(c)}</option>`
   ).join('');
   if (!cats.includes(currentVal)) catSelect.value = cats[0];
+
+  // Udhar type pe Payment Mode hide karo
+  const modeSelect = row.querySelector('.bulk-mode');
+  const isUdhar = String(selectEl.value).toLowerCase() === 'udhar';
+  modeSelect.style.visibility = isUdhar ? 'hidden' : 'visible';
+  modeSelect.disabled = isUdhar;
 }
 
 function addBulkRow() {
