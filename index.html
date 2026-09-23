@@ -1144,10 +1144,11 @@ function addBulkRow() {
   row.className = 'bulk-row grid grid-cols-12 gap-2 items-center bg-gray-900/50 p-2 rounded-lg border border-gray-700';
   row.innerHTML = `
     <select onchange="onBulkTypeChange(this)" class="bulk-type col-span-1 bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-white">
-      <option value="Expense">Expense</option>
-      <option value="Income">Income</option>
-      <option value="Savings">Savings</option>
-    </select>
+  <option value="Expense">Expense</option>
+  <option value="Income">Income</option>
+  <option value="Savings">Savings</option>
+  <option value="Udhar">Udhar</option>
+</select>
     <input type="date" class="bulk-date col-span-2 bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-white" value="${today}">
     <select class="bulk-category col-span-2 bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-white">${getCategoryOptions('')}</select>
     <input type="text" class="bulk-person col-span-1 bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-white" value="Self" placeholder="Person">
@@ -1192,8 +1193,9 @@ async function submitBulk(btn) {
     if (!date) { errors.push(`Row ${idx + 1}: Date required`); return; }
     if (!amount || amount <= 0) { errors.push(`Row ${idx + 1}: Amount valid nahi`); return; }
 
-    items.push({ date, type, category, person, amount, paymentMode: mode, note });
-  });
+        const isUdharRow = String(type).toLowerCase() === 'udhar';
+    const finalMode = isUdharRow ? 'Udhar' : mode;
+   items.push({ date, type, category, person, amount, paymentMode: finalMode, note });
 
   if (errors.length) {
     const errEl = document.getElementById('bulkError');
