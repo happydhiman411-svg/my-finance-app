@@ -106,10 +106,11 @@ tailwind.config = {
     <div>
       <label class="block text-xs text-gray-400 mb-1">Type</label>
       <select id="txType" onchange="onTypeChange()" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-        <option value="Expense">Expense</option>
-        <option value="Income">Income</option>
-        <option value="Savings">Savings</option>
-        <option value="Udhar">Udhar</option>
+  <option value="Expense">Expense</option>
+  <option value="Income">Income</option>
+  <option value="Savings">Savings</option>
+  <option value="Udhar">Udhar (Liya)</option>
+  <option value="UdharDiya">Udhar Diya</option>
       </select>
     </div>
     <div>
@@ -415,6 +416,43 @@ tailwind.config = {
     </div>
   </div>
 </div>
+
+  <!-- Receive Udhar Modal -->
+<div id="receiveModal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md hidden p-4">
+  <div class="bg-cardBg p-6 rounded-2xl shadow-2xl w-full max-w-md border border-gray-700 fade-in max-h-[90vh] overflow-y-auto">
+    <h3 class="text-lg font-bold mb-1 text-blue-400">Receive Udhar</h3>
+    <p id="receivePersonName" class="text-sm text-gray-400 mb-4"></p>
+    <div class="space-y-3">
+      <div>
+        <label class="block text-xs text-gray-400 mb-1">Amount (₹)</label>
+        <input type="number" id="receiveAmount" min="0.01" step="0.01" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+      </div>
+      <div>
+        <label class="block text-xs text-gray-400 mb-1">Received Date</label>
+        <input type="date" id="receiveDate" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+      </div>
+      <div>
+        <label class="block text-xs text-gray-400 mb-1">Payment Mode</label>
+        <select id="receiveMode" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+          <option value="Cash">Cash</option>
+          <option value="UPI">UPI</option>
+          <option value="Bank Transfer">Bank Transfer</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs text-gray-400 mb-1">Note (optional)</label>
+        <input type="text" id="receiveNote" placeholder="Optional" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+      </div>
+    </div>
+    <div class="flex gap-2 mt-5">
+      <button id="receiveSubmitBtn" onclick="submitReceive(this)" class="flex-1 bg-blue-600 hover:bg-blue-500 py-2.5 rounded-lg text-sm font-medium">
+        <i class="fa-solid fa-check mr-1"></i> Confirm Received
+      </button>
+      <button onclick="closeReceiveModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 py-2.5 rounded-lg text-sm font-medium border border-gray-700">Cancel</button>
+    </div>
+  </div>
+</div>
+
 
 <!-- Udhar History Modal -->
 <div id="historyModal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md hidden p-4">
@@ -779,10 +817,11 @@ function renderCategories() {
 
 function onTypeChange() {
   renderCategories();
-  const type = document.getElementById('txType').value;
+  const type = String(document.getElementById('txType').value).toLowerCase().replace(/\s+/g, '');
   const pmWrap = document.getElementById('paymentModeWrap');
   if (pmWrap) {
-    pmWrap.style.display = String(type).toLowerCase() === 'udhar' ? 'none' : '';
+    const hide = (type === 'udhar' || type === 'udhardiya');
+    pmWrap.style.display = hide ? 'none' : '';
   }
 }
 
@@ -819,9 +858,10 @@ function renderDashboard() {
 appData.transactions.forEach(t => {
   const amt = parseFloat(t.amount) || 0;
   const type = String(t.type).toLowerCase();
-  if (type === 'income') totalInc += amt;
+    if (type === 'income') totalInc += amt;
   else if (type === 'savings') totalSav += amt;
   else if (type === 'udhar') { /* skip — not yet paid */ }
+  else if (type === 'udhardiya' || type === 'udharreceived') { /* skip — loan tracking */ }
   else totalExp += amt;
 });
 document.getElementById('totalIncome').textContent = formatMoney(totalInc);
@@ -862,6 +902,8 @@ document.getElementById('netBalance').textContent = formatMoney(totalInc - total
     if (t2 === 'income') typeColor = 'text-emerald-400';
     else if (t2 === 'savings') typeColor = 'text-blue-400';
     else if (t2 === 'udhar') typeColor = 'text-amber-400';
+        else if (t2 === 'udhardiya') typeColor = 'text-blue-400';
+    else if (t2 === 'udharreceived') typeColor = 'text-emerald-400';
     const tid = escapeHtml(t.id);
     tr.innerHTML = `
       <td class="py-2.5 px-3 whitespace-nowrap">${escapeHtml(t.date || '')}</td>
@@ -1039,8 +1081,9 @@ async function saveTransaction() {
     const newType = document.getElementById('txType').value;
     const newCat = document.getElementById('txCategory').value;
     const newPerson = document.getElementById('txPerson').value || 'Self';
-    const dup = appData.transactions.find(t =>
+        const dup = appData.transactions.find(t =>
       String(t.date) === String(newDate) &&
+      String(t.type).toLowerCase().replace(/\s+/g, '') === String(newType).toLowerCase().replace(/\s+/g, '') &&
       String(t.type).toLowerCase() === String(newType).toLowerCase() &&
       String(t.category) === String(newCat) &&
       String(t.person || 'Self') === String(newPerson) &&
@@ -1063,7 +1106,12 @@ async function saveTransaction() {
     category: document.getElementById('txCategory').value,
     person: document.getElementById('txPerson').value || 'Self',
     amount: amount,
-        paymentMode: document.getElementById('txType').value.toLowerCase() === 'udhar' ? 'Udhar' : document.getElementById('txPaymentMode').value,
+            paymentMode: (function(){
+      const t = String(document.getElementById('txType').value).toLowerCase().replace(/\s+/g, '');
+      if (t === 'udhardiya') return 'Udhar Diya';
+      if (t === 'udhar') return 'Udhar';
+      return document.getElementById('txPaymentMode').value;
+    })(),
     note: document.getElementById('txNote').value || '-'
   };
 
@@ -1332,7 +1380,8 @@ function onBulkTypeChange(selectEl) {
 
   // Udhar type pe Payment Mode hide karo
   const modeSelect = row.querySelector('.bulk-mode');
-  const isUdhar = String(selectEl.value).toLowerCase() === 'udhar';
+    const tNorm = String(selectEl.value).toLowerCase().replace(/\s+/g, '');
+  const isUdhar = (tNorm === 'udhar' || tNorm === 'udhardiya');
   modeSelect.style.visibility = isUdhar ? 'hidden' : 'visible';
   modeSelect.disabled = isUdhar;
 }
@@ -1348,6 +1397,7 @@ function addBulkRow() {
   <option value="Income">Income</option>
   <option value="Savings">Savings</option>
   <option value="Udhar">Udhar</option>
+  <option value="UdharDiya">Udhar Diya</option>
 </select>
     <input type="date" class="bulk-date col-span-2 bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-white" value="${today}">
     <select class="bulk-category col-span-2 bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-white">${getCategoryOptions('')}</select>
@@ -1393,8 +1443,10 @@ async function submitBulk(btn) {
     if (!date) { errors.push(`Row ${idx + 1}: Date required`); return; }
     if (!amount || amount <= 0) { errors.push(`Row ${idx + 1}: Amount valid nahi`); return; }
 
-        const isUdharRow = String(type).toLowerCase() === 'udhar';
-    const finalMode = isUdharRow ? 'Udhar' : mode;
+            const tNorm = String(type).toLowerCase().replace(/\s+/g, '');
+    const isUdharRow = tNorm === 'udhar';
+    const isUdharDiyaRow = tNorm === 'udhardiya';
+    const finalMode = isUdharDiyaRow ? 'Udhar Diya' : (isUdharRow ? 'Udhar' : mode);
    items.push({ date, type, category, person, amount, paymentMode: finalMode, note });
    });
   if (errors.length) {
@@ -1473,32 +1525,45 @@ function renderUdharRegister() {
   ledger.forEach(e => {
     const person = String(e.person || '').trim();
     if (!person) return;
-    if (!map[person]) map[person] = { udhar: 0, paid: 0, entries: [] };
+    if (!map[person]) map[person] = { payable: 0, paid: 0, receivable: 0, received: 0, entries: [] };
     const amt = parseFloat(e.amount) || 0;
     const type = String(e.type || '').toLowerCase();
+
     if (type === 'payment') map[person].paid += amt;
-    else map[person].udhar += amt;
+    else if (type === 'received') map[person].received += amt;
+    else if (type === 'udhardiya') map[person].receivable += amt;
+    else map[person].payable += amt;
+
     map[person].entries.push(e);
   });
 
-  udharPersonsCache = Object.keys(map)
-    .map(name => ({
+  udharPersonsCache = Object.keys(map).map(name => {
+    const m = map[name];
+    return {
       name: name,
-      udhar: map[name].udhar,
-      paid: map[name].paid,
-      pending: map[name].udhar - map[name].paid,
-      entries: map[name].entries
-    }))
-    .filter(p => Math.abs(p.pending) > 0.001)
-    .sort((a, b) => b.pending - a.pending);
+      payable: m.payable,
+      paid: m.paid,
+      receivable: m.receivable,
+      received: m.received,
+      netPayable: m.payable - m.paid,
+      netReceivable: m.receivable - m.received,
+      entries: m.entries
+    };
+  }).filter(p => Math.abs(p.netPayable) > 0.001 || Math.abs(p.netReceivable) > 0.001)
+    .sort((a, b) => {
+      const aSum = Math.max(0, a.netPayable) + Math.max(0, a.netReceivable);
+      const bSum = Math.max(0, b.netPayable) + Math.max(0, b.netReceivable);
+      return bSum - aSum;
+    });
 
-  // Badge: pending aur advance alag alag
-  const totalPending = udharPersonsCache.filter(p => p.pending > 0).reduce((s, p) => s + p.pending, 0);
-  const totalAdvance = udharPersonsCache.filter(p => p.pending < 0).reduce((s, p) => s + Math.abs(p.pending), 0);
+  const totalPayable = udharPersonsCache.filter(p => p.netPayable > 0).reduce((s, p) => s + p.netPayable, 0);
+  const totalReceivable = udharPersonsCache.filter(p => p.netReceivable > 0).reduce((s, p) => s + p.netReceivable, 0);
 
   if (badge) {
-    let txt = 'Udhar: ' + formatMoney(totalPending);
-    if (totalAdvance > 0) txt += ' · Advance: ' + formatMoney(totalAdvance);
+    let txt = '';
+    if (totalPayable > 0) txt += 'Deni: ' + formatMoney(totalPayable);
+    if (totalReceivable > 0) txt += (txt ? ' · ' : '') + 'Leni: ' + formatMoney(totalReceivable);
+    if (!txt) txt = 'Total: ₹0';
     badge.textContent = txt;
   }
 
@@ -1508,31 +1573,126 @@ function renderUdharRegister() {
   }
 
   container.innerHTML = udharPersonsCache.map((p, idx) => {
-    const isAdvance = p.pending < 0;
-    const amountClass = isAdvance ? 'text-emerald-400' : 'text-amber-400';
-    const amountText = isAdvance
-      ? 'Advance: ' + formatMoney(Math.abs(p.pending))
-      : formatMoney(p.pending);
+    let lines = '';
+    if (p.netPayable > 0) {
+      lines += `
+        <div class="flex justify-between items-center mt-1">
+          <span class="text-xs text-amber-300">You owe</span>
+          <span class="text-lg font-bold text-amber-400">${formatMoney(p.netPayable)}</span>
+        </div>`;
+    } else if (p.netPayable < -0.001) {
+      lines += `
+        <div class="flex justify-between items-center mt-1">
+          <span class="text-xs text-amber-300">Advance (paid)</span>
+          <span class="text-sm font-semibold text-emerald-400">${formatMoney(Math.abs(p.netPayable))}</span>
+        </div>`;
+    }
+    if (p.netReceivable > 0) {
+      lines += `
+        <div class="flex justify-between items-center mt-1">
+          <span class="text-xs text-blue-300">They owe</span>
+          <span class="text-lg font-bold text-blue-400">${formatMoney(p.netReceivable)}</span>
+        </div>`;
+    } else if (p.netReceivable < -0.001) {
+      lines += `
+        <div class="flex justify-between items-center mt-1">
+          <span class="text-xs text-blue-300">Advance (they gave)</span>
+          <span class="text-sm font-semibold text-emerald-400">${formatMoney(Math.abs(p.netReceivable))}</span>
+        </div>`;
+    }
+
+    let buttons = '';
+    if (p.netPayable > 0) {
+      buttons += `<button onclick="openPayModal(${idx})" class="flex-1 bg-amber-600 hover:bg-amber-500 py-1.5 rounded-lg text-xs font-medium">
+        <i class="fa-solid fa-hand-holding-dollar mr-1"></i> Pay
+      </button>`;
+    }
+    if (p.netReceivable > 0) {
+      buttons += `<button onclick="openReceiveModal(${idx})" class="flex-1 bg-blue-600 hover:bg-blue-500 py-1.5 rounded-lg text-xs font-medium">
+        <i class="fa-solid fa-hand-holding-heart mr-1"></i> Receive
+      </button>`;
+    }
+    buttons += `<button onclick="openHistoryModal(${idx})" class="flex-1 bg-gray-800 hover:bg-gray-700 py-1.5 rounded-lg text-xs font-medium border border-gray-700">
+      <i class="fa-solid fa-clock-rotate-left mr-1"></i> History
+    </button>`;
 
     return `
       <div class="bg-gray-900 border border-gray-700 rounded-xl p-4">
-        <div class="mb-2">
-          <p class="text-sm font-semibold text-white truncate">${escapeHtml(p.name)}</p>
-          <p class="text-xs text-gray-400 mt-0.5">Total Udhar: ${formatMoney(p.udhar)} · Paid: ${formatMoney(p.paid)}</p>
-        </div>
-        <p class="text-xl font-bold ${amountClass} mb-3">${amountText}</p>
-        <div class="flex gap-2">
-          <button onclick="openPayModal(${idx})" class="flex-1 bg-emerald-600 hover:bg-emerald-500 py-1.5 rounded-lg text-xs font-medium">
-            <i class="fa-solid fa-hand-holding-dollar mr-1"></i> Pay
-          </button>
-          <button onclick="openHistoryModal(${idx})" class="flex-1 bg-gray-800 hover:bg-gray-700 py-1.5 rounded-lg text-xs font-medium border border-gray-700">
-            <i class="fa-solid fa-clock-rotate-left mr-1"></i> History
-          </button>
-        </div>
+        <p class="text-sm font-semibold text-white truncate mb-1">${escapeHtml(p.name)}</p>
+        ${lines}
+        <div class="flex gap-2 mt-3 flex-wrap">${buttons}</div>
       </div>
     `;
   }).join('');
 }
+
+let receivePersonCache = null;
+
+function openReceiveModal(idx) {
+  const p = udharPersonsCache[idx];
+  if (!p) return;
+  receivePersonCache = p;
+  document.getElementById('receivePersonName').textContent = p.name + ' — They owe: ' + formatMoney(p.netReceivable);
+  const amountEl = document.getElementById('receiveAmount');
+  amountEl.value = p.netReceivable;
+  amountEl.removeAttribute('max');
+  document.getElementById('receiveDate').value = getTodayLocal();
+  document.getElementById('receiveNote').value = '';
+  document.getElementById('receiveModal').classList.remove('hidden');
+  document.body.classList.add('no-scroll');
+}
+
+function closeReceiveModal() {
+  document.getElementById('receiveModal').classList.add('hidden');
+  document.body.classList.remove('no-scroll');
+  receivePersonCache = null;
+}
+
+async function submitReceive(btn) {
+  if (!receivePersonCache) return;
+  const amount = parseFloat(document.getElementById('receiveAmount').value);
+  if (!amount || amount <= 0) { showToast("Valid amount daalo", "error"); return; }
+
+  const date = document.getElementById('receiveDate').value;
+  if (!date) { showToast("Date daalo", "error"); return; }
+
+  const mode = document.getElementById('receiveMode').value;
+  const note = document.getElementById('receiveNote').value.trim();
+
+  btnLoading(btn, 'Receiving...');
+  try {
+    const data = await apiPost({
+      action: 'receiveUdhar',
+      token: TOKEN,
+      person: receivePersonCache.name,
+      amount: amount,
+      date: date,
+      paymentMode: mode,
+      note: note || ('Received from: ' + receivePersonCache.name)
+    });
+    if (handleAuthError(data)) return;
+    if (data.status === 'success') {
+      showToast("Received successfully!");
+      closeReceiveModal();
+      if (data.transactions) {
+        appData.transactions = data.transactions;
+        appData.categories = data.categories || appData.categories;
+        appData.udharLedger = data.udharLedger || appData.udharLedger;
+        renderDashboard();
+      } else {
+        syncData();
+      }
+    } else {
+      showToast(data.message || "Error", "error");
+    }
+  } catch (e) {
+    console.error(e);
+    showToast(e.message || "Network error", "error");
+  } finally {
+    btnReset(btn);
+  }
+}
+
 
 function openPayModal(idx) {
   const p = udharPersonsCache[idx];
