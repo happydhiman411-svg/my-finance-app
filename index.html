@@ -937,6 +937,25 @@ function resetForm() {
   document.getElementById('cancelEditBtn').classList.add('hidden');
 }
 
+  // Duplicate check (sirf nayi entry pe)
+  if (!isEdit) {
+    const newDate = document.getElementById('txDate').value;
+    const newType = document.getElementById('txType').value;
+    const newCat = document.getElementById('txCategory').value;
+    const newPerson = document.getElementById('txPerson').value || 'Self';
+    const dup = appData.transactions.find(t =>
+      String(t.date) === String(newDate) &&
+      String(t.type).toLowerCase() === String(newType).toLowerCase() &&
+      String(t.category) === String(newCat) &&
+      String(t.person || 'Self') === String(newPerson) &&
+      Math.abs(parseFloat(t.amount) - amount) < 0.01
+    );
+    if (dup) {
+      const ok = confirm(`⚠ Ye entry already exists:\n\n${newDate} | ${newType} | ${newCat} | ${newPerson} | ₹${amount}\n\nPhir bhi save karni hai?`);
+      if (!ok) return;
+    }
+  }
+
 async function saveTransaction() {
   const btn = document.getElementById('saveTxBtn');
   const amount = parseFloat(document.getElementById('txAmount').value);
@@ -1210,7 +1229,34 @@ async function submitBulk(btn) {
     return;
   }
   if (items.length === 0) { showToast("Koi valid entry nahi", "error"); return; }
+  // Duplicate check bulk mein bhi
+  const duplicates = [];
+  const internalDupes = [];
+  const seen = new Set();
 
+  items.forEach((it, idx) => {
+    const key = [it.date, String(it.type).toLowerCase(), it.category, it.person || 'Self', Number(it.amount)].join('|');
+    // Already database mein?
+    const exists = appData.transactions.find(t =>
+      String(t.date) === String(it.date) &&
+      String(t.type).toLowerCase() === String(it.type).toLowerCase() &&
+      String(t.category) === String(it.category) &&
+      String(t.person || 'Self') === String(it.person || 'Self') &&
+      Math.abs(parseFloat(t.amount) - it.amount) < 0.01
+    );
+    if (exists) duplicates.push(idx + 1);
+    // Bulk ke andar hi duplicate?
+    if (seen.has(key)) internalDupes.push(idx + 1);
+    seen.add(key);
+  });
+
+  if (duplicates.length > 0 || internalDupes.length > 0) {
+    let msg = '⚠ Duplicate entries mili:\n\n';
+    if (duplicates.length > 0) msg += `Database mein already hai: Row ${duplicates.join(', ')}\n`;
+    if (internalDupes.length > 0) msg += `Bulk ke andar repeat ho rahi hai: Row ${internalDupes.join(', ')}\n`;
+    msg += '\nPhir bhi sab upload karni hai?';
+    if (!confirm(msg)) return;
+  }
   btnLoading(btn, 'Uploading...');
   try {
     const data = await apiPost({ action: 'saveBulk', token: TOKEN, items: items });
