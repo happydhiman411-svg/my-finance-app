@@ -1489,34 +1489,49 @@ function renderUdharRegister() {
       pending: map[name].udhar - map[name].paid,
       entries: map[name].entries
     }))
-    .filter(p => p.pending > 0)
+    .filter(p => Math.abs(p.pending) > 0.001)
     .sort((a, b) => b.pending - a.pending);
 
-  const totalPending = udharPersonsCache.reduce((s, p) => s + p.pending, 0);
-  if (badge) badge.textContent = 'Total: ' + formatMoney(totalPending);
+  // Badge: pending aur advance alag alag
+  const totalPending = udharPersonsCache.filter(p => p.pending > 0).reduce((s, p) => s + p.pending, 0);
+  const totalAdvance = udharPersonsCache.filter(p => p.pending < 0).reduce((s, p) => s + Math.abs(p.pending), 0);
+
+  if (badge) {
+    let txt = 'Udhar: ' + formatMoney(totalPending);
+    if (totalAdvance > 0) txt += ' · Advance: ' + formatMoney(totalAdvance);
+    badge.textContent = txt;
+  }
 
   if (udharPersonsCache.length === 0) {
     container.innerHTML = '<p class="text-sm text-gray-500 col-span-full text-center py-4">Koi udhar pending nahi hai ✅</p>';
     return;
   }
 
-  container.innerHTML = udharPersonsCache.map((p, idx) => `
-    <div class="bg-gray-900 border border-gray-700 rounded-xl p-4">
-      <div class="mb-2">
-        <p class="text-sm font-semibold text-white truncate">${escapeHtml(p.name)}</p>
-        <p class="text-xs text-gray-400 mt-0.5">Total Udhar: ${formatMoney(p.udhar)} · Paid: ${formatMoney(p.paid)}</p>
+  container.innerHTML = udharPersonsCache.map((p, idx) => {
+    const isAdvance = p.pending < 0;
+    const amountClass = isAdvance ? 'text-emerald-400' : 'text-amber-400';
+    const amountText = isAdvance
+      ? 'Advance: ' + formatMoney(Math.abs(p.pending))
+      : formatMoney(p.pending);
+
+    return `
+      <div class="bg-gray-900 border border-gray-700 rounded-xl p-4">
+        <div class="mb-2">
+          <p class="text-sm font-semibold text-white truncate">${escapeHtml(p.name)}</p>
+          <p class="text-xs text-gray-400 mt-0.5">Total Udhar: ${formatMoney(p.udhar)} · Paid: ${formatMoney(p.paid)}</p>
+        </div>
+        <p class="text-xl font-bold ${amountClass} mb-3">${amountText}</p>
+        <div class="flex gap-2">
+          <button onclick="openPayModal(${idx})" class="flex-1 bg-emerald-600 hover:bg-emerald-500 py-1.5 rounded-lg text-xs font-medium">
+            <i class="fa-solid fa-hand-holding-dollar mr-1"></i> Pay
+          </button>
+          <button onclick="openHistoryModal(${idx})" class="flex-1 bg-gray-800 hover:bg-gray-700 py-1.5 rounded-lg text-xs font-medium border border-gray-700">
+            <i class="fa-solid fa-clock-rotate-left mr-1"></i> History
+          </button>
+        </div>
       </div>
-      <p class="text-xl font-bold text-amber-400 mb-3">${formatMoney(p.pending)}</p>
-      <div class="flex gap-2">
-        <button onclick="openPayModal(${idx})" class="flex-1 bg-emerald-600 hover:bg-emerald-500 py-1.5 rounded-lg text-xs font-medium">
-          <i class="fa-solid fa-hand-holding-dollar mr-1"></i> Pay
-        </button>
-        <button onclick="openHistoryModal(${idx})" class="flex-1 bg-gray-800 hover:bg-gray-700 py-1.5 rounded-lg text-xs font-medium border border-gray-700">
-          <i class="fa-solid fa-clock-rotate-left mr-1"></i> History
-        </button>
-      </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
 function openPayModal(idx) {
@@ -1524,9 +1539,9 @@ function openPayModal(idx) {
   if (!p) return;
   payPersonCache = p;
   document.getElementById('payPersonName').textContent = p.name + ' — Pending: ' + formatMoney(p.pending);
-  const amountEl = document.getElementById('payAmount');
-  amountEl.value = p.pending;
-  amountEl.max = p.pending;
+    const amountEl = document.getElementById('payAmount');
+  amountEl.value = p.pending > 0 ? p.pending : '';
+  amountEl.removeAttribute('max');
   document.getElementById('payDate').value = getTodayLocal();
   document.getElementById('payNote').value = '';
   document.getElementById('payModal').classList.remove('hidden');
@@ -1543,7 +1558,7 @@ async function submitPay(btn) {
   if (!payPersonCache) return;
   const amount = parseFloat(document.getElementById('payAmount').value);
   if (!amount || amount <= 0) { showToast("Valid amount daalo", "error"); return; }
-  if (amount > payPersonCache.pending + 0.01) { showToast("Pending se zyada nahi de sakte", "error"); return; }
+  
 
   const date = document.getElementById('payDate').value;
   if (!date) { showToast("Date daalo", "error"); return; }
