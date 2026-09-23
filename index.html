@@ -937,6 +937,22 @@ function resetForm() {
   document.getElementById('cancelEditBtn').classList.add('hidden');
 }
 
+  
+
+async function saveTransaction() {
+  const btn = document.getElementById('saveTxBtn');
+  const amount = parseFloat(document.getElementById('txAmount').value);
+  if (!amount || amount <= 0) {
+    showToast("Valid amount (0 se zyada) daalo", "error");
+    return;
+  }
+
+  const isEdit = !!editingId;
+  let password = null;
+  if (isEdit) {
+    password = await askPassword("Confirm Edit", "Edit karne ke liye password daalo");
+    if (!password) return;
+  }
   // Duplicate check (sirf nayi entry pe)
   if (!isEdit) {
     const newDate = document.getElementById('txDate').value;
@@ -954,21 +970,6 @@ function resetForm() {
       const ok = confirm(`⚠ Ye entry already exists:\n\n${newDate} | ${newType} | ${newCat} | ${newPerson} | ₹${amount}\n\nPhir bhi save karni hai?`);
       if (!ok) return;
     }
-  }
-
-async function saveTransaction() {
-  const btn = document.getElementById('saveTxBtn');
-  const amount = parseFloat(document.getElementById('txAmount').value);
-  if (!amount || amount <= 0) {
-    showToast("Valid amount (0 se zyada) daalo", "error");
-    return;
-  }
-
-  const isEdit = !!editingId;
-  let password = null;
-  if (isEdit) {
-    password = await askPassword("Confirm Edit", "Edit karne ke liye password daalo");
-    if (!password) return;
   }
 
   const payload = {
