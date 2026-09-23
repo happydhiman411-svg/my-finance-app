@@ -116,8 +116,17 @@ tailwind.config = {
 </select>
   <button onclick="addCategory(this)" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium transition">Add Category</button>
 </div>
-  <div id="categoryList" class="space-y-2 max-h-64 overflow-y-auto"></div>
-</div>
+  
+      <div id="categoryList" class="space-y-2 max-h-64 overflow-y-auto"></div></div>
+              <div class="bg-cardBg p-5 rounded-2xl border border-gray-700 shadow">
+        <h3 class="text-md font-semibold mb-3 text-indigo-300">Persons / Sources</h3>
+        <div class="space-y-3 mb-4">
+          <input type="text" id="newPersonName" placeholder="New person name"
+            class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+          <button onclick="addPerson(this)" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium transition">Add Person</button>
+        </div>
+        <div id="personList" class="space-y-2 max-h-64 overflow-y-auto"></div>
+      </div>
 
       <div class="bg-cardBg p-5 rounded-2xl border border-gray-700 shadow">
         <h3 class="text-md font-semibold mb-3 text-indigo-300">Bulk Entry</h3>
@@ -152,7 +161,7 @@ tailwind.config = {
           </div>
           <div>
             <label class="block text-xs text-gray-400 mb-1">Person / Source</label>
-            <input type="text" id="txPerson" value="Self" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+            <select id="txPerson" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white"></select>
           </div>
           <div>
             <label class="block text-xs text-gray-400 mb-1">Amount (₹)</label>
@@ -407,7 +416,7 @@ tailwind.config = {
 let API_URL = "https://script.google.com/macros/s/AKfycbxNx6VOcjtmfCeefeNR-BO2N6PqhQu1fna1fZUDpK2u_wPpDADkoae4GlYsl7gR1jaB/exec";
 let TOKEN = localStorage.getItem('fin_token') || "";
 let USERNAME = localStorage.getItem('fin_user') || "";
-let appData = { transactions: [], categories: [], dailyLedger: [] };
+let appData = { transactions: [], categories: [], dailyLedger: [], udharLedger: [], persons: [] };
 let editingId = null;
 let searchTimer = null;
 
@@ -648,6 +657,7 @@ async function syncData(showSpin = false) {
       appData.categories = data.categories || [];
       appData.dailyLedger = data.dailyLedger || [];
             appData.udharLedger = data.udharLedger || [];
+            appData.persons = data.persons || [];
       statusEl.textContent = 'Connected';
       statusEl.className = 'px-2.5 py-1 text-xs rounded-full bg-emerald-900/50 text-emerald-400 border border-emerald-700';
       renderDashboard();
@@ -714,6 +724,8 @@ function renderDashboard() {
     renderCategoryList();
     renderCategoryWise();
     renderUdharRegister();
+    renderPersonList();
+  renderPersonDropdown();
 
   const filterType = document.getElementById('filterType').value;
   const filterMonth = document.getElementById('filterMonth').value;
@@ -911,7 +923,7 @@ function editTransaction(id) {
   document.getElementById('txType').value = t.type || 'Expense';
   renderCategories();
   document.getElementById('txCategory').value = t.category || '';
-  document.getElementById('txPerson').value = t.person || 'Self';
+    renderPersonDropdown(t.person || 'Self');
   document.getElementById('txAmount').value = t.amount || '';
   document.getElementById('txPaymentMode').value = t.paymentmode || t.paymentMode || 'Cash';
   document.getElementById('txNote').value = (t.note === '-' || !t.note) ? '' : t.note;
@@ -927,7 +939,7 @@ function resetForm() {
   document.getElementById('txDate').value = getTodayLocal();
   document.getElementById('txAmount').value = '';
   document.getElementById('txNote').value = '';
-  document.getElementById('txPerson').value = 'Self';
+    renderPersonDropdown('Self');
   document.getElementById('formTitle').textContent = "Add New Transaction";
   const saveBtn = document.getElementById('saveTxBtn');
   saveBtn.textContent = "Save Record";
@@ -1072,6 +1084,88 @@ async function addCategory(btn) {
     btnReset(btn);
   }
 }
+
+  function renderPersonList() {
+  const listEl = document.getElementById('personList');
+  if (!listEl) return;
+  let persons = (appData.persons || [])
+    .map(p => String(p.person || p.name || '').trim())
+    .filter(Boolean);
+  persons = [...new Set(persons)];
+
+  if (persons.length === 0) {
+    listEl.innerHTML = '<p class="text-xs text-gray-500">No persons yet</p>';
+    return;
+  }
+
+  listEl.innerHTML = persons.map(p => `
+    <div class="flex items-center justify-between bg-gray-900 border border-gray-700 rounded-lg px-3 py-2">
+      <span class="text-sm text-white truncate">${escapeHtml(p)}</span>
+    </div>
+  `).join('');
+}
+
+function renderPersonDropdown(preserveValue) {
+  const sel = document.getElementById('txPerson');
+  if (!sel) return;
+  const currentVal = preserveValue !== undefined ? preserveValue : sel.value;
+
+  let persons = (appData.persons || [])
+    .map(p => String(p.person || p.name || '').trim())
+    .filter(Boolean);
+  persons = [...new Set(persons)];
+  if (persons.length === 0) persons = ['Self'];
+
+  sel.innerHTML = persons.map(p =>
+    `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`
+  ).join('');
+
+  if (currentVal && persons.includes(currentVal)) {
+    sel.value = currentVal;
+  } else if (currentVal) {
+    // Agar current value list mein nahi hai (purani entry edit ho rahi), add kar do
+    const opt = document.createElement('option');
+    opt.value = currentVal;
+    opt.textContent = currentVal;
+    sel.appendChild(opt);
+    sel.value = currentVal;
+  } else {
+    sel.value = persons[0];
+  }
+}
+
+async function addPerson(btn) {
+  const input = document.getElementById('newPersonName');
+  const name = input.value.trim();
+  if (!name) { showToast("Person name daalo", "error"); return; }
+
+  btnLoading(btn, 'Adding...');
+  try {
+    const data = await apiPost({ action: 'addPerson', token: TOKEN, name: name });
+    if (handleAuthError(data)) return;
+    if (data.status === 'success') {
+      showToast("Person added!");
+      input.value = '';
+      if (data.transactions) {
+        appData.transactions = data.transactions;
+        appData.categories = data.categories || appData.categories;
+        appData.udharLedger = data.udharLedger || appData.udharLedger;
+        appData.persons = data.persons || appData.persons;
+        renderDashboard();
+      } else {
+        syncData();
+      }
+    } else {
+      showToast(data.message || "Error", "error");
+    }
+  } catch (e) {
+    showToast("Network error", "error");
+  } finally {
+    btnReset(btn);
+  }
+}
+
+  
   function renderCategoryList() {
   const listEl = document.getElementById('categoryList');
   let cats = appData.categories
