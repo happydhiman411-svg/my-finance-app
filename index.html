@@ -1698,9 +1698,9 @@ function openPayModal(idx) {
   const p = udharPersonsCache[idx];
   if (!p) return;
   payPersonCache = p;
-  document.getElementById('payPersonName').textContent = p.name + ' — Pending: ' + formatMoney(p.pending);
-    const amountEl = document.getElementById('payAmount');
-  amountEl.value = p.pending > 0 ? p.pending : '';
+  document.getElementById('payPersonName').textContent = p.name + ' — You owe: ' + formatMoney(p.netPayable);
+  const amountEl = document.getElementById('payAmount');
+  amountEl.value = p.netPayable > 0 ? p.netPayable : '';
   amountEl.removeAttribute('max');
   document.getElementById('payDate').value = getTodayLocal();
   document.getElementById('payNote').value = '';
