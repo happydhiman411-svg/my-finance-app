@@ -36,14 +36,14 @@ tailwind.config = {
       <div>
         <label class="block text-sm text-gray-400 mb-1">Password</label>
         <div class="relative">
-  <input type="password" id="loginPass" autocomplete="current-password"
-    class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 pr-10 text-white focus:outline-none focus:border-indigo-500"
-    onkeydown="if(event.key==='Enter') handleLogin()">
-  <button type="button" onclick="togglePass('loginPass', this)"
-    class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-400">
-    <i class="fa-solid fa-eye"></i>
-  </button>
-</div>
+          <input type="password" id="loginPass" autocomplete="current-password"
+            class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 pr-10 text-white focus:outline-none focus:border-indigo-500"
+            onkeydown="if(event.key==='Enter') handleLogin()">
+          <button type="button" onclick="togglePass('loginPass', this)"
+            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-400">
+            <i class="fa-solid fa-eye"></i>
+          </button>
+        </div>
       </div>
       <button id="loginBtn" onclick="handleLogin()"
         class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 rounded-lg transition shadow-lg">Login</button>
@@ -90,8 +90,8 @@ tailwind.config = {
       <p id="totalExpense" class="text-lg md:text-2xl font-bold text-red-400 mt-1">₹0</p>
     </div>
     <div class="bg-cardBg p-4 md:p-5 rounded-2xl border border-gray-700 shadow">
-  <p class="text-xs md:text-sm text-gray-400">Total Savings</p>
-  <p id="totalSavings" class="text-lg md:text-2xl font-bold text-blue-400 mt-1">₹0</p>
+      <p class="text-xs md:text-sm text-gray-400">Total Savings</p>
+      <p id="totalSavings" class="text-lg md:text-2xl font-bold text-blue-400 mt-1">₹0</p>
     </div>
     <div class="bg-cardBg p-4 md:p-5 rounded-2xl border border-gray-700 shadow">
       <p class="text-xs md:text-sm text-gray-400">Net Balance</p>
@@ -99,183 +99,178 @@ tailwind.config = {
     </div>
   </div>
 
-  <!-- Add New Transaction (Full Width) -->
-<div class="bg-cardBg p-5 md:p-6 rounded-2xl border border-gray-700 shadow mb-4">
-  <h3 id="formTitle" class="text-lg font-semibold mb-4 text-indigo-300">Add New Transaction</h3>
-  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-    <div>
-      <label class="block text-xs text-gray-400 mb-1">Type</label>
-      <select id="txType" onchange="onTypeChange()" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-  <option value="Expense">Expense</option>
-  <option value="Income">Income</option>
-  <option value="Savings">Savings</option>
-  <option value="Udhar">Udhar (Liya)</option>
-  <option value="UdharDiya">Udhar (Diya)</option>
-      </select>
-    </div>
-    <div>
-      <label class="block text-xs text-gray-400 mb-1">Date</label>
-      <input type="date" id="txDate" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-    </div>
-    <div>
-      <label class="block text-xs text-gray-400 mb-1">Category</label>
-      <select id="txCategory" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white"></select>
-    </div>
-    <div>
-      <label class="block text-xs text-gray-400 mb-1">Person / Source</label>
-      <select id="txPerson" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white"></select>
-    </div>
-    <div>
-      <label class="block text-xs text-gray-400 mb-1">Amount (₹)</label>
-      <input type="number" id="txAmount" min="0.01" step="0.01" placeholder="0" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-    </div>
-    <div id="paymentModeWrap">
-      <label class="block text-xs text-gray-400 mb-1">Payment Mode</label>
-      <select id="txPaymentMode" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-        <option value="Cash">Cash</option>
-        <option value="UPI">UPI</option>
-        <option value="Bank Transfer">Bank Transfer</option>
-      </select>
-    </div>
-  </div>
-  <div class="mt-4">
-    <label class="block text-xs text-gray-400 mb-1">Note / Description</label>
-    <input type="text" id="txNote" placeholder="Optional details..." class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-  </div>
-  <div class="flex space-x-3 mt-4">
-    <button id="saveTxBtn" onclick="saveTransaction()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-2.5 rounded-lg text-sm font-medium transition shadow-md">Save Record</button>
-    <button id="cancelEditBtn" onclick="resetForm()" class="hidden bg-gray-800 hover:bg-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium border border-gray-700">Cancel</button>
-  </div>
-</div>
-
-<!-- Bulk Entry / Categories / Persons (3 columns) -->
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-4 items-start">
-
-  <!-- Bulk Entry -->
-  <div class="bg-cardBg rounded-2xl border border-gray-700 shadow collapsible-card" data-card-id="bulk" data-default="closed">
-    <div class="flex items-center justify-between p-5 cursor-pointer select-none" onclick="toggleCollapsible('bulk')">
-      <h3 class="text-md font-semibold text-indigo-300">Bulk Entry</h3>
-      <i class="fa-solid fa-plus text-gray-400 toggle-icon"></i>
-    </div>
-    <div class="card-content px-5 pb-5">
-      <p class="text-xs text-gray-400 mb-3">Ek saath kai entries add karo.</p>
-      <button onclick="openBulkModal()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-2 rounded-lg text-sm font-medium transition">
-        <i class="fa-solid fa-layer-group mr-1"></i> Bulk Add
-      </button>
-    </div>
-  </div>
-
-  <!-- Categories -->
-  <div class="bg-cardBg rounded-2xl border border-gray-700 shadow collapsible-card" data-card-id="categories" data-default="closed">
-    <div class="flex items-center justify-between p-5 cursor-pointer select-none" onclick="toggleCollapsible('categories')">
-      <h3 class="text-md font-semibold text-indigo-300">Categories</h3>
-      <i class="fa-solid fa-plus text-gray-400 toggle-icon"></i>
-    </div>
-    <div class="card-content px-5 pb-5">
-      <div class="space-y-3 mb-4">
-        <input type="text" id="newCategoryName" placeholder="New category name" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-        <select id="newCategoryType" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+  <!-- Add New Transaction -->
+  <div class="bg-cardBg p-5 md:p-6 rounded-2xl border border-gray-700 shadow mb-4">
+    <h3 id="formTitle" class="text-lg font-semibold mb-4 text-indigo-300">Add New Transaction</h3>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-xs text-gray-400 mb-1">Type</label>
+        <select id="txType" onchange="onTypeChange()" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
           <option value="Expense">Expense</option>
           <option value="Income">Income</option>
           <option value="Savings">Savings</option>
+          <option value="Udhar">Udhar (Liya)</option>
+          <option value="UdharDiya">Udhar (Diya)</option>
         </select>
-        <button onclick="addCategory(this)" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium transition">Add Category</button>
       </div>
-      <div id="categoryList" class="space-y-2 max-h-64 overflow-y-auto"></div>
+      <div>
+        <label class="block text-xs text-gray-400 mb-1">Date</label>
+        <input type="date" id="txDate" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+      </div>
+      <div>
+        <label class="block text-xs text-gray-400 mb-1">Category</label>
+        <select id="txCategory" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white"></select>
+      </div>
+      <div>
+        <label class="block text-xs text-gray-400 mb-1">Person / Source</label>
+        <select id="txPerson" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white"></select>
+      </div>
+      <div>
+        <label class="block text-xs text-gray-400 mb-1">Amount (₹)</label>
+        <input type="number" id="txAmount" min="0.01" step="0.01" placeholder="0" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+      </div>
+      <div id="paymentModeWrap">
+        <label class="block text-xs text-gray-400 mb-1">Payment Mode</label>
+        <select id="txPaymentMode" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+          <option value="Cash">Cash</option>
+          <option value="UPI">UPI</option>
+          <option value="Bank Transfer">Bank Transfer</option>
+        </select>
+      </div>
+    </div>
+    <div class="mt-4">
+      <label class="block text-xs text-gray-400 mb-1">Note / Description</label>
+      <input type="text" id="txNote" placeholder="Optional details..." class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+    </div>
+    <div class="flex space-x-3 mt-4">
+      <button id="saveTxBtn" onclick="saveTransaction()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-2.5 rounded-lg text-sm font-medium transition shadow-md">Save Record</button>
+      <button id="cancelEditBtn" onclick="resetForm()" class="hidden bg-gray-800 hover:bg-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium border border-gray-700">Cancel</button>
     </div>
   </div>
 
-  <!-- Persons / Sources -->
-  <div class="bg-cardBg rounded-2xl border border-gray-700 shadow collapsible-card" data-card-id="persons" data-default="closed">
-    <div class="flex items-center justify-between p-5 cursor-pointer select-none" onclick="toggleCollapsible('persons')">
-      <h3 class="text-md font-semibold text-indigo-300">Persons / Sources</h3>
+  <!-- Bulk / Categories / Persons -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-4 items-start">
+
+    <div class="bg-cardBg rounded-2xl border border-gray-700 shadow collapsible-card" data-card-id="bulk" data-default="closed">
+      <div class="flex items-center justify-between p-5 cursor-pointer select-none" onclick="toggleCollapsible('bulk')">
+        <h3 class="text-md font-semibold text-indigo-300">Bulk Entry</h3>
+        <i class="fa-solid fa-plus text-gray-400 toggle-icon"></i>
+      </div>
+      <div class="card-content px-5 pb-5">
+        <p class="text-xs text-gray-400 mb-3">Ek saath kai entries add karo.</p>
+        <button onclick="openBulkModal()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-2 rounded-lg text-sm font-medium transition">
+          <i class="fa-solid fa-layer-group mr-1"></i> Bulk Add
+        </button>
+      </div>
+    </div>
+
+    <div class="bg-cardBg rounded-2xl border border-gray-700 shadow collapsible-card" data-card-id="categories" data-default="closed">
+      <div class="flex items-center justify-between p-5 cursor-pointer select-none" onclick="toggleCollapsible('categories')">
+        <h3 class="text-md font-semibold text-indigo-300">Categories</h3>
+        <i class="fa-solid fa-plus text-gray-400 toggle-icon"></i>
+      </div>
+      <div class="card-content px-5 pb-5">
+        <div class="space-y-3 mb-4">
+          <input type="text" id="newCategoryName" placeholder="New category name" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+          <select id="newCategoryType" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+            <option value="Expense">Expense</option>
+            <option value="Income">Income</option>
+            <option value="Savings">Savings</option>
+          </select>
+          <button onclick="addCategory(this)" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium transition">Add Category</button>
+        </div>
+        <div id="categoryList" class="space-y-2 max-h-64 overflow-y-auto"></div>
+      </div>
+    </div>
+
+    <div class="bg-cardBg rounded-2xl border border-gray-700 shadow collapsible-card" data-card-id="persons" data-default="closed">
+      <div class="flex items-center justify-between p-5 cursor-pointer select-none" onclick="toggleCollapsible('persons')">
+        <h3 class="text-md font-semibold text-indigo-300">Persons / Sources</h3>
+        <i class="fa-solid fa-plus text-gray-400 toggle-icon"></i>
+      </div>
+      <div class="card-content px-5 pb-5">
+        <div class="space-y-3 mb-4">
+          <input type="text" id="newPersonName" placeholder="New person name" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+          <button onclick="addPerson(this)" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium transition">Add Person</button>
+        </div>
+        <div id="personList" class="space-y-2 max-h-64 overflow-y-auto"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Period Filter -->
+  <div class="bg-cardBg p-5 rounded-2xl border border-gray-700 shadow mb-4">
+    <div class="flex flex-col sm:flex-row justify-between items-center gap-3">
+      <h3 class="text-lg font-semibold text-indigo-300">Period Filter</h3>
+      <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+        <select id="filterType" onchange="renderDashboard()" class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white">
+          <option value="all">All Time</option>
+          <option value="monthly">Monthly</option>
+          <option value="yearly">Yearly</option>
+        </select>
+        <input type="month" id="filterMonth" onchange="renderDashboard()" class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white">
+      </div>
+    </div>
+  </div>
+
+  <!-- Category-wise Total -->
+  <div class="bg-cardBg rounded-2xl border border-gray-700 shadow mb-4 collapsible-card" data-card-id="catwise" data-default="closed">
+    <div class="flex items-center justify-between p-5 cursor-pointer select-none" onclick="toggleCollapsible('catwise')">
+      <h3 class="text-lg font-semibold text-indigo-300">Category-wise Total</h3>
       <i class="fa-solid fa-plus text-gray-400 toggle-icon"></i>
     </div>
     <div class="card-content px-5 pb-5">
-      <div class="space-y-3 mb-4">
-        <input type="text" id="newPersonName" placeholder="New person name" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-        <button onclick="addPerson(this)" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium transition">Add Person</button>
+      <div class="flex justify-end mb-4">
+        <select id="catWiseType" onchange="renderCategoryWise()"
+          class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white w-full sm:w-auto">
+          <option value="expense" selected>Expense</option>
+          <option value="income">Income</option>
+          <option value="savings">Savings</option>
+          <option value="both">Both</option>
+        </select>
       </div>
-      <div id="personList" class="space-y-2 max-h-64 overflow-y-auto"></div>
+      <div id="categoryWiseList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
     </div>
   </div>
-
-</div>
-
-  <!-- Period Filter -->
-<div class="bg-cardBg p-5 rounded-2xl border border-gray-700 shadow mb-4">
-  <div class="flex flex-col sm:flex-row justify-between items-center gap-3">
-    <h3 class="text-lg font-semibold text-indigo-300">Period Filter</h3>
-    <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-      <select id="filterType" onchange="renderDashboard()" class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white">
-        <option value="all">All Time</option>
-        <option value="monthly">Monthly</option>
-        <option value="yearly">Yearly</option>
-      </select>
-      <input type="month" id="filterMonth" onchange="renderDashboard()" class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white">
-    </div>
-  </div>
-</div>
-
-  
-  <!-- Category-wise Total -->
-<div class="bg-cardBg rounded-2xl border border-gray-700 shadow mb-4 collapsible-card" data-card-id="catwise" data-default="closed">
-  <div class="flex items-center justify-between p-5 cursor-pointer select-none" onclick="toggleCollapsible('catwise')">
-    <h3 class="text-lg font-semibold text-indigo-300">Category-wise Total</h3>
-    <i class="fa-solid fa-plus text-gray-400 toggle-icon"></i>
-  </div>
-  <div class="card-content px-5 pb-5">
-    <div class="flex justify-end mb-4">
-      <select id="catWiseType" onchange="renderCategoryWise()"
-        class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white w-full sm:w-auto">
-        <option value="expense" selected>Expense</option>
-        <option value="income">Income</option>
-        <option value="savings">Savings</option>
-        <option value="both">Both</option>
-      </select>
-    </div>
-    <div id="categoryWiseList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
-  </div>
-</div>
 
   <!-- Udhar Register -->
-<div class="bg-cardBg rounded-2xl border border-gray-700 shadow mb-4 collapsible-card" data-card-id="udhar" data-default="closed">
-  <div class="flex items-center justify-between p-5 cursor-pointer select-none" onclick="toggleCollapsible('udhar')">
-    <div class="flex items-center gap-3">
-      <h3 class="text-lg font-semibold text-amber-300">Udhar Register</h3>
-      <span id="udharTotalBadge" class="text-xs text-amber-400 bg-amber-900/40 border border-amber-700 px-3 py-1 rounded-full">Total: ₹0</span>
+  <div class="bg-cardBg rounded-2xl border border-gray-700 shadow mb-4 collapsible-card" data-card-id="udhar" data-default="closed">
+    <div class="flex items-center justify-between p-5 cursor-pointer select-none" onclick="toggleCollapsible('udhar')">
+      <div class="flex items-center gap-3">
+        <h3 class="text-lg font-semibold text-amber-300">Udhar Register</h3>
+        <span id="udharTotalBadge" class="text-xs text-amber-400 bg-amber-900/40 border border-amber-700 px-3 py-1 rounded-full">Total: ₹0</span>
+      </div>
+      <i class="fa-solid fa-plus text-gray-400 toggle-icon"></i>
     </div>
-    <i class="fa-solid fa-plus text-gray-400 toggle-icon"></i>
+    <div class="card-content px-5 pb-5">
+      <div id="udharList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+    </div>
   </div>
-  <div class="card-content px-5 pb-5">
-    <div id="udharList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
-  </div>
-</div>
 
-  
-  <!-- Transactions Table -->
+  <!-- Recent Transactions -->
   <div class="bg-cardBg p-4 md:p-6 rounded-2xl border border-gray-700 shadow">
-   <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-3">
-  <h3 class="text-lg font-semibold text-indigo-300">Recent Transactions</h3>
-  <div class="flex gap-2 w-full sm:w-auto">
-    <div class="relative flex-1 sm:w-64">
-  <input type="text" id="searchTx" placeholder="Search category, person, note..." oninput="onSearch()"
-    class="w-full bg-gray-900 border border-gray-700 rounded-lg pl-3 pr-9 py-1.5 text-sm text-white">
-  <button id="clearSearchBtn" onclick="clearSearch()" title="Clear"
-    class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-400 hidden">
-    <i class="fa-solid fa-circle-xmark"></i>
-  </button>
+    <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-3">
+      <h3 class="text-lg font-semibold text-indigo-300">Recent Transactions</h3>
+      <div class="flex gap-2 w-full sm:w-auto">
+        <div class="relative flex-1 sm:w-64">
+          <input type="text" id="searchTx" placeholder="Search category, person, note..." oninput="onSearch()"
+            class="w-full bg-gray-900 border border-gray-700 rounded-lg pl-3 pr-9 py-1.5 text-sm text-white">
+          <button id="clearSearchBtn" onclick="clearSearch()" title="Clear"
+            class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-400 hidden">
+            <i class="fa-solid fa-circle-xmark"></i>
+          </button>
+        </div>
+        <select id="rowsLimit" onchange="renderDashboard()"
+          class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white">
+          <option value="10" selected>10</option>
+          <option value="20">20</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+          <option value="200">200</option>
+        </select>
+      </div>
     </div>
-    <select id="rowsLimit" onchange="renderDashboard()"
-      class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white">
-      <option value="10" selected>10</option>
-      <option value="20">20</option>
-      <option value="50">50</option>
-      <option value="100">100</option>
-      <option value="200">200</option>
-    </select>
-  </div>
-</div>
     <div class="overflow-x-auto">
       <table class="w-full text-left text-sm">
         <thead>
@@ -301,7 +296,6 @@ tailwind.config = {
   <div class="bg-cardBg p-6 rounded-2xl shadow-2xl w-full max-w-md border border-gray-700 fade-in max-h-[90vh] overflow-y-auto">
     <h3 class="text-xl font-bold mb-5 text-indigo-400">Settings</h3>
 
-    <!-- Change Username -->
     <div class="border border-gray-700 rounded-xl p-4 mb-4">
       <h4 class="text-sm font-semibold text-indigo-300 mb-3">Change Username</h4>
       <input type="text" id="setNewUser" placeholder="New username" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white mb-2">
@@ -309,7 +303,6 @@ tailwind.config = {
       <button onclick="changeUsername()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium">Update Username</button>
     </div>
 
-    <!-- Change Password -->
     <div class="border border-gray-700 rounded-xl p-4 mb-4">
       <h4 class="text-sm font-semibold text-indigo-300 mb-3">Change Password</h4>
       <input type="password" id="setCurrentPass" placeholder="Current password" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white mb-2">
@@ -318,7 +311,6 @@ tailwind.config = {
       <button onclick="changePassword()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium">Update Password</button>
     </div>
 
-    <!-- API URL -->
     <div class="border border-gray-700 rounded-xl p-4 mb-4">
       <h4 class="text-sm font-semibold text-indigo-300 mb-3">Change API URL</h4>
       <input type="text" id="setApiUrl" placeholder="https://script.google.com/..." class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white mb-2">
@@ -336,14 +328,14 @@ tailwind.config = {
     <h3 class="text-lg font-bold mb-2 text-indigo-400" id="confirmTitle">Confirm</h3>
     <p class="text-sm text-gray-400 mb-4" id="confirmMsg">Enter password to continue</p>
     <div class="relative mb-3">
-  <input type="password" id="confirmPass" placeholder="Password" autocomplete="off"
-    class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 pr-10 text-sm text-white"
-    onkeydown="if(event.key==='Enter') submitConfirm()">
-  <button type="button" onclick="togglePass('confirmPass', this)"
-    class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-400">
-    <i class="fa-solid fa-eye"></i>
-  </button>
-</div>
+      <input type="password" id="confirmPass" placeholder="Password" autocomplete="off"
+        class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 pr-10 text-sm text-white"
+        onkeydown="if(event.key==='Enter') submitConfirm()">
+      <button type="button" onclick="togglePass('confirmPass', this)"
+        class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-400">
+        <i class="fa-solid fa-eye"></i>
+      </button>
+    </div>
     <div class="flex gap-2">
       <button onclick="submitConfirm()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium">Confirm</button>
       <button onclick="cancelConfirm()" class="flex-1 bg-gray-800 hover:bg-gray-700 py-2 rounded-lg text-sm font-medium border border-gray-700">Cancel</button>
@@ -387,13 +379,13 @@ tailwind.config = {
   </div>
 </div>
 
-  <!-- Pay Udhar Modal -->
+<!-- Pay Udhar Modal -->
 <div id="payModal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md hidden p-4">
   <div class="bg-cardBg p-6 rounded-2xl shadow-2xl w-full max-w-md border border-gray-700 fade-in max-h-[90vh] overflow-y-auto">
     <h3 class="text-lg font-bold mb-1 text-indigo-400">Pay Udhar</h3>
     <p id="payPersonName" class="text-sm text-gray-400 mb-4"></p>
     <div class="space-y-3">
-           <div>
+      <div>
         <label class="block text-xs text-gray-400 mb-1">Category</label>
         <select id="payCategory" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white"></select>
       </div>
@@ -427,13 +419,13 @@ tailwind.config = {
   </div>
 </div>
 
-  <!-- Receive Udhar Modal -->
+<!-- Receive Udhar Modal -->
 <div id="receiveModal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md hidden p-4">
   <div class="bg-cardBg p-6 rounded-2xl shadow-2xl w-full max-w-md border border-gray-700 fade-in max-h-[90vh] overflow-y-auto">
     <h3 class="text-lg font-bold mb-1 text-blue-400">Receive Udhar</h3>
     <p id="receivePersonName" class="text-sm text-gray-400 mb-4"></p>
     <div class="space-y-3">
-            <div>
+      <div>
         <label class="block text-xs text-gray-400 mb-1">Category</label>
         <select id="receiveCategory" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white"></select>
       </div>
@@ -467,7 +459,6 @@ tailwind.config = {
   </div>
 </div>
 
-
 <!-- Udhar History Modal -->
 <div id="historyModal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md hidden p-4">
   <div class="bg-cardBg p-6 rounded-2xl shadow-2xl w-full max-w-2xl border border-gray-700 fade-in max-h-[90vh] flex flex-col">
@@ -479,8 +470,7 @@ tailwind.config = {
   </div>
 </div>
 
-
-<!-- ============ TOAST ============ -->
+<!-- TOAST -->
 <div id="toast" class="fixed bottom-6 right-6 z-[70] hidden">
   <div id="toastBody" class="px-4 py-3 rounded-lg shadow-lg text-sm font-medium border"></div>
 </div>
@@ -536,7 +526,7 @@ function btnReset(btn) {
   }
 }
 
-  function toggleCollapsible(id) {
+function toggleCollapsible(id) {
   const card = document.querySelector(`.collapsible-card[data-card-id="${id}"]`);
   if (!card) return;
   const content = card.querySelector('.card-content');
@@ -578,7 +568,6 @@ function initCollapsibles() {
   });
 }
 
-  
 function showToast(msg, type = 'success') {
   const el = document.getElementById('toast');
   const body = document.getElementById('toastBody');
@@ -657,9 +646,8 @@ window.onload = function () {
   document.getElementById('txDate').value = getTodayLocal();
   document.getElementById('filterMonth').value = getCurrentMonthLocal();
   startLiveClock();
-    initCollapsibles();
+  initCollapsibles();
   document.getElementById('setApiUrl').value = API_URL;
-
 
   if (TOKEN) {
     showApp();
@@ -671,7 +659,7 @@ window.onload = function () {
   }
 };
 
-  function startLiveClock() {
+function startLiveClock() {
   const el = document.getElementById('currentDateDisplay');
   if (!el) return;
   function tick() {
@@ -689,7 +677,6 @@ window.onload = function () {
   tick();
   setInterval(tick, 1000);
 }
-
 
 function showApp() {
   document.getElementById('loginModal').classList.add('hidden');
@@ -734,7 +721,7 @@ async function handleLogin() {
   }
 }
 
-  function togglePass(inputId, btn) {
+function togglePass(inputId, btn) {
   const input = document.getElementById(inputId);
   const icon = btn.querySelector('i');
   if (input.type === 'password') {
@@ -775,8 +762,8 @@ async function syncData(showSpin = false) {
       appData.transactions = data.transactions || [];
       appData.categories = data.categories || [];
       appData.dailyLedger = data.dailyLedger || [];
-            appData.udharLedger = data.udharLedger || [];
-            appData.persons = data.persons || [];
+      appData.udharLedger = data.udharLedger || [];
+      appData.persons = data.persons || [];
       statusEl.textContent = 'Connected';
       statusEl.className = 'px-2.5 py-1 text-xs rounded-full bg-emerald-900/50 text-emerald-400 border border-emerald-700';
       renderDashboard();
@@ -792,7 +779,7 @@ async function syncData(showSpin = false) {
   }
 }
 
-  function getCategoriesForType(type) {
+function getCategoriesForType(type) {
   const t = String(type).toLowerCase();
   const wanted = t === 'income' ? 'income' : (t === 'savings' ? 'savings' : 'expense');
 
@@ -841,17 +828,16 @@ function onTypeChange() {
 
 function renderDashboard() {
   renderCategories();
-    renderCategoryList();
-    renderCategoryWise();
-    renderUdharRegister();
-    renderPersonList();
+  renderCategoryList();
+  renderCategoryWise();
+  renderUdharRegister();
+  renderPersonList();
   renderPersonDropdown();
 
   const filterType = document.getElementById('filterType').value;
   const filterMonth = document.getElementById('filterMonth').value;
   const searchQuery = document.getElementById('searchTx').value.toLowerCase().trim();
 
-  // Filter
   const filtered = appData.transactions.filter(t => {
     const tDate = String(t.date || '');
     if (filterType === 'monthly' && filterMonth) {
@@ -867,25 +853,23 @@ function renderDashboard() {
     return true;
   });
 
-  // Totals (of ALL transactions, not filtered - to match original)
   let totalInc = 0, totalExp = 0, totalSav = 0;
-appData.transactions.forEach(t => {
-  const amt = parseFloat(t.amount) || 0;
-  const type = String(t.type).toLowerCase();
+  appData.transactions.forEach(t => {
+    const amt = parseFloat(t.amount) || 0;
+    const type = String(t.type).toLowerCase();
     if (type === 'income') totalInc += amt;
-  else if (type === 'savings') totalSav += amt;
-  else if (type === 'udhar') { /* skip — not yet paid */ }
-  else if (type === 'udhardiya' || type === 'udharreceived') { /* skip — loan tracking */ }
-  else totalExp += amt;
-});
-document.getElementById('totalIncome').textContent = formatMoney(totalInc);
-document.getElementById('totalExpense').textContent = formatMoney(totalExp);
-const savEl = document.getElementById('totalSavings');
-if (savEl) savEl.textContent = formatMoney(totalSav);
-document.getElementById('netBalance').textContent = formatMoney(totalInc - totalExp - totalSav);
+    else if (type === 'savings') totalSav += amt;
+    else if (type === 'udhar') { /* skip */ }
+    else if (type === 'udhardiya' || type === 'udharreceived') { /* skip */ }
+    else totalExp += amt;
+  });
+  document.getElementById('totalIncome').textContent = formatMoney(totalInc);
+  document.getElementById('totalExpense').textContent = formatMoney(totalExp);
+  const savEl = document.getElementById('totalSavings');
+  if (savEl) savEl.textContent = formatMoney(totalSav);
+  document.getElementById('netBalance').textContent = formatMoney(totalInc - totalExp - totalSav);
 
-  // Today
-    const todayStr = getTodayLocal();
+  const todayStr = getTodayLocal();
   const todayCount = appData.transactions.filter(t => String(t.date || '').startsWith(todayStr)).length;
   const todayEl = document.getElementById('todayStatus');
   if (todayCount > 0) {
@@ -896,13 +880,11 @@ document.getElementById('netBalance').textContent = formatMoney(totalInc - total
     todayEl.className = "text-sm md:text-lg font-bold text-red-400 mt-1";
   }
 
-  // Table
   const tbody = document.getElementById('transactionTableBody');
-      const limit = parseInt(document.getElementById('rowsLimit').value) || 10;
-    filtered.sort((a, b) => {
+  const limit = parseInt(document.getElementById('rowsLimit').value) || 10;
+  filtered.sort((a, b) => {
     const d = String(b.date || '').localeCompare(String(a.date || ''));
     if (d !== 0) return d;
-    // Same date — ID ke aakhir ke timestamp se newest pehle
     return String(b.id || '').localeCompare(String(a.id || ''));
   });
   const limited = filtered.slice(0, limit);
@@ -911,17 +893,16 @@ document.getElementById('netBalance').textContent = formatMoney(totalInc - total
     return;
   }
 
-    const frag = document.createDocumentFragment();
+  const frag = document.createDocumentFragment();
   limited.forEach(t => {
     const tr = document.createElement('tr');
     const mode = t.paymentmode || t.paymentMode || '-';
-    const isInc = String(t.type).toLowerCase() === 'income';
-        const t2 = String(t.type).toLowerCase();
+    const t2 = String(t.type).toLowerCase();
     let typeColor = 'text-red-400';
     if (t2 === 'income') typeColor = 'text-emerald-400';
     else if (t2 === 'savings') typeColor = 'text-blue-400';
     else if (t2 === 'udhar') typeColor = 'text-amber-400';
-        else if (t2 === 'udhardiya') typeColor = 'text-blue-400';
+    else if (t2 === 'udhardiya') typeColor = 'text-blue-400';
     else if (t2 === 'udharreceived') typeColor = 'text-emerald-400';
     const tid = escapeHtml(t.id);
     tr.innerHTML = `
@@ -943,7 +924,7 @@ document.getElementById('netBalance').textContent = formatMoney(totalInc - total
   tbody.appendChild(frag);
 }
 
-  function renderCategoryWise() {
+function renderCategoryWise() {
   const container = document.getElementById('categoryWiseList');
   if (!container) return;
 
@@ -964,9 +945,9 @@ document.getElementById('netBalance').textContent = formatMoney(totalInc - total
     const type = String(t.type || '').toLowerCase();
     const amt = parseFloat(t.amount) || 0;
     if (!map[cat]) map[cat] = { income: 0, expense: 0, savings: 0 };
-        if (type === 'income') map[cat].income += amt;
+    if (type === 'income') map[cat].income += amt;
     else if (type === 'savings') map[cat].savings += amt;
-        else if (type === 'udhar' || type === 'udhardiya' || type === 'udharreceived') { /* skip */ }
+    else if (type === 'udhar' || type === 'udhardiya' || type === 'udharreceived') { /* skip */ }
     else map[cat].expense += amt;
   });
 
@@ -1042,7 +1023,7 @@ function clearSearch() {
   document.getElementById('clearSearchBtn').classList.add('hidden');
   renderDashboard();
 }
-  
+
 /* ============ CRUD ============ */
 function editTransaction(id) {
   const t = appData.transactions.find(x => String(x.id) === String(id));
@@ -1052,7 +1033,7 @@ function editTransaction(id) {
   document.getElementById('txType').value = t.type || 'Expense';
   renderCategories();
   document.getElementById('txCategory').value = t.category || '';
-    renderPersonDropdown(t.person || 'Self');
+  renderPersonDropdown(t.person || 'Self');
   document.getElementById('txAmount').value = t.amount || '';
   document.getElementById('txPaymentMode').value = t.paymentmode || t.paymentMode || 'Cash';
   document.getElementById('txNote').value = (t.note === '-' || !t.note) ? '' : t.note;
@@ -1068,7 +1049,7 @@ function resetForm() {
   document.getElementById('txDate').value = getTodayLocal();
   document.getElementById('txAmount').value = '';
   document.getElementById('txNote').value = '';
-    renderPersonDropdown('Self');
+  renderPersonDropdown('Self');
   document.getElementById('formTitle').textContent = "Add New Transaction";
   const saveBtn = document.getElementById('saveTxBtn');
   saveBtn.textContent = "Save Record";
@@ -1077,8 +1058,6 @@ function resetForm() {
   saveBtn.classList.remove('opacity-60', 'cursor-not-allowed');
   document.getElementById('cancelEditBtn').classList.add('hidden');
 }
-
-  
 
 async function saveTransaction() {
   const btn = document.getElementById('saveTxBtn');
@@ -1094,16 +1073,15 @@ async function saveTransaction() {
     password = await askPassword("Confirm Edit", "Edit karne ke liye password daalo");
     if (!password) return;
   }
-  // Duplicate check (sirf nayi entry pe)
+
   if (!isEdit) {
     const newDate = document.getElementById('txDate').value;
     const newType = document.getElementById('txType').value;
     const newCat = document.getElementById('txCategory').value;
     const newPerson = document.getElementById('txPerson').value || 'Self';
-        const dup = appData.transactions.find(t =>
+    const dup = appData.transactions.find(t =>
       String(t.date) === String(newDate) &&
       String(t.type).toLowerCase().replace(/\s+/g, '') === String(newType).toLowerCase().replace(/\s+/g, '') &&
-      String(t.type).toLowerCase() === String(newType).toLowerCase() &&
       String(t.category) === String(newCat) &&
       String(t.person || 'Self') === String(newPerson) &&
       Math.abs(parseFloat(t.amount) - amount) < 0.01
@@ -1125,7 +1103,7 @@ async function saveTransaction() {
     category: document.getElementById('txCategory').value,
     person: document.getElementById('txPerson').value || 'Self',
     amount: amount,
-            paymentMode: (function(){
+    paymentMode: (function(){
       const t = String(document.getElementById('txType').value).toLowerCase().replace(/\s+/g, '');
       if (t === 'udhardiya') return 'Udhar Diya';
       if (t === 'udhar') return 'Udhar';
@@ -1173,6 +1151,7 @@ async function deleteTransaction(id, btn) {
       if (data.transactions) {
         appData.transactions = data.transactions;
         appData.categories = data.categories || appData.categories;
+        appData.udharLedger = data.udharLedger || appData.udharLedger;
         renderDashboard();
       } else {
         syncData();
@@ -1220,7 +1199,7 @@ async function addCategory(btn) {
   }
 }
 
-  function renderPersonList() {
+function renderPersonList() {
   const listEl = document.getElementById('personList');
   if (!listEl) return;
   let persons = (appData.persons || [])
@@ -1258,7 +1237,6 @@ function renderPersonDropdown(preserveValue) {
   if (currentVal && persons.includes(currentVal)) {
     sel.value = currentVal;
   } else if (currentVal) {
-    // Agar current value list mein nahi hai (purani entry edit ho rahi), add kar do
     const opt = document.createElement('option');
     opt.value = currentVal;
     opt.textContent = currentVal;
@@ -1300,8 +1278,7 @@ async function addPerson(btn) {
   }
 }
 
-  
-  function renderCategoryList() {
+function renderCategoryList() {
   const listEl = document.getElementById('categoryList');
   let cats = appData.categories
     .map(c => String(c.category || c.name || '').trim())
@@ -1345,13 +1322,12 @@ async function editCategory(oldName) {
   } catch (e) { showToast("Network error", "error"); }
 }
 
-/* Event delegation for table buttons */
 document.getElementById('transactionTableBody').addEventListener('click', e => {
   const btn = e.target.closest('button[data-action]');
   if (!btn) return;
   const id = btn.getAttribute('data-id');
   if (btn.getAttribute('data-action') === 'edit') editTransaction(id);
-    else if (btn.getAttribute('data-action') === 'delete') deleteTransaction(id, btn);
+  else if (btn.getAttribute('data-action') === 'delete') deleteTransaction(id, btn);
 });
 
 /* ============ BULK ============ */
@@ -1397,9 +1373,8 @@ function onBulkTypeChange(selectEl) {
   ).join('');
   if (!cats.includes(currentVal)) catSelect.value = cats[0];
 
-  // Udhar type pe Payment Mode hide karo
   const modeSelect = row.querySelector('.bulk-mode');
-    const tNorm = String(selectEl.value).toLowerCase().replace(/\s+/g, '');
+  const tNorm = String(selectEl.value).toLowerCase().replace(/\s+/g, '');
   const isUdhar = (tNorm === 'udhar' || tNorm === 'udhardiya');
   modeSelect.style.visibility = isUdhar ? 'hidden' : 'visible';
   modeSelect.disabled = isUdhar;
@@ -1412,12 +1387,12 @@ function addBulkRow() {
   row.className = 'bulk-row grid grid-cols-12 gap-2 items-center bg-gray-900/50 p-2 rounded-lg border border-gray-700';
   row.innerHTML = `
     <select onchange="onBulkTypeChange(this)" class="bulk-type col-span-1 bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-white">
-  <option value="Expense">Expense</option>
-  <option value="Income">Income</option>
-  <option value="Savings">Savings</option>
-  <option value="Udhar">Udhar (Liya)</option>
-  <option value="UdharDiya">Udhar (Diya)</option>
-</select>
+      <option value="Expense">Expense</option>
+      <option value="Income">Income</option>
+      <option value="Savings">Savings</option>
+      <option value="Udhar">Udhar (Liya)</option>
+      <option value="UdharDiya">Udhar (Diya)</option>
+    </select>
     <input type="date" class="bulk-date col-span-2 bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-white" value="${today}">
     <select class="bulk-category col-span-2 bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-white">${getCategoryOptions('')}</select>
     <select class="bulk-person col-span-1 bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-white">${getPersonOptions('Self')}</select>
@@ -1462,12 +1437,13 @@ async function submitBulk(btn) {
     if (!date) { errors.push(`Row ${idx + 1}: Date required`); return; }
     if (!amount || amount <= 0) { errors.push(`Row ${idx + 1}: Amount valid nahi`); return; }
 
-            const tNorm = String(type).toLowerCase().replace(/\s+/g, '');
+    const tNorm = String(type).toLowerCase().replace(/\s+/g, '');
     const isUdharRow = tNorm === 'udhar';
     const isUdharDiyaRow = tNorm === 'udhardiya';
     const finalMode = isUdharDiyaRow ? 'Udhar Diya' : (isUdharRow ? 'Udhar' : mode);
-   items.push({ date, type, category, person, amount, paymentMode: finalMode, note });
-   });
+    items.push({ date, type, category, person, amount, paymentMode: finalMode, note });
+  });
+
   if (errors.length) {
     const errEl = document.getElementById('bulkError');
     errEl.textContent = errors.slice(0, 8).join('\n');
@@ -1475,14 +1451,13 @@ async function submitBulk(btn) {
     return;
   }
   if (items.length === 0) { showToast("Koi valid entry nahi", "error"); return; }
-  // Duplicate check bulk mein bhi
+
   const duplicates = [];
   const internalDupes = [];
   const seen = new Set();
 
   items.forEach((it, idx) => {
     const key = [it.date, String(it.type).toLowerCase(), it.category, it.person || 'Self', Number(it.amount)].join('|');
-    // Already database mein?
     const exists = appData.transactions.find(t =>
       String(t.date) === String(it.date) &&
       String(t.type).toLowerCase() === String(it.type).toLowerCase() &&
@@ -1491,7 +1466,6 @@ async function submitBulk(btn) {
       Math.abs(parseFloat(t.amount) - it.amount) < 0.01
     );
     if (exists) duplicates.push(idx + 1);
-    // Bulk ke andar hi duplicate?
     if (seen.has(key)) internalDupes.push(idx + 1);
     seen.add(key);
   });
@@ -1503,6 +1477,7 @@ async function submitBulk(btn) {
     msg += '\nPhir bhi sab upload karni hai?';
     if (!confirm(msg)) return;
   }
+
   btnLoading(btn, 'Uploading...');
   try {
     const data = await apiPost({ action: 'saveBulk', token: TOKEN, items: items });
@@ -1513,6 +1488,7 @@ async function submitBulk(btn) {
       if (data.transactions) {
         appData.transactions = data.transactions;
         appData.categories = data.categories || appData.categories;
+        appData.udharLedger = data.udharLedger || appData.udharLedger;
         renderDashboard();
       } else {
         syncData();
@@ -1527,11 +1503,10 @@ async function submitBulk(btn) {
   }
 }
 
-  
-
-/* ============ SETTINGS ============ */
+/* ============ UDHAR ============ */
 let udharPersonsCache = [];
 let payPersonCache = null;
+let receivePersonCache = null;
 
 function renderUdharRegister() {
   const container = document.getElementById('udharList');
@@ -1645,7 +1620,139 @@ function renderUdharRegister() {
   }).join('');
 }
 
-let receivePersonCache = null;
+// SIMPLE & CORRECT: category-wise pending nikalo
+// - type=udhar/udhardiya → us category mein gross udhar add karo
+// - type=payment/received → uski category (jo ab real hai, jaise Doodh) se exact subtract karo
+// - Purani "Udhar Payment" category wali payments → proportionally distribute karo
+function getPersonCategories(person, mode) {
+  const ledger = appData.udharLedger || [];
+  const isPayable = mode !== 'receivable';
+  const wantedTypes = isPayable ? ['udhar'] : ['udhardiya'];
+  const payTypes = isPayable ? ['payment'] : ['received'];
+
+  const catMap = {};    // category → net pending
+  let totalGross = 0;
+  let legacyPaid = 0;   // "Udhar Payment" / "Udhar Received" type ki purani payments
+
+  ledger.forEach(e => {
+    if (String(e.person || '').trim() !== String(person).trim()) return;
+    const cat = String(e.category || '').trim();
+    const amt = parseFloat(e.amount) || 0;
+    const type = String(e.type || '').toLowerCase();
+
+    if (wantedTypes.indexOf(type) !== -1 && cat && cat !== 'Udhar Payment' && cat !== 'Udhar Received') {
+      if (!catMap[cat]) catMap[cat] = 0;
+      catMap[cat] += amt;
+      totalGross += amt;
+    } else if (payTypes.indexOf(type) !== -1) {
+      // Nayi payment: category real (jaise Doodh) → exact subtract
+      // Purani payment: category "Udhar Payment" → legacy count
+      if (cat && cat !== 'Udhar Payment' && cat !== 'Udhar Received') {
+        if (!catMap[cat]) catMap[cat] = 0;
+        catMap[cat] -= amt;
+      } else {
+        legacyPaid += amt;
+      }
+    }
+  });
+
+  // Legacy payments ko proportionally distribute karo (purani entries ke liye)
+  if (legacyPaid > 0 && totalGross > 0) {
+    const cats = Object.keys(catMap);
+    cats.forEach(c => {
+      const share = (catMap[c] / totalGross) * legacyPaid;
+      catMap[c] -= share;
+    });
+  }
+
+  return Object.keys(catMap)
+    .filter(c => catMap[c] > 0.001)
+    .map(c => ({ name: c, pending: Math.round(catMap[c] * 100) / 100 }))
+    .sort((a, b) => b.pending - a.pending);
+}
+
+function openPayModal(idx) {
+  const p = udharPersonsCache[idx];
+  if (!p) return;
+  payPersonCache = p;
+
+  const cats = getPersonCategories(p.name, 'payable');
+  const catSelect = document.getElementById('payCategory');
+  if (cats.length === 0) {
+    showToast("Koi pending category nahi mili", "error");
+    return;
+  }
+  catSelect.innerHTML = cats.map(c =>
+    `<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)} — Pending ${formatMoney(c.pending)}</option>`
+  ).join('');
+
+  document.getElementById('payPersonName').textContent = p.name + ' — You owe: ' + formatMoney(p.netPayable);
+  const amountEl = document.getElementById('payAmount');
+  amountEl.value = cats[0].pending;
+  amountEl.removeAttribute('max');
+  document.getElementById('payDate').value = getTodayLocal();
+  document.getElementById('payNote').value = '';
+  document.getElementById('payModal').classList.remove('hidden');
+  document.body.classList.add('no-scroll');
+
+  catSelect.onchange = function() {
+    const selectedCat = cats.find(c => c.name === catSelect.value);
+    if (selectedCat) amountEl.value = selectedCat.pending;
+  };
+}
+
+function closePayModal() {
+  document.getElementById('payModal').classList.add('hidden');
+  document.body.classList.remove('no-scroll');
+  payPersonCache = null;
+}
+
+async function submitPay(btn) {
+  if (!payPersonCache) return;
+  const amount = parseFloat(document.getElementById('payAmount').value);
+  if (!amount || amount <= 0) { showToast("Valid amount daalo", "error"); return; }
+
+  const date = document.getElementById('payDate').value;
+  if (!date) { showToast("Date daalo", "error"); return; }
+  const category = document.getElementById('payCategory').value;
+  if (!category) { showToast("Category select karo", "error"); return; }
+  const mode = document.getElementById('payMode').value;
+  const note = document.getElementById('payNote').value.trim();
+
+  btnLoading(btn, 'Paying...');
+  try {
+    const data = await apiPost({
+      action: 'payUdhar',
+      token: TOKEN,
+      person: payPersonCache.name,
+      category: category,
+      amount: amount,
+      date: date,
+      paymentMode: mode,
+      note: note || ('Udhar payment: ' + payPersonCache.name)
+    });
+    if (handleAuthError(data)) return;
+    if (data.status === 'success') {
+      showToast("Payment successful!");
+      closePayModal();
+      if (data.transactions) {
+        appData.transactions = data.transactions;
+        appData.categories = data.categories || appData.categories;
+        appData.udharLedger = data.udharLedger || appData.udharLedger;
+        renderDashboard();
+      } else {
+        syncData();
+      }
+    } else {
+      showToast(data.message || "Error", "error");
+    }
+  } catch (e) {
+    console.error(e);
+    showToast(e.message || "Network error", "error");
+  } finally {
+    btnReset(btn);
+  }
+}
 
 function openReceiveModal(idx) {
   const p = udharPersonsCache[idx];
@@ -1730,194 +1837,6 @@ async function submitReceive(btn) {
   }
 }
 
-  function getPersonCategories(person, mode) {
-  const ledger = appData.udharLedger || [];
-  const map = {};
-  const isPayable = mode !== 'receivable';
-
-  ledger.forEach(e => {
-    if (String(e.person || '').trim() !== String(person).trim()) return;
-    const cat = String(e.category || '').trim();
-    if (!cat) return;
-    const amt = parseFloat(e.amount) || 0;
-    const type = String(e.type || '').toLowerCase();
-
-    if (isPayable) {
-      if (type === 'udhar') {
-        // Old entries: "Udhar Payment" nahi hain, aur category real hai
-        if (!map[cat]) map[cat] = 0;
-        map[cat] += amt;
-      } else if (type === 'payment') {
-        // Payment entries ki category "Udhar Payment" hoti hai
-        // Aur uski asli category ka naam ledger mein nahi hai
-        // Isliye hum total paid amount ko yahan track karenge
-        // Lekin categorize kaise kare?
-        // Solution: hum category-wise pending calculate nahi karenge
-        // Balki total person ka netPayable dikhayenge
-      }
-    } else {
-      if (type === 'udhardiya') {
-        if (!map[cat]) map[cat] = 0;
-        map[cat] += amt;
-      }
-    }
-  });
-
-  // Agar payments bhi hain, to total netPayable se calculate karo
-  // But category-wise split accurately karna mushkil hai
-  // Best approach: total pending = netPayable, aur uske against category suggest karo
-  // Simple solution: harek category ka "gross" dikhao (payments minus nahi karo)
-  // Lekin yahi problem hai
-
-  // REAL FIX: 
-  // Person-level netPayable = sum(udhar) - sum(payments)
-  // Harek category ka gross udhar calculate karo
-  // Phir netPayable ki proportion mein distribute karo
-
-  let totalUdhar = 0;
-  let totalPaid = 0;
-
-  ledger.forEach(e => {
-    if (String(e.person || '').trim() !== String(person).trim()) return;
-    const amt = parseFloat(e.amount) || 0;
-    const type = String(e.type || '').toLowerCase();
-    const cat = String(e.category || '').trim();
-
-    if (isPayable) {
-      if (type === 'udhar' && cat && cat !== 'Udhar Payment') totalUdhar += amt;
-      else if (type === 'payment') totalPaid += amt;
-    } else {
-      if (type === 'udhardiya' && cat && cat !== 'Udhar Received') totalUdhar += amt;
-      else if (type === 'received') totalPaid += amt;
-    }
-  });
-
-  // Category-wise gross udhar
-  const catMap = {};
-  ledger.forEach(e => {
-    if (String(e.person || '').trim() !== String(person).trim()) return;
-    const cat = String(e.category || '').trim();
-    if (!cat || cat === 'Udhar Payment' || cat === 'Udhar Received') return;
-    const amt = parseFloat(e.amount) || 0;
-    const type = String(e.type || '').toLowerCase();
-
-    if (isPayable && type === 'udhar') {
-      catMap[cat] = (catMap[cat] || 0) + amt;
-    } else if (!isPayable && type === 'udhardiya') {
-      catMap[cat] = (catMap[cat] || 0) + amt;
-    }
-  });
-
-  // Agar koi payment nahi hua, to category-wise pending = gross udhar
-  if (totalPaid === 0 || totalUdhar === 0) {
-    return Object.keys(catMap)
-      .filter(c => catMap[c] > 0.001)
-      .map(c => ({ name: c, pending: catMap[c] }))
-      .sort((a, b) => b.pending - a.pending);
-  }
-
-  // Agar payments hue hain, to category-wise proportionally distribute karo
-  // (kyunki accurately kaunsi category ka pay hua, ye pata nahi)
-  const netPending = totalUdhar - totalPaid;
-  const cats = Object.keys(catMap);
-
-  if (netPending <= 0.001) return [];
-
-  // Proportionally distribute
-  return cats
-    .map(c => ({
-      name: c,
-      pending: Math.round((catMap[c] / totalUdhar) * netPending * 100) / 100
-    }))
-    .filter(c => c.pending > 0.001)
-    .sort((a, b) => b.pending - a.pending);
-}
-
-function openPayModal(idx) {
-  const p = udharPersonsCache[idx];
-  if (!p) return;
-  payPersonCache = p;
-
-  const cats = getPersonCategories(p.name, 'payable');
-  const catSelect = document.getElementById('payCategory');
-  if (cats.length === 0) {
-    showToast("Koi pending category nahi mili", "error");
-    return;
-  }
-  catSelect.innerHTML = cats.map(c =>
-    `<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)} — Pending ${formatMoney(c.pending)}</option>`
-  ).join('');
-
-  document.getElementById('payPersonName').textContent = p.name + ' — You owe: ' + formatMoney(p.netPayable);
-  const amountEl = document.getElementById('payAmount');
-  amountEl.value = cats[0].pending;
-  amountEl.removeAttribute('max');
-  document.getElementById('payDate').value = getTodayLocal();
-  document.getElementById('payNote').value = '';
-  document.getElementById('payModal').classList.remove('hidden');
-  document.body.classList.add('no-scroll');
-
-  // Category change hone pe amount auto-update
-  catSelect.onchange = function() {
-    const selectedCat = cats.find(c => c.name === catSelect.value);
-    if (selectedCat) amountEl.value = selectedCat.pending;
-  };
-}
-
-function closePayModal() {
-  document.getElementById('payModal').classList.add('hidden');
-  document.body.classList.remove('no-scroll');
-  payPersonCache = null;
-}
-
-async function submitPay(btn) {
-  if (!payPersonCache) return;
-  const amount = parseFloat(document.getElementById('payAmount').value);
-  if (!amount || amount <= 0) { showToast("Valid amount daalo", "error"); return; }
-  
-
-  const date = document.getElementById('payDate').value;
-  if (!date) { showToast("Date daalo", "error"); return; }
-    const category = document.getElementById('payCategory').value;
-  if (!category) { showToast("Category select karo", "error"); return; }
-  const mode = document.getElementById('payMode').value;
-  const note = document.getElementById('payNote').value.trim();
-
-  btnLoading(btn, 'Paying...');
-  try {
-    const data = await apiPost({
-      action: 'payUdhar',
-      token: TOKEN,
-      person: payPersonCache.name,
-      category: category,
-      amount: amount,
-      date: date,
-      paymentMode: mode,
-      note: note || ('Udhar payment: ' + payPersonCache.name)
-    });
-    if (handleAuthError(data)) return;
-    if (data.status === 'success') {
-      showToast("Payment successful!");
-      closePayModal();
-      if (data.transactions) {
-        appData.transactions = data.transactions;
-        appData.categories = data.categories || appData.categories;
-        appData.udharLedger = data.udharLedger || appData.udharLedger;
-        renderDashboard();
-      } else {
-        syncData();
-      }
-    } else {
-      showToast(data.message || "Error", "error");
-    }
-  } catch (e) {
-    console.error(e);
-    showToast(e.message || "Network error", "error");
-  } finally {
-    btnReset(btn);
-  }
-}
-
 function openHistoryModal(idx) {
   const p = udharPersonsCache[idx];
   if (!p) return;
@@ -1929,10 +1848,16 @@ function openHistoryModal(idx) {
     list.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">Koi entry nahi</p>';
   } else {
     list.innerHTML = entries.map(e => {
-      const isPayment = String(e.type || '').toLowerCase() === 'payment';
-      const color = isPayment ? 'text-emerald-400' : 'text-amber-400';
-      const sign = isPayment ? '−' : '+';
-      const mode = isPayment ? escapeHtml(e.paymentmode || e.paymentMode || '') : 'Udhar liya';
+      const type = String(e.type || '').toLowerCase();
+      const isPayment = (type === 'payment');
+      const isReceived = (type === 'received');
+      const isUdharDiya = (type === 'udhardiya');
+      let color = 'text-amber-400';
+      let sign = '+';
+      let mode = 'Udhar liya';
+      if (isPayment) { color = 'text-emerald-400'; sign = '−'; mode = 'Paid: ' + escapeHtml(e.paymentmode || e.paymentMode || ''); }
+      else if (isReceived) { color = 'text-emerald-400'; sign = '−'; mode = 'Received: ' + escapeHtml(e.paymentmode || e.paymentMode || ''); }
+      else if (isUdharDiya) { color = 'text-blue-400'; sign = '+'; mode = 'Udhar diya'; }
       return `
         <div class="bg-gray-900 border border-gray-700 rounded-lg p-3 flex justify-between items-center gap-3">
           <div class="min-w-0 flex-1">
@@ -1955,7 +1880,7 @@ function closeHistoryModal() {
   document.body.classList.remove('no-scroll');
 }
 
-  
+/* ============ SETTINGS ============ */
 function openSettings() {
   document.getElementById('setApiUrl').value = API_URL;
   document.getElementById('setNewUser').value = '';
@@ -2026,7 +1951,6 @@ async function changeApiUrl() {
   }
   if (!pass) { showToast("Current password daalo", "error"); return; }
 
-  // Verify password against current server (agar current API reachable hai)
   if (API_URL && TOKEN) {
     try {
       const data = await apiPost({ action: 'verifyPassword', token: TOKEN, password: pass });
@@ -2034,21 +1958,16 @@ async function changeApiUrl() {
         showToast("Password galat hai", "error"); return;
       }
     } catch (e) {
-      // Purana server down — allow kar do
       console.warn("Current API unreachable, skipping verification");
     }
   }
 
   API_URL = newUrl;
-    localStorage.setItem('fin_api_url', newUrl);
-  
-  // Token purane server ka tha, clear kar do
+  localStorage.setItem('fin_api_url', newUrl);
   localStorage.removeItem('fin_token');
   showToast("API URL updated! Login karo.", "success");
   setTimeout(() => location.reload(), 1000);
 }
-
-
 </script>
 </body>
 </html>
