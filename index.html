@@ -1731,7 +1731,6 @@ async function submitReceive(btn) {
 }
 
   function getPersonCategories(person, mode) {
-  // mode: 'payable' (udhar liya) ya 'receivable' (udhar diya)
   const ledger = appData.udharLedger || [];
   const map = {};
   const isPayable = mode !== 'receivable';
@@ -1743,23 +1742,94 @@ async function submitReceive(btn) {
     const amt = parseFloat(e.amount) || 0;
     const type = String(e.type || '').toLowerCase();
 
-    // Skip "Udhar Payment" / "Udhar Received" — ye meta entries hain
-    if (cat === 'Udhar Payment' || cat === 'Udhar Received') return;
-
-    if (!map[cat]) map[cat] = 0;
-
     if (isPayable) {
-      if (type === 'udhar') map[cat] += amt;
-      else if (type === 'payment') map[cat] -= amt;
+      if (type === 'udhar') {
+        // Old entries: "Udhar Payment" nahi hain, aur category real hai
+        if (!map[cat]) map[cat] = 0;
+        map[cat] += amt;
+      } else if (type === 'payment') {
+        // Payment entries ki category "Udhar Payment" hoti hai
+        // Aur uski asli category ka naam ledger mein nahi hai
+        // Isliye hum total paid amount ko yahan track karenge
+        // Lekin categorize kaise kare?
+        // Solution: hum category-wise pending calculate nahi karenge
+        // Balki total person ka netPayable dikhayenge
+      }
     } else {
-      if (type === 'udhardiya') map[cat] += amt;
-      else if (type === 'received') map[cat] -= amt;
+      if (type === 'udhardiya') {
+        if (!map[cat]) map[cat] = 0;
+        map[cat] += amt;
+      }
     }
   });
 
-  return Object.keys(map)
-    .filter(cat => map[cat] > 0.001)
-    .map(cat => ({ name: cat, pending: map[cat] }))
+  // Agar payments bhi hain, to total netPayable se calculate karo
+  // But category-wise split accurately karna mushkil hai
+  // Best approach: total pending = netPayable, aur uske against category suggest karo
+  // Simple solution: harek category ka "gross" dikhao (payments minus nahi karo)
+  // Lekin yahi problem hai
+
+  // REAL FIX: 
+  // Person-level netPayable = sum(udhar) - sum(payments)
+  // Harek category ka gross udhar calculate karo
+  // Phir netPayable ki proportion mein distribute karo
+
+  let totalUdhar = 0;
+  let totalPaid = 0;
+
+  ledger.forEach(e => {
+    if (String(e.person || '').trim() !== String(person).trim()) return;
+    const amt = parseFloat(e.amount) || 0;
+    const type = String(e.type || '').toLowerCase();
+    const cat = String(e.category || '').trim();
+
+    if (isPayable) {
+      if (type === 'udhar' && cat && cat !== 'Udhar Payment') totalUdhar += amt;
+      else if (type === 'payment') totalPaid += amt;
+    } else {
+      if (type === 'udhardiya' && cat && cat !== 'Udhar Received') totalUdhar += amt;
+      else if (type === 'received') totalPaid += amt;
+    }
+  });
+
+  // Category-wise gross udhar
+  const catMap = {};
+  ledger.forEach(e => {
+    if (String(e.person || '').trim() !== String(person).trim()) return;
+    const cat = String(e.category || '').trim();
+    if (!cat || cat === 'Udhar Payment' || cat === 'Udhar Received') return;
+    const amt = parseFloat(e.amount) || 0;
+    const type = String(e.type || '').toLowerCase();
+
+    if (isPayable && type === 'udhar') {
+      catMap[cat] = (catMap[cat] || 0) + amt;
+    } else if (!isPayable && type === 'udhardiya') {
+      catMap[cat] = (catMap[cat] || 0) + amt;
+    }
+  });
+
+  // Agar koi payment nahi hua, to category-wise pending = gross udhar
+  if (totalPaid === 0 || totalUdhar === 0) {
+    return Object.keys(catMap)
+      .filter(c => catMap[c] > 0.001)
+      .map(c => ({ name: c, pending: catMap[c] }))
+      .sort((a, b) => b.pending - a.pending);
+  }
+
+  // Agar payments hue hain, to category-wise proportionally distribute karo
+  // (kyunki accurately kaunsi category ka pay hua, ye pata nahi)
+  const netPending = totalUdhar - totalPaid;
+  const cats = Object.keys(catMap);
+
+  if (netPending <= 0.001) return [];
+
+  // Proportionally distribute
+  return cats
+    .map(c => ({
+      name: c,
+      pending: Math.round((catMap[c] / totalUdhar) * netPending * 100) / 100
+    }))
+    .filter(c => c.pending > 0.001)
     .sort((a, b) => b.pending - a.pending);
 }
 
