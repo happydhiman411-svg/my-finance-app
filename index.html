@@ -948,6 +948,7 @@ function renderCategoryWise() {
     if (type === 'income') map[cat].income += amt;
     else if (type === 'savings') map[cat].savings += amt;
     else if (type === 'udhar' || type === 'udhardiya' || type === 'udharreceived') { /* skip */ }
+          else if (cat === 'Udhar Payment' || cat === 'Udhar Received') { /* skip — purani spam */ }
     else map[cat].expense += amt;
   });
 
