@@ -1544,7 +1544,7 @@ function renderUdharRegister() {
       netReceivable: m.receivable - m.received,
       entries: m.entries
     };
-  }).filter(p => Math.abs(p.netPayable) > 0.001 || Math.abs(p.netReceivable) > 0.001)
+  })
     .sort((a, b) => {
       const aSum = Math.max(0, a.netPayable) + Math.max(0, a.netReceivable);
       const bSum = Math.max(0, b.netPayable) + Math.max(0, b.netReceivable);
@@ -1569,7 +1569,14 @@ function renderUdharRegister() {
 
   container.innerHTML = udharPersonsCache.map((p, idx) => {
     let lines = '';
-    if (p.netPayable > 0) {
+        if (Math.abs(p.netPayable) < 0.001 && Math.abs(p.netReceivable) < 0.001) {
+      lines += `
+        <div class="flex justify-between items-center mt-1">
+          <span class="text-xs text-gray-400">Cleared ✅</span>
+          <span class="text-sm font-semibold text-gray-500">₹0</span>
+        </div>`;
+    }
+        else if (p.netPayable > 0) {
       lines += `
         <div class="flex justify-between items-center mt-1">
           <span class="text-xs text-amber-300">You owe</span>
@@ -1859,6 +1866,10 @@ function openHistoryModal(idx) {
       if (isPayment) { color = 'text-emerald-400'; sign = '−'; mode = 'Paid: ' + escapeHtml(e.paymentmode || e.paymentMode || ''); }
       else if (isReceived) { color = 'text-emerald-400'; sign = '−'; mode = 'Received: ' + escapeHtml(e.paymentmode || e.paymentMode || ''); }
       else if (isUdharDiya) { color = 'text-blue-400'; sign = '+'; mode = 'Udhar diya'; }
+            const refId = String(e.refid || e.refId || e['refId'] || '').trim();
+      const editBtn = refId
+        ? `<button onclick="editFromHistory('${escapeHtml(refId)}')" class="text-indigo-400 hover:text-indigo-300 ml-2" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button>`
+        : '';
       return `
         <div class="bg-gray-900 border border-gray-700 rounded-lg p-3 flex justify-between items-center gap-3">
           <div class="min-w-0 flex-1">
@@ -1866,7 +1877,10 @@ function openHistoryModal(idx) {
             <p class="text-xs text-gray-400 mt-0.5 truncate">${escapeHtml(e.category || '')}${e.note ? ' · ' + escapeHtml(e.note) : ''}</p>
             <p class="text-xs text-gray-500 mt-0.5">${mode}</p>
           </div>
-          <p class="text-lg font-bold ${color} whitespace-nowrap">${sign}${formatMoney(e.amount)}</p>
+          <div class="flex items-center gap-2">
+            <p class="text-lg font-bold ${color} whitespace-nowrap">${sign}${formatMoney(e.amount)}</p>
+            ${editBtn}
+          </div>
         </div>
       `;
     }).join('');
@@ -1874,6 +1888,14 @@ function openHistoryModal(idx) {
 
   document.getElementById('historyModal').classList.remove('hidden');
   document.body.classList.add('no-scroll');
+}
+
+  function editFromHistory(refId) {
+  if (!refId) return;
+  closeHistoryModal();
+  setTimeout(() => {
+    editTransaction(refId);
+  }, 200);
 }
 
 function closeHistoryModal() {
