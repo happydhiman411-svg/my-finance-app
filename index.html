@@ -1030,8 +1030,19 @@ function editTransaction(id) {
   const t = appData.transactions.find(x => String(x.id) === String(id));
   if (!t) return;
   editingId = t.id;
+    window._editingOriginalType = t.type || '';
+  window._editingOriginalCategory = t.category || '';
   document.getElementById('txDate').value = t.date || getTodayLocal();
-  document.getElementById('txType').value = t.type || 'Expense';
+    // Type set karo — Received/Diya bhi handle karo
+  const tTypeNorm = String(t.type || '').toLowerCase().replace(/\s+/g, '');
+  const typeSelect = document.getElementById('txType');
+  if (tTypeNorm === 'udharreceived' || tTypeNorm === 'received') {
+    typeSelect.value = 'UdharDiya'; // Received ye "Udhar Diya" ke group ka hai
+  } else if (tTypeNorm === 'payment') {
+    typeSelect.value = 'Udhar'; // Payment ye "Udhar" ke group ka hai
+  } else {
+    typeSelect.value = t.type || 'Expense';
+  }
   renderCategories();
   document.getElementById('txCategory').value = t.category || '';
   renderPersonDropdown(t.person || 'Self');
@@ -1047,6 +1058,8 @@ function editTransaction(id) {
 
 function resetForm() {
   editingId = null;
+    window._editingOriginalType = '';
+  window._editingOriginalCategory = '';
   document.getElementById('txDate').value = getTodayLocal();
   document.getElementById('txAmount').value = '';
   document.getElementById('txNote').value = '';
@@ -1100,8 +1113,16 @@ async function saveTransaction() {
     isEdit: isEdit,
     password: password,
     date: document.getElementById('txDate').value,
-    type: document.getElementById('txType').value,
-    category: document.getElementById('txCategory').value,
+        type: (isEdit && window._editingOriginalType &&
+           (String(window._editingOriginalType).toLowerCase() === 'udharreceived' ||
+            String(window._editingOriginalType).toLowerCase() === 'payment'))
+          ? window._editingOriginalType
+          : document.getElementById('txType').value,
+    category: (isEdit && window._editingOriginalCategory &&
+               (String(window._editingOriginalType).toLowerCase() === 'udharreceived' ||
+                String(window._editingOriginalType).toLowerCase() === 'payment'))
+              ? window._editingOriginalCategory
+              : document.getElementById('txCategory').value,
     person: document.getElementById('txPerson').value || 'Self',
     amount: amount,
     paymentMode: (function(){
