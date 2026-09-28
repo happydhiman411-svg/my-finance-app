@@ -99,6 +99,17 @@ tailwind.config = {
     </div>
   </div>
 
+    <!-- Financial Year Filter -->
+  <div class="bg-cardBg p-5 rounded-2xl border border-gray-700 shadow mb-4">
+    <div class="flex flex-col sm:flex-row justify-between items-center gap-3">
+      <h3 class="text-lg font-semibold text-emerald-300">Financial Year</h3>
+      <select id="fyFilter" onchange="renderFyCards()"
+        class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white w-full sm:w-auto">
+      </select>
+    </div>
+  </div>
+
+
   <!-- Add New Transaction -->
   <div class="bg-cardBg p-5 md:p-6 rounded-2xl border border-gray-700 shadow mb-4">
     <h3 id="formTitle" class="text-lg font-semibold mb-4 text-indigo-300">Add New Transaction</h3>
@@ -826,6 +837,73 @@ function onTypeChange() {
   }
 }
 
+  function getFinancialYear(dateStr) {
+  if (!dateStr) return '';
+  const parts = String(dateStr).split('-');
+  if (parts.length < 3) return '';
+  const y = parseInt(parts[0]);
+  const m = parseInt(parts[1]);
+  if (m >= 4) {
+    return y + '-' + (y + 1);
+  } else {
+    return (y - 1) + '-' + y;
+  }
+}
+
+function populateFyDropdown() {
+  const sel = document.getElementById('fyFilter');
+  if (!sel) return;
+  const currentVal = sel.value;
+  const fys = new Set();
+
+  appData.transactions.forEach(t => {
+    const fy = getFinancialYear(t.date);
+    if (fy) fys.add(fy);
+  });
+
+  const todayFy = getFinancialYear(getTodayLocal());
+  if (todayFy) fys.add(todayFy);
+
+  const sorted = Array.from(fys).sort().reverse();
+
+  sel.innerHTML = '<option value="all">All</option>' +
+    sorted.map(fy => `<option value="${fy}">${fy}</option>`).join('');
+
+  if (currentVal && (currentVal === 'all' || sorted.indexOf(currentVal) !== -1)) {
+    sel.value = currentVal;
+  }
+}
+
+function renderFyCards() {
+  populateFyDropdown();
+  const sel = document.getElementById('fyFilter');
+  if (!sel) return;
+  const selectedFy = sel.value;
+
+  let totalInc = 0, totalExp = 0, totalSav = 0;
+
+  appData.transactions.forEach(t => {
+    if (selectedFy !== 'all') {
+      const fy = getFinancialYear(t.date);
+      if (fy !== selectedFy) return;
+    }
+    const amt = parseFloat(t.amount) || 0;
+    const type = String(t.type).toLowerCase();
+    if (type === 'income') totalInc += amt;
+    else if (type === 'savings') totalSav += amt;
+    else if (type === 'udhar') { /* skip */ }
+    else if (type === 'udhardiya' || type === 'udharreceived') { /* skip */ }
+    else totalExp += amt;
+  });
+
+  document.getElementById('totalIncome').textContent = formatMoney(totalInc);
+  document.getElementById('totalExpense').textContent = formatMoney(totalExp);
+  const savEl = document.getElementById('totalSavings');
+  if (savEl) savEl.textContent = formatMoney(totalSav);
+  document.getElementById('netBalance').textContent = formatMoney(totalInc - totalExp - totalSav);
+}
+
+
 function renderDashboard() {
   renderCategories();
   renderCategoryList();
@@ -853,21 +931,7 @@ function renderDashboard() {
     return true;
   });
 
-  let totalInc = 0, totalExp = 0, totalSav = 0;
-  appData.transactions.forEach(t => {
-    const amt = parseFloat(t.amount) || 0;
-    const type = String(t.type).toLowerCase();
-    if (type === 'income') totalInc += amt;
-    else if (type === 'savings') totalSav += amt;
-    else if (type === 'udhar') { /* skip */ }
-    else if (type === 'udhardiya' || type === 'udharreceived') { /* skip */ }
-    else totalExp += amt;
-  });
-  document.getElementById('totalIncome').textContent = formatMoney(totalInc);
-  document.getElementById('totalExpense').textContent = formatMoney(totalExp);
-  const savEl = document.getElementById('totalSavings');
-  if (savEl) savEl.textContent = formatMoney(totalSav);
-  document.getElementById('netBalance').textContent = formatMoney(totalInc - totalExp - totalSav);
+    renderFyCards();
 
   const todayStr = getTodayLocal();
   const todayCount = appData.transactions.filter(t => String(t.date || '').startsWith(todayStr)).length;
