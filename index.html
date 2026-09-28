@@ -210,6 +210,29 @@ tailwind.config = {
 
   </div>
 
+    <!-- Notepad -->
+  <div class="bg-cardBg rounded-2xl border border-gray-700 shadow mb-4 collapsible-card" data-card-id="notepad" data-default="closed">
+    <div class="flex items-center justify-between p-5 cursor-pointer select-none" onclick="toggleCollapsible('notepad')">
+      <h3 class="text-lg font-semibold text-yellow-300">Notepad</h3>
+      <i class="fa-solid fa-plus text-gray-400 toggle-icon"></i>
+    </div>
+    <div class="card-content px-5 pb-5">
+      <textarea id="notepadText" rows="10" placeholder="Yahan kuch bhi likho..."
+        class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white font-mono resize-y"
+        style="min-height: 200px;"></textarea>
+      <div class="flex gap-2 mt-3">
+        <button onclick="saveNotepad(this)" class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium transition">
+          <i class="fa-solid fa-floppy-disk mr-1"></i> Save Notepad
+        </button>
+        <button onclick="clearNotepad()" class="bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded-lg text-sm font-medium border border-gray-700">
+          <i class="fa-solid fa-eraser"></i>
+        </button>
+      </div>
+      <p id="notepadStatus" class="text-xs text-gray-500 mt-2"></p>
+    </div>
+  </div>
+
+  
   <!-- Period Filter -->
   <div class="bg-cardBg p-5 rounded-2xl border border-gray-700 shadow mb-4">
     <div class="flex flex-col sm:flex-row justify-between items-center gap-3">
@@ -579,6 +602,63 @@ function initCollapsibles() {
   });
 }
 
+  function loadNotepad() {
+  const el = document.getElementById('notepadText');
+  if (!el) return;
+  el.value = appData.notepad || '';
+  const t = localStorage.getItem('fin_notepad_time');
+  updateNotepadStatus(t ? 'Last saved: ' + t : 'Not saved yet');
+}
+
+async function saveNotepad(btn) {
+  const el = document.getElementById('notepadText');
+  if (!el) return;
+  const content = el.value;
+  btnLoading(btn, 'Saving...');
+  try {
+    const data = await apiPost({ action: 'saveNotepad', token: TOKEN, content: content });
+    if (handleAuthError(data)) return;
+    if (data.status === 'success') {
+      appData.notepad = data.notepad || content;
+      const now = new Date().toLocaleString('en-IN');
+      localStorage.setItem('fin_notepad_time', now);
+      updateNotepadStatus('Last saved: ' + now);
+      showToast("Notepad saved!");
+    } else {
+      showToast(data.message || "Error", "error");
+    }
+  } catch (e) {
+    showToast(e.message || "Network error", "error");
+  } finally {
+    btnReset(btn);
+  }
+}
+
+async function clearNotepad() {
+  if (!confirm("Notepad saaf karna hai? (Ye undo nahi hoga)")) return;
+  const el = document.getElementById('notepadText');
+  if (!el) return;
+  el.value = '';
+  try {
+    const data = await apiPost({ action: 'saveNotepad', token: TOKEN, content: '' });
+    if (handleAuthError(data)) return;
+    if (data.status === 'success') {
+      appData.notepad = '';
+      localStorage.removeItem('fin_notepad_time');
+      updateNotepadStatus('Cleared');
+      showToast("Notepad cleared", "info");
+    }
+  } catch (e) {
+    showToast(e.message || "Network error", "error");
+  }
+}
+
+function updateNotepadStatus(msg) {
+  const el = document.getElementById('notepadStatus');
+  if (el) el.textContent = msg;
+}
+
+
 function showToast(msg, type = 'success') {
   const el = document.getElementById('toast');
   const body = document.getElementById('toastBody');
@@ -658,6 +738,7 @@ window.onload = function () {
   document.getElementById('filterMonth').value = getCurrentMonthLocal();
   startLiveClock();
   initCollapsibles();
+  loadNotepad();
   document.getElementById('setApiUrl').value = API_URL;
 
   if (TOKEN) {
@@ -775,6 +856,7 @@ async function syncData(showSpin = false) {
       appData.dailyLedger = data.dailyLedger || [];
       appData.udharLedger = data.udharLedger || [];
       appData.persons = data.persons || [];
+      appData.notepad = data.notepad || '';
       statusEl.textContent = 'Connected';
       statusEl.className = 'px-2.5 py-1 text-xs rounded-full bg-emerald-900/50 text-emerald-400 border border-emerald-700';
       renderDashboard();
