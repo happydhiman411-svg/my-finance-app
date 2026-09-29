@@ -118,9 +118,14 @@ tailwind.config = {
       <p class="text-xs md:text-sm text-gray-400">Total Expense</p>
       <p id="totalExpense" class="text-lg md:text-2xl font-bold text-red-400 mt-1">₹0</p>
     </div>
-    <div class="bg-cardBg p-4 md:p-5 rounded-2xl border border-gray-700 shadow">
-      <p class="text-xs md:text-sm text-gray-400">Total Savings</p>
-      <p id="totalSavings" class="text-lg md:text-2xl font-bold text-blue-400 mt-1">₹0</p>
+        <div class="bg-cardBg p-4 md:p-5 rounded-2xl border border-gray-700 shadow">
+      <div class="flex items-center justify-between">
+        <p class="text-xs md:text-sm text-gray-400">Total Savings</p>
+        <button onclick="toggleSavings()" id="savingsEyeBtn" class="text-gray-500 hover:text-blue-400" title="Show/Hide">
+          <i class="fa-solid fa-eye-slash"></i>
+        </button>
+      </div>
+      <p id="totalSavings" class="text-lg md:text-2xl font-bold text-blue-400 mt-1">•••••</p>
     </div>
     <div class="bg-cardBg p-4 md:p-5 rounded-2xl border border-gray-700 shadow">
       <p class="text-xs md:text-sm text-gray-400">Net Balance</p>
@@ -790,6 +795,7 @@ window.onload = function () {
     populateYearDropdown();
   loadNotepad();
     initIncomeVisibility();
+    initSavingsVisibility();
   document.getElementById('setApiUrl').value = API_URL;
 
   if (TOKEN) {
@@ -1071,6 +1077,43 @@ function formatIncome(amount) {
   return '•••••';
 }
 
+  let savingsVisible = false;
+
+function toggleSavings() {
+  savingsVisible = !savingsVisible;
+  const btn = document.getElementById('savingsEyeBtn');
+  const icon = btn.querySelector('i');
+
+  if (savingsVisible) {
+    icon.classList.remove('fa-eye-slash');
+    icon.classList.add('fa-eye');
+    localStorage.setItem('fin_savings_visible', 'true');
+  } else {
+    icon.classList.remove('fa-eye');
+    icon.classList.add('fa-eye-slash');
+    localStorage.setItem('fin_savings_visible', 'false');
+  }
+  renderFyCards();
+}
+
+function formatSavings(amount) {
+  if (savingsVisible) return formatMoney(amount);
+  return '•••••';
+}
+
+function initSavingsVisibility() {
+  const saved = localStorage.getItem('fin_savings_visible');
+  savingsVisible = saved === 'true';
+  const btn = document.getElementById('savingsEyeBtn');
+  if (!btn) return;
+  const icon = btn.querySelector('i');
+  if (savingsVisible) {
+    icon.classList.remove('fa-eye-slash');
+    icon.classList.add('fa-eye');
+  }
+}
+
+
 function initIncomeVisibility() {
   const saved = localStorage.getItem('fin_income_visible');
   incomeVisible = saved === 'true';
@@ -1109,7 +1152,7 @@ function renderFyCards() {
     document.getElementById('totalIncome').textContent = formatIncome(totalInc);
   document.getElementById('totalExpense').textContent = formatMoney(totalExp);
   const savEl = document.getElementById('totalSavings');
-  if (savEl) savEl.textContent = formatMoney(totalSav);
+    if (savEl) savEl.textContent = formatSavings(totalSav);
   document.getElementById('netBalance').textContent = formatMoney(totalInc - totalExp - totalSav);
 }
 
