@@ -316,7 +316,7 @@ tailwind.config = {
   <!-- Recent Transactions -->
   <div class="bg-cardBg p-4 md:p-6 rounded-2xl border border-gray-700 shadow">
     <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-3">
-      <h3 class="text-lg font-semibold text-indigo-300">Recent Transactions</h3>
+            <h3 class="text-lg font-semibold text-indigo-300">Recent Transactions <span id="txCount" class="text-sm text-gray-400">(0)</span></h3>
       <div class="flex gap-2 w-full sm:w-auto">
         <div class="relative flex-1 sm:w-64">
           <input type="text" id="searchTx" placeholder="Search category, person, note..." oninput="onSearch()"
@@ -1129,6 +1129,8 @@ function renderDashboard() {
     return String(b.id || '').localeCompare(String(a.id || ''));
   });
   const limited = filtered.slice(0, limit);
+    const countEl = document.getElementById('txCount');
+  if (countEl) countEl.textContent = '(' + filtered.length + ')';
   if (filtered.length === 0) {
     tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-gray-500">No records found</td></tr>`;
     return;
