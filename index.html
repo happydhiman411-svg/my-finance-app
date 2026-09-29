@@ -844,13 +844,13 @@ function renderReminders() {
             <p class="text-xs text-gray-500 mt-0.5">Last: ${escapeHtml(r.lastDone)}${r.notes ? ' · ' + escapeHtml(r.notes) : ''}</p>
           </div>
           <div class="flex gap-1 flex-shrink-0">
-            <button onclick="markReminderDone('${escapeHtml(r.id)}')" class="bg-emerald-600 hover:bg-emerald-500 px-2 py-1 rounded text-xs" title="Mark Done">
+            <button onclick="markReminderDone('${escapeHtml(r.id)}', this)" class="bg-emerald-600 hover:bg-emerald-500 px-2 py-1 rounded text-xs" title="Mark Done">
               <i class="fa-solid fa-check"></i>
             </button>
-            <button onclick="editReminder('${escapeHtml(r.id)}')" class="bg-indigo-600 hover:bg-indigo-500 px-2 py-1 rounded text-xs" title="Edit">
+            <button onclick="editReminder('${escapeHtml(r.id)}', this)" class="bg-indigo-600 hover:bg-indigo-500 px-2 py-1 rounded text-xs" title="Edit">
               <i class="fa-solid fa-pen"></i>
             </button>
-            <button onclick="deleteReminder('${escapeHtml(r.id)}')" class="bg-red-600 hover:bg-red-500 px-2 py-1 rounded text-xs" title="Delete">
+            <button onclick="deleteReminder('${escapeHtml(r.id)}', this)" class="bg-red-600 hover:bg-red-500 px-2 py-1 rounded text-xs" title="Delete">
               <i class="fa-solid fa-trash"></i>
             </button>
           </div>
@@ -898,10 +898,11 @@ async function addReminder(btn) {
   }
 }
 
-async function markReminderDone(id) {
+async function markReminderDone(id, btn) {
   const password = await askPassword("Confirm Done", "Password daalo");
   if (!password) return;
 
+  btnLoading(btn);
   try {
     const data = await apiPost({ action: 'markReminderDone', token: TOKEN, id: id, password: password });
     if (handleAuthError(data)) return;
@@ -918,10 +919,12 @@ async function markReminderDone(id) {
     }
   } catch (e) {
     showToast(e.message || "Network error", "error");
+  } finally {
+    btnReset(btn);
   }
 }
 
-async function editReminder(id) {
+async function editReminder(id, btn) {
   const r = (appData.reminders || []).find(x => String(x.id) === String(id));
   if (!r) return;
 
@@ -937,6 +940,7 @@ async function editReminder(id) {
   const newNotes = prompt("Notes:", r.notes || '');
   if (newNotes === null) return;
 
+  btnLoading(btn);
   try {
     const data = await apiPost({
       action: 'updateReminder', token: TOKEN,
@@ -957,13 +961,16 @@ async function editReminder(id) {
     }
   } catch (e) {
     showToast(e.message || "Network error", "error");
+  } finally {
+    btnReset(btn);
   }
 }
 
-async function deleteReminder(id) {
+async function deleteReminder(id, btn) {
   const password = await askPassword("Confirm Delete", "Delete karne ke liye password daalo");
   if (!password) return;
 
+  btnLoading(btn);
   try {
     const data = await apiPost({ action: 'deleteReminder', token: TOKEN, id: id, password: password });
     if (handleAuthError(data)) return;
@@ -980,6 +987,8 @@ async function deleteReminder(id) {
     }
   } catch (e) {
     showToast(e.message || "Network error", "error");
+  } finally {
+    btnReset(btn);
   }
 }
 
