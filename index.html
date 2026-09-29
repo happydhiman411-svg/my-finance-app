@@ -899,8 +899,11 @@ async function addReminder(btn) {
 }
 
 async function markReminderDone(id) {
+  const password = await askPassword("Confirm Done", "Password daalo");
+  if (!password) return;
+
   try {
-    const data = await apiPost({ action: 'markReminderDone', token: TOKEN, id: id });
+    const data = await apiPost({ action: 'markReminderDone', token: TOKEN, id: id, password: password });
     if (handleAuthError(data)) return;
     if (data.status === 'success') {
       showToast("Marked done!");
