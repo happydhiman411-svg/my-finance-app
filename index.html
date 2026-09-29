@@ -1077,7 +1077,19 @@ function formatIncome(amount) {
   return '•••••';
 }
 
-  let savingsVisible = false;
+function initIncomeVisibility() {
+  const saved = localStorage.getItem('fin_income_visible');
+  incomeVisible = saved === 'true';
+  const btn = document.getElementById('incomeEyeBtn');
+  if (!btn) return;
+  const icon = btn.querySelector('i');
+  if (incomeVisible) {
+    icon.classList.remove('fa-eye-slash');
+    icon.classList.add('fa-eye');
+  }
+}
+
+let savingsVisible = false;
 
 function toggleSavings() {
   savingsVisible = !savingsVisible;
@@ -1112,21 +1124,7 @@ function initSavingsVisibility() {
     icon.classList.add('fa-eye');
   }
 }
-
-
-function initIncomeVisibility() {
-  const saved = localStorage.getItem('fin_income_visible');
-  incomeVisible = saved === 'true';
-  const btn = document.getElementById('incomeEyeBtn');
-  if (!btn) return;
-  const icon = btn.querySelector('i');
-  if (incomeVisible) {
-    icon.classList.remove('fa-eye-slash');
-    icon.classList.add('fa-eye');
-  }
-}
-
-
+  
 function renderFyCards() {
   populateFyDropdown();
   const sel = document.getElementById('fyFilter');
