@@ -269,6 +269,48 @@ tailwind.config = {
     </div>
   </div>
 
+    <!-- Reminders -->
+  <div class="bg-cardBg rounded-2xl border border-gray-700 shadow mb-4 collapsible-card" data-card-id="reminders" data-default="closed">
+    <div class="flex items-center justify-between p-5 cursor-pointer select-none" onclick="toggleCollapsible('reminders')">
+      <div class="flex items-center gap-3">
+        <h3 class="text-lg font-semibold text-pink-300">Reminders</h3>
+        <span id="reminderBadge" class="text-xs text-gray-400 bg-gray-800 border border-gray-600 px-3 py-1 rounded-full">(0)</span>
+      </div>
+      <i class="fa-solid fa-plus text-gray-400 toggle-icon"></i>
+    </div>
+    <div class="card-content px-5 pb-5">
+
+      <!-- Add New Reminder -->
+      <div class="border border-gray-700 rounded-xl p-4 mb-4">
+        <h4 class="text-sm font-semibold text-pink-300 mb-3">Add New Reminder</h4>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Task Name</label>
+            <input type="text" id="reminderTask" placeholder="e.g. Cylinder Change" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Frequency (days)</label>
+            <input type="number" id="reminderFreq" min="1" placeholder="e.g. 30" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Last Done Date</label>
+            <input type="date" id="reminderLastDone" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Notes (optional)</label>
+            <input type="text" id="reminderNotes" placeholder="Optional" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+          </div>
+        </div>
+        <button onclick="addReminder(this)" class="w-full bg-pink-600 hover:bg-pink-500 py-2 rounded-lg text-sm font-medium transition mt-3">
+          <i class="fa-solid fa-plus mr-1"></i> Add Reminder
+        </button>
+      </div>
+
+      <!-- Reminders List -->
+      <div id="remindersList" class="space-y-2"></div>
+    </div>
+  </div>
+
   
     <!-- Period Filter -->
   <div class="bg-cardBg p-5 rounded-2xl border border-gray-700 shadow mb-4">
@@ -715,6 +757,229 @@ function updateNotepadStatus(msg) {
   if (el) el.textContent = msg;
 }
 
+  function daysUntil(dateStr, frequencyDays) {
+  if (!dateStr) return 0;
+  const last = new Date(dateStr + 'T00:00:00');
+  const next = new Date(last.getTime() + frequencyDays * 24 * 60 * 60 * 1000);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.round((next - today) / (24 * 60 * 60 * 1000));
+}
+
+function renderReminders() {
+  const container = document.getElementById('remindersList');
+  const badge = document.getElementById('reminderBadge');
+  if (!container) return;
+
+  let items = (appData.reminders || []).map(r => {
+    const freq = parseInt(r.frequency) || 0;
+    const lastDone = String(r.lastdone || r.lastDone || '').trim();
+    const daysLeft = daysUntil(lastDone, freq);
+    return {
+      id: String(r.id || ''),
+      task: String(r.task || '').trim(),
+      frequency: freq,
+      lastDone: lastDone,
+      notes: String(r.notes || '').trim(),
+      daysLeft: daysLeft
+    };
+  }).filter(r => r.task);
+
+  // Sort: overdue first, then due soon, then ok
+  items.sort((a, b) => a.daysLeft - b.daysLeft);
+
+  const overdueCount = items.filter(i => i.daysLeft < 0).length;
+
+  if (badge) {
+    let txt = '(' + items.length + ')';
+    if (overdueCount > 0) txt += ' 🔴 ' + overdueCount;
+    badge.textContent = txt;
+    badge.className = overdueCount > 0
+      ? 'text-xs text-red-300 bg-red-900/40 border border-red-700 px-3 py-1 rounded-full'
+      : 'text-xs text-gray-400 bg-gray-800 border border-gray-600 px-3 py-1 rounded-full';
+  }
+
+  if (items.length === 0) {
+    container.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">Koi reminder nahi hai. Add karo!</p>';
+    return;
+  }
+
+  container.innerHTML = items.map(r => {
+    let color = 'gray';
+    let status = '';
+    let icon = '';
+
+    if (r.daysLeft < 0) {
+      color = 'red';
+      icon = '🔴';
+      status = 'Overdue by ' + Math.abs(r.daysLeft) + ' din';
+    } else if (r.daysLeft <= 7) {
+      color = 'yellow';
+      icon = '🟡';
+      status = 'Due in ' + r.daysLeft + ' din';
+    } else {
+      color = 'green';
+      icon = '🟢';
+      status = 'Due in ' + r.daysLeft + ' din';
+    }
+
+    const colorClass = {
+      red: 'border-red-700 bg-red-900/20',
+      yellow: 'border-yellow-700 bg-yellow-900/20',
+      green: 'border-emerald-700 bg-emerald-900/20'
+    }[color];
+
+    const statusClass = {
+      red: 'text-red-300',
+      yellow: 'text-yellow-300',
+      green: 'text-emerald-300'
+    }[color];
+
+    return `
+      <div class="border ${colorClass} rounded-lg p-3">
+        <div class="flex justify-between items-start gap-3 flex-wrap">
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-semibold text-white">${icon} ${escapeHtml(r.task)}</p>
+            <p class="text-xs ${statusClass} mt-0.5">${status} · Every ${r.frequency} din</p>
+            <p class="text-xs text-gray-500 mt-0.5">Last: ${escapeHtml(r.lastDone)}${r.notes ? ' · ' + escapeHtml(r.notes) : ''}</p>
+          </div>
+          <div class="flex gap-1 flex-shrink-0">
+            <button onclick="markReminderDone('${escapeHtml(r.id)}')" class="bg-emerald-600 hover:bg-emerald-500 px-2 py-1 rounded text-xs" title="Mark Done">
+              <i class="fa-solid fa-check"></i>
+            </button>
+            <button onclick="editReminder('${escapeHtml(r.id)}')" class="bg-indigo-600 hover:bg-indigo-500 px-2 py-1 rounded text-xs" title="Edit">
+              <i class="fa-solid fa-pen"></i>
+            </button>
+            <button onclick="deleteReminder('${escapeHtml(r.id)}')" class="bg-red-600 hover:bg-red-500 px-2 py-1 rounded text-xs" title="Delete">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function addReminder(btn) {
+  const task = document.getElementById('reminderTask').value.trim();
+  const freq = parseInt(document.getElementById('reminderFreq').value);
+  const lastDone = document.getElementById('reminderLastDone').value;
+  const notes = document.getElementById('reminderNotes').value.trim();
+
+  if (!task) { showToast("Task name daalo", "error"); return; }
+  if (!freq || freq <= 0) { showToast("Valid frequency daalo (din)", "error"); return; }
+  if (!lastDone) { showToast("Last done date daalo", "error"); return; }
+
+  btnLoading(btn, 'Adding...');
+  try {
+    const data = await apiPost({
+      action: 'addReminder', token: TOKEN,
+      task: task, frequency: freq, lastDone: lastDone, notes: notes
+    });
+    if (handleAuthError(data)) return;
+    if (data.status === 'success') {
+      showToast("Reminder added!");
+      document.getElementById('reminderTask').value = '';
+      document.getElementById('reminderFreq').value = '';
+      document.getElementById('reminderNotes').value = '';
+      if (data.reminders) {
+        appData.reminders = data.reminders;
+        renderReminders();
+      } else {
+        syncData();
+      }
+    } else {
+      showToast(data.message || "Error", "error");
+    }
+  } catch (e) {
+    showToast(e.message || "Network error", "error");
+  } finally {
+    btnReset(btn);
+  }
+}
+
+async function markReminderDone(id) {
+  try {
+    const data = await apiPost({ action: 'markReminderDone', token: TOKEN, id: id });
+    if (handleAuthError(data)) return;
+    if (data.status === 'success') {
+      showToast("Marked done!");
+      if (data.reminders) {
+        appData.reminders = data.reminders;
+        renderReminders();
+      } else {
+        syncData();
+      }
+    } else {
+      showToast(data.message || "Error", "error");
+    }
+  } catch (e) {
+    showToast(e.message || "Network error", "error");
+  }
+}
+
+async function editReminder(id) {
+  const r = (appData.reminders || []).find(x => String(x.id) === String(id));
+  if (!r) return;
+
+  const password = await askPassword("Confirm Edit", "Edit karne ke liye password daalo");
+  if (!password) return;
+
+  const newTask = prompt("Task name:", r.task || '');
+  if (newTask === null) return;
+  const newFreq = prompt("Frequency (din):", r.frequency || '');
+  if (newFreq === null) return;
+  const newLastDone = prompt("Last done date (YYYY-MM-DD):", r.lastdone || r.lastDone || '');
+  if (newLastDone === null) return;
+  const newNotes = prompt("Notes:", r.notes || '');
+  if (newNotes === null) return;
+
+  try {
+    const data = await apiPost({
+      action: 'updateReminder', token: TOKEN,
+      id: id, task: newTask.trim(), frequency: parseInt(newFreq),
+      lastDone: newLastDone.trim(), notes: newNotes.trim(), password: password
+    });
+    if (handleAuthError(data)) return;
+    if (data.status === 'success') {
+      showToast("Reminder updated!");
+      if (data.reminders) {
+        appData.reminders = data.reminders;
+        renderReminders();
+      } else {
+        syncData();
+      }
+    } else {
+      showToast(data.message || "Error", "error");
+    }
+  } catch (e) {
+    showToast(e.message || "Network error", "error");
+  }
+}
+
+async function deleteReminder(id) {
+  const password = await askPassword("Confirm Delete", "Delete karne ke liye password daalo");
+  if (!password) return;
+
+  try {
+    const data = await apiPost({ action: 'deleteReminder', token: TOKEN, id: id, password: password });
+    if (handleAuthError(data)) return;
+    if (data.status === 'success') {
+      showToast("Reminder deleted!");
+      if (data.reminders) {
+        appData.reminders = data.reminders;
+        renderReminders();
+      } else {
+        syncData();
+      }
+    } else {
+      showToast(data.message || "Error", "error");
+    }
+  } catch (e) {
+    showToast(e.message || "Network error", "error");
+  }
+}
+
 
 function showToast(msg, type = 'success') {
   const el = document.getElementById('toast');
@@ -907,6 +1172,7 @@ function cacheData() {
       udharLedger: appData.udharLedger || [],
       persons: appData.persons || [],
       notepad: appData.notepad || '',
+            reminders: appData.reminders || [],
       timestamp: Date.now()
     }));
   } catch (e) {
@@ -925,6 +1191,8 @@ function loadCache() {
     appData.udharLedger = data.udharLedger || [];
     appData.persons = data.persons || [];
     appData.notepad = data.notepad || '';
+        appData.reminders = data.reminders || [];
+    
     return true;
   } catch (e) {
     console.warn("Cache load failed:", e);
@@ -954,6 +1222,7 @@ async function syncData(showSpin = false) {
       appData.udharLedger = data.udharLedger || [];
       appData.persons = data.persons || [];
       appData.notepad = data.notepad || '';
+            appData.reminders = data.reminders || [];
             cacheData();
             populateYearDropdown();
       statusEl.textContent = 'Connected';
@@ -1222,6 +1491,7 @@ function renderDashboard() {
   renderCategoryList();
   renderCategoryWise();
   renderUdharRegister();
+    renderReminders();
   renderPersonList();
   renderPersonDropdown();
 
