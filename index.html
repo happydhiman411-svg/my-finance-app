@@ -22,6 +22,14 @@ tailwind.config = {
 </style>
 </head>
 <body class="bg-darkBg text-gray-100 min-h-screen antialiased">
+  <script>
+// Warm-up ping — Apps Script ko pehle se jaga do
+(function() {
+  const url = "https://script.google.com/macros/s/AKfycbxNx6VOcjtmfCeefeNR-BO2N6PqhQu1fna1fZUDpK2u_wPpDADkoae4GlYsl7gR1jaB/exec";
+  fetch(url + "?action=ping&_t=" + Date.now(), { method: 'GET' }).catch(() => {});
+})();
+</script>
+
 
 <!-- ============ LOGIN MODAL ============ -->
 <div id="loginModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md hidden">
@@ -779,6 +787,7 @@ window.onload = function () {
   document.getElementById('setApiUrl').value = API_URL;
 
   if (TOKEN) {
+        if (loadCache()) renderDashboard();
     showApp();
     syncData();
   } else {
@@ -836,6 +845,7 @@ async function handleLogin() {
       localStorage.setItem('fin_user', USERNAME);
       document.getElementById('loginPass').value = '';
       showApp();
+            if (loadCache()) renderDashboard();
       syncData();
     } else {
       errEl.textContent = data.message || 'Invalid credentials';
@@ -873,6 +883,41 @@ function handleLogout(callServer = true) {
   location.reload();
 }
 
+function cacheData() {
+  try {
+    localStorage.setItem('fin_cache', JSON.stringify({
+      transactions: appData.transactions || [],
+      categories: appData.categories || [],
+      dailyLedger: appData.dailyLedger || [],
+      udharLedger: appData.udharLedger || [],
+      persons: appData.persons || [],
+      notepad: appData.notepad || '',
+      timestamp: Date.now()
+    }));
+  } catch (e) {
+    console.warn("Cache save failed:", e);
+  }
+}
+
+function loadCache() {
+  try {
+    const cached = localStorage.getItem('fin_cache');
+    if (!cached) return false;
+    const data = JSON.parse(cached);
+    appData.transactions = data.transactions || [];
+    appData.categories = data.categories || [];
+    appData.dailyLedger = data.dailyLedger || [];
+    appData.udharLedger = data.udharLedger || [];
+    appData.persons = data.persons || [];
+    appData.notepad = data.notepad || '';
+    return true;
+  } catch (e) {
+    console.warn("Cache load failed:", e);
+    return false;
+  }
+}
+
+  
 /* ============ SYNC ============ */
 async function syncData(showSpin = false) {
   if (!API_URL || !TOKEN) return;
@@ -894,6 +939,7 @@ async function syncData(showSpin = false) {
       appData.udharLedger = data.udharLedger || [];
       appData.persons = data.persons || [];
       appData.notepad = data.notepad || '';
+            cacheData();
             populateYearDropdown();
       statusEl.textContent = 'Connected';
       statusEl.className = 'px-2.5 py-1 text-xs rounded-full bg-emerald-900/50 text-emerald-400 border border-emerald-700';
