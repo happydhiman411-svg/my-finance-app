@@ -105,9 +105,14 @@ tailwind.config = {
       <p class="text-xs md:text-sm text-gray-400">Today's Status</p>
       <p id="todayStatus" class="text-sm md:text-lg font-bold text-red-400 mt-1">Aaj entry nahi hui!</p>
     </div>
-    <div class="bg-cardBg p-4 md:p-5 rounded-2xl border border-gray-700 shadow">
-      <p class="text-xs md:text-sm text-gray-400">Total Income</p>
-      <p id="totalIncome" class="text-lg md:text-2xl font-bold text-emerald-400 mt-1">₹0</p>
+        <div class="bg-cardBg p-4 md:p-5 rounded-2xl border border-gray-700 shadow">
+      <div class="flex items-center justify-between">
+        <p class="text-xs md:text-sm text-gray-400">Total Income</p>
+        <button onclick="toggleIncome()" id="incomeEyeBtn" class="text-gray-500 hover:text-emerald-400" title="Show/Hide">
+          <i class="fa-solid fa-eye-slash"></i>
+        </button>
+      </div>
+      <p id="totalIncome" class="text-lg md:text-2xl font-bold text-emerald-400 mt-1">•••••</p>
     </div>
     <div class="bg-cardBg p-4 md:p-5 rounded-2xl border border-gray-700 shadow">
       <p class="text-xs md:text-sm text-gray-400">Total Expense</p>
@@ -784,6 +789,7 @@ window.onload = function () {
   initCollapsibles();
     populateYearDropdown();
   loadNotepad();
+    initIncomeVisibility();
   document.getElementById('setApiUrl').value = API_URL;
 
   if (TOKEN) {
@@ -1041,6 +1047,43 @@ function populateFyDropdown() {
   }
 }
 
+  let incomeVisible = false;
+
+function toggleIncome() {
+  incomeVisible = !incomeVisible;
+  const btn = document.getElementById('incomeEyeBtn');
+  const icon = btn.querySelector('i');
+
+  if (incomeVisible) {
+    icon.classList.remove('fa-eye-slash');
+    icon.classList.add('fa-eye');
+    localStorage.setItem('fin_income_visible', 'true');
+  } else {
+    icon.classList.remove('fa-eye');
+    icon.classList.add('fa-eye-slash');
+    localStorage.setItem('fin_income_visible', 'false');
+  }
+  renderFyCards();
+}
+
+function formatIncome(amount) {
+  if (incomeVisible) return formatMoney(amount);
+  return '•••••';
+}
+
+function initIncomeVisibility() {
+  const saved = localStorage.getItem('fin_income_visible');
+  incomeVisible = saved === 'true';
+  const btn = document.getElementById('incomeEyeBtn');
+  if (!btn) return;
+  const icon = btn.querySelector('i');
+  if (incomeVisible) {
+    icon.classList.remove('fa-eye-slash');
+    icon.classList.add('fa-eye');
+  }
+}
+
+
 function renderFyCards() {
   populateFyDropdown();
   const sel = document.getElementById('fyFilter');
@@ -1063,7 +1106,7 @@ function renderFyCards() {
     else totalExp += amt;
   });
 
-  document.getElementById('totalIncome').textContent = formatMoney(totalInc);
+    document.getElementById('totalIncome').textContent = formatIncome(totalInc);
   document.getElementById('totalExpense').textContent = formatMoney(totalExp);
   const savEl = document.getElementById('totalSavings');
   if (savEl) savEl.textContent = formatMoney(totalSav);
