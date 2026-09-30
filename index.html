@@ -345,7 +345,7 @@ tailwind.config = {
   <!-- Category-wise Total -->
   <div class="bg-cardBg rounded-2xl border border-gray-700 shadow mb-4 collapsible-card" data-card-id="catwise" data-default="closed">
     <div class="flex items-center justify-between p-5 cursor-pointer select-none" onclick="toggleCollapsible('catwise')">
-      <h3 class="text-lg font-semibold text-indigo-300">Category-wise Total</h3>
+            <h3 class="text-lg font-semibold text-indigo-300">Category-wise Total <span id="catWiseCount" class="text-sm text-gray-400">(₹0)</span></h3>
       <i class="fa-solid fa-plus text-gray-400 toggle-icon"></i>
     </div>
     <div class="card-content px-5 pb-5">
@@ -1636,10 +1636,25 @@ function renderCategoryWise() {
   else entries.sort((a, b) => (b.income + b.expense + b.savings) - (a.income + a.expense + a.savings));
 
   if (entries.length === 0) {
+     if (entries.length === 0) {
     container.innerHTML = '<p class="text-sm text-gray-500 col-span-full text-center py-4">Is period mein koi data nahi hai</p>';
+    const emptyEl = document.getElementById('catWiseCount');
+    if (emptyEl) emptyEl.textContent = '(₹0)';
     return;
   }
+  // Total calculate karo (current type filter ke hisaab se)
+  let grandTotal = 0;
+  entries.forEach(e => {
+    if (typeFilter === 'income') grandTotal += e.income;
+    else if (typeFilter === 'expense') grandTotal += e.expense;
+    else if (typeFilter === 'savings') grandTotal += e.savings;
+    else grandTotal += (e.income + e.expense + e.savings);
+  });
 
+  const countEl = document.getElementById('catWiseCount');
+  if (countEl) countEl.textContent = '(' + formatMoney(grandTotal) + ')';
+
+  
   container.innerHTML = entries.map(e => {
     let amountHtml = '';
     if (typeFilter === 'income') {
