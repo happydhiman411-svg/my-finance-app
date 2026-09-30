@@ -379,7 +379,7 @@ tailwind.config = {
   <!-- Recent Transactions -->
   <div class="bg-cardBg p-4 md:p-6 rounded-2xl border border-gray-700 shadow">
     <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-3">
-            <h3 class="text-lg font-semibold text-indigo-300">Recent Transactions <span id="txCount" class="text-sm text-gray-400">(0)</span></h3>
+     <h3 class="text-lg font-semibold text-indigo-300">Recent Transactions <span id="txCount" class="text-sm text-gray-400">(0)</span> <span id="txTotal" class="text-sm text-indigo-400">(₹0)</span></h3>
       <div class="flex gap-2 w-full sm:w-auto">
         <div class="relative flex-1 sm:w-64">
           <input type="text" id="searchTx" placeholder="Search category, person, note..." oninput="onSearch()"
@@ -1549,6 +1549,19 @@ function renderDashboard() {
   const limited = filtered.slice(0, limit);
     const countEl = document.getElementById('txCount');
   if (countEl) countEl.textContent = '(' + filtered.length + ')';
+
+  // Total of filtered transactions
+  let txTotal = 0;
+  filtered.forEach(t => {
+    const amt = parseFloat(t.amount) || 0;
+    const type = String(t.type).toLowerCase();
+    // Udhar / Received skip karo (jaise Dashboard mein)
+    if (type === 'udhar' || type === 'udhardiya' || type === 'udharreceived') return;
+    txTotal += amt;
+  });
+  const totalEl = document.getElementById('txTotal');
+  if (totalEl) totalEl.textContent = '(' + formatMoney(txTotal) + ')';
+  
   if (filtered.length === 0) {
     tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-gray-500">No records found</td></tr>`;
     return;
