@@ -1635,9 +1635,10 @@ function renderCategoryWise() {
   else if (typeFilter === 'savings') entries.sort((a, b) => b.savings - a.savings);
   else entries.sort((a, b) => (b.income + b.expense + b.savings) - (a.income + a.expense + a.savings));
 
-  if (entries.length === 0) {
-       if (entries.length === 0) {
+   if (entries.length === 0) {
     container.innerHTML = '<p class="text-sm text-gray-500 col-span-full text-center py-4">Is period mein koi data nahi hai</p>';
+    const emptyEl = document.getElementById('catWiseCount');
+    if (emptyEl) emptyEl.textContent = '(₹0)';
     return;
   }
   // Total calculate karo (current type filter ke hisaab se)
