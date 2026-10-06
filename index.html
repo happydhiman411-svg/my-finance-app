@@ -587,29 +587,37 @@ tailwind.config = {
   </div>
 </div>
 
-  <!-- ============ REPORT PREVIEW MODAL ============ -->
+<!-- ============ REPORT PREVIEW MODAL ============ -->
 <div id="reportPreviewModal" class="fixed inset-0 z-[65] flex items-center justify-center bg-black/80 backdrop-blur-md hidden p-4">
-  <div class="bg-cardBg rounded-2xl shadow-2xl w-full max-w-4xl border border-gray-700 fade-in flex flex-col" style="max-height: 95vh;">
+  <div class="bg-cardBg rounded-2xl shadow-2xl w-full max-w-md border border-gray-700 fade-in">
+    <div class="p-6">
+      <h3 class="text-xl font-bold text-emerald-400 mb-4">Download Report</h3>
 
-    <!-- Header -->
-    <div class="flex justify-between items-center p-4 border-b border-gray-700">
-      <div>
-        <h3 class="text-lg font-bold text-emerald-400">Report Preview</h3>
-        <p class="text-xs text-gray-400 mt-0.5">Period: <span id="reportPeriodLabel">All Time</span> · <span id="reportPageCount">1</span> page(s)</p>
+      <div class="bg-gray-900 border border-gray-700 rounded-xl p-4 mb-4 space-y-2">
+        <div class="flex justify-between">
+          <span class="text-sm text-gray-400">Period:</span>
+          <span id="reportPeriodLabel" class="text-sm font-semibold text-indigo-300">All Time</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-sm text-gray-400">Total Entries:</span>
+          <span id="reportEntryCount" class="text-sm font-semibold text-indigo-300">0</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-sm text-gray-400">Total Pages:</span>
+          <span id="reportPageCount" class="text-sm font-semibold text-emerald-400">1</span>
+        </div>
       </div>
+
+      <p class="text-xs text-gray-500 mb-4 text-center">
+        <i class="fa-solid fa-info-circle mr-1"></i> A4 size report PDF
+      </p>
+
       <div class="flex gap-2">
-        <button onclick="confirmReportDownload(this)" class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded-lg text-sm font-medium">
+        <button id="reportDownloadBtn" onclick="confirmReportDownload(this)" class="flex-1 bg-emerald-600 hover:bg-emerald-500 py-2.5 rounded-lg text-sm font-medium">
           <i class="fa-solid fa-download mr-1"></i> Download
         </button>
-        <button onclick="closeReportPreview()" class="bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-lg text-sm font-medium border border-gray-700">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
+        <button onclick="closeReportPreview()" class="flex-1 bg-gray-800 hover:bg-gray-700 py-2.5 rounded-lg text-sm font-medium border border-gray-700">Cancel</button>
       </div>
-    </div>
-
-    <!-- Preview Area -->
-    <div id="reportPreviewArea" class="flex-1 overflow-auto bg-gray-950 p-4 flex flex-col items-center gap-4">
-      <!-- PDF pages canvas yahan render honge -->
     </div>
   </div>
 </div>
