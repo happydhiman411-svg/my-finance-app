@@ -434,26 +434,54 @@ tailwind.config = {
   <div class="bg-cardBg p-6 rounded-2xl shadow-2xl w-full max-w-md border border-gray-700 fade-in max-h-[90vh] overflow-y-auto">
     <h3 class="text-xl font-bold mb-5 text-indigo-400">Settings</h3>
 
+        <!-- Change Username -->
     <div class="border border-gray-700 rounded-xl p-4 mb-4">
       <h4 class="text-sm font-semibold text-indigo-300 mb-3">Change Username</h4>
       <input type="text" id="setNewUser" placeholder="New username" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white mb-2">
-      <input type="password" id="setUserPass" placeholder="Current password" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white mb-2">
-      <button onclick="changeUsername()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium">Update Username</button>
+      <div class="relative mb-2">
+        <input type="password" id="setUserPass" placeholder="Current password" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 pr-10 text-sm text-white">
+        <button type="button" onclick="togglePass('setUserPass', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-400">
+          <i class="fa-solid fa-eye"></i>
+        </button>
+      </div>
+      <button id="setUserBtn" onclick="changeUsername(this)" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium">Update Username</button>
     </div>
 
+    <!-- Change Password -->
     <div class="border border-gray-700 rounded-xl p-4 mb-4">
       <h4 class="text-sm font-semibold text-indigo-300 mb-3">Change Password</h4>
-      <input type="password" id="setCurrentPass" placeholder="Current password" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white mb-2">
-      <input type="password" id="setNewPass" placeholder="New password" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white mb-2">
-      <input type="password" id="setConfirmPass" placeholder="Confirm new password" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white mb-2">
-      <button onclick="changePassword()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium">Update Password</button>
+      <div class="relative mb-2">
+        <input type="password" id="setCurrentPass" placeholder="Current password" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 pr-10 text-sm text-white">
+        <button type="button" onclick="togglePass('setCurrentPass', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-400">
+          <i class="fa-solid fa-eye"></i>
+        </button>
+      </div>
+      <div class="relative mb-2">
+        <input type="password" id="setNewPass" placeholder="New password" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 pr-10 text-sm text-white">
+        <button type="button" onclick="togglePass('setNewPass', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-400">
+          <i class="fa-solid fa-eye"></i>
+        </button>
+      </div>
+      <div class="relative mb-2">
+        <input type="password" id="setConfirmPass" placeholder="Confirm new password" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 pr-10 text-sm text-white">
+        <button type="button" onclick="togglePass('setConfirmPass', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-400">
+          <i class="fa-solid fa-eye"></i>
+        </button>
+      </div>
+      <button id="setPassBtn" onclick="changePassword(this)" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium">Update Password</button>
     </div>
 
+    <!-- API URL -->
     <div class="border border-gray-700 rounded-xl p-4 mb-4">
       <h4 class="text-sm font-semibold text-indigo-300 mb-3">Change API URL</h4>
       <input type="text" id="setApiUrl" placeholder="https://script.google.com/..." class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white mb-2">
-      <input type="password" id="setApiPass" placeholder="Current password" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white mb-2">
-      <button onclick="changeApiUrl()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium">Update API URL</button>
+      <div class="relative mb-2">
+        <input type="password" id="setApiPass" placeholder="Current password" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 pr-10 text-sm text-white">
+        <button type="button" onclick="togglePass('setApiPass', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-400">
+          <i class="fa-solid fa-eye"></i>
+        </button>
+      </div>
+      <button id="setApiBtn" onclick="changeApiUrl(this)" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium">Update API URL</button>
     </div>
 
     <button onclick="closeSettings()" class="w-full bg-gray-800 hover:bg-gray-700 py-2 rounded-lg text-sm font-medium border border-gray-700">Close</button>
@@ -2645,12 +2673,13 @@ function closeSettings() {
   document.getElementById('settingsModal').classList.add('hidden');
 }
 
-async function changeUsername() {
+async function changeUsername(btn) {
   const newUser = document.getElementById('setNewUser').value.trim();
   const pass = document.getElementById('setUserPass').value;
   if (!newUser) { showToast("New username daalo", "error"); return; }
   if (!pass) { showToast("Current password daalo", "error"); return; }
 
+  btnLoading(btn, 'Updating...');
   try {
     const data = await apiPost({
       action: 'updateCredentials', token: TOKEN,
@@ -2666,10 +2695,14 @@ async function changeUsername() {
     } else {
       showToast(data.message || "Error", "error");
     }
-  } catch (e) { showToast("Network error", "error"); }
+  } catch (e) {
+    showToast("Network error", "error");
+  } finally {
+    btnReset(btn);
+  }
 }
 
-async function changePassword() {
+async function changePassword(btn) {
   const current = document.getElementById('setCurrentPass').value;
   const np = document.getElementById('setNewPass').value;
   const cp = document.getElementById('setConfirmPass').value;
@@ -2678,6 +2711,7 @@ async function changePassword() {
   if (!np || np.length < 4) { showToast("New password kam se kam 4 characters", "error"); return; }
   if (np !== cp) { showToast("New passwords match nahi kar rahe", "error"); return; }
 
+  btnLoading(btn, 'Updating...');
   try {
     const data = await apiPost({
       action: 'updateCredentials', token: TOKEN,
@@ -2688,11 +2722,15 @@ async function changePassword() {
       setTimeout(() => handleLogout(false), 1200);
     } else {
       showToast(data.message || "Error", "error");
+      btnReset(btn);
     }
-  } catch (e) { showToast("Network error", "error"); }
+  } catch (e) {
+    showToast("Network error", "error");
+    btnReset(btn);
+  }
 }
 
-async function changeApiUrl() {
+async function changeApiUrl(btn) {
   const newUrl = document.getElementById('setApiUrl').value.trim();
   const pass = document.getElementById('setApiPass').value;
 
@@ -2701,22 +2739,31 @@ async function changeApiUrl() {
   }
   if (!pass) { showToast("Current password daalo", "error"); return; }
 
-  if (API_URL && TOKEN) {
-    try {
+  btnLoading(btn, 'Verifying...');
+  try {
+    if (API_URL && TOKEN) {
       const data = await apiPost({ action: 'verifyPassword', token: TOKEN, password: pass });
       if (data.status !== 'success') {
-        showToast("Password galat hai", "error"); return;
+        showToast("Password galat hai", "error");
+        btnReset(btn);
+        return;
       }
-    } catch (e) {
-      console.warn("Current API unreachable, skipping verification");
     }
+    API_URL = newUrl;
+    localStorage.setItem('fin_api_url', newUrl);
+    localStorage.removeItem('fin_token');
+    showToast("API URL updated! Login karo.", "success");
+    setTimeout(() => location.reload(), 1000);
+  } catch (e) {
+    console.warn("Current API unreachable, skipping verification");
+    API_URL = newUrl;
+    localStorage.setItem('fin_api_url', newUrl);
+    localStorage.removeItem('fin_token');
+    showToast("API URL updated! Login karo.", "success");
+    setTimeout(() => location.reload(), 1000);
+  } finally {
+    btnReset(btn);
   }
-
-  API_URL = newUrl;
-  localStorage.setItem('fin_api_url', newUrl);
-  localStorage.removeItem('fin_token');
-  showToast("API URL updated! Login karo.", "success");
-  setTimeout(() => location.reload(), 1000);
 }
 </script>
 </body>
