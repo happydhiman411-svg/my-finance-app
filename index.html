@@ -775,6 +775,32 @@ function formatMoney(n) {
   return '₹' + (Number(n) || 0).toLocaleString('en-IN');
 }
 
+  function animateNumber(el, targetValue) {
+  if (!el) return;
+  const startValue = 0;
+  const duration = 800;
+  const startTime = performance.now();
+  const isNegative = targetValue < 0;
+  const absTarget = Math.abs(targetValue);
+
+  function easeOutQuad(t) {
+    return t * (2 - t);
+  }
+
+  function update(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const easedProgress = easeOutQuad(progress);
+    const currentValue = Math.round(startValue + (absTarget - startValue) * easedProgress);
+    const displayValue = isNegative ? -currentValue : currentValue;
+    el.textContent = formatMoney(displayValue);
+    if (progress < 1) {
+      requestAnimationFrame(update);
+    }
+  }
+  requestAnimationFrame(update);
+}
+
 function btnLoading(btn, text) {
   if (!btn || btn.disabled) return;
   btn.dataset.orig = btn.innerHTML;
@@ -1612,11 +1638,27 @@ function renderFyCards() {
     else totalExp += amt;
   });
 
-    document.getElementById('totalIncome').textContent = formatIncome(totalInc);
-  document.getElementById('totalExpense').textContent = formatMoney(totalExp);
+      // Income — animate only if visible
+  const incEl = document.getElementById('totalIncome');
+  if (incEl) {
+    if (incomeVisible) animateNumber(incEl, totalInc);
+    else incEl.textContent = formatIncome(totalInc);
+  }
+
+  // Expense — always visible
+  const expEl = document.getElementById('totalExpense');
+  if (expEl) animateNumber(expEl, totalExp);
+
+  // Savings — animate only if visible
   const savEl = document.getElementById('totalSavings');
-    if (savEl) savEl.textContent = formatSavings(totalSav);
-  document.getElementById('netBalance').textContent = formatMoney(totalInc - totalExp - totalSav);
+  if (savEl) {
+    if (savingsVisible) animateNumber(savEl, totalSav);
+    else savEl.textContent = formatSavings(totalSav);
+  }
+
+  // Net Balance — always visible
+  const netEl = document.getElementById('netBalance');
+  if (netEl) animateNumber(netEl, totalInc - totalExp - totalSav);
 }
 
   function populateYearDropdown() {
