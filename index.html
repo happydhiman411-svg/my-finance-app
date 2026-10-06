@@ -1526,7 +1526,7 @@ function renderDashboard() {
       if (!tDate.startsWith(filterYear)) return false;
     }
     if (searchQuery) {
-      const hay = [t.category, t.person, t.note, t.type, t.paymentmode, t.paymentMode]
+            const hay = [t.category, t.person, t.note, t.type, t.paymentmode, t.paymentMode, t.date]
         .map(x => String(x || '').toLowerCase()).join(' ');
       if (!hay.includes(searchQuery)) return false;
     }
