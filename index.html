@@ -589,7 +589,7 @@ tailwind.config = {
 
 <!-- ============ PDF PREVIEW MODAL ============ -->
 <div id="pdfPreviewModal" class="fixed inset-0 z-[65] flex items-center justify-center bg-black/80 backdrop-blur-md hidden p-4">
-  <div class="bg-cardBg p-6 rounded-2xl shadow-2xl w-full max-w-lg border border-gray-700 fade-in max-h-[90vh] overflow-y-auto">
+  <div class="bg-cardBg p-6 rounded-2xl shadow-2xl w-full max-w-md border border-gray-700 fade-in">
     <div class="flex justify-between items-center mb-5">
       <h3 class="text-xl font-bold text-emerald-400">PDF Download</h3>
       <button onclick="closePDFPreview()" class="text-gray-400 hover:text-white text-2xl leading-none">&times;</button>
@@ -597,28 +597,24 @@ tailwind.config = {
 
     <!-- Info -->
     <div class="bg-gray-900 border border-gray-700 rounded-xl p-4 mb-4">
-      <p class="text-sm text-gray-300 mb-1">Period: <span id="pdfPeriod" class="font-semibold text-indigo-300">All Time</span></p>
-      <p class="text-sm text-gray-300 mb-1">Total Entries: <span id="pdfEntryCount" class="font-semibold text-indigo-300">0</span></p>
-      <p class="text-sm text-gray-300">Total Pages: <span id="pdfTotalPages" class="font-semibold text-emerald-400">1</span></p>
+      <div class="flex justify-between items-center py-1">
+        <span class="text-sm text-gray-400">Period:</span>
+        <span id="pdfPeriod" class="text-sm font-semibold text-indigo-300">All Time</span>
+      </div>
+      <div class="flex justify-between items-center py-1">
+        <span class="text-sm text-gray-400">Total Entries:</span>
+        <span id="pdfEntryCount" class="text-sm font-semibold text-indigo-300">0</span>
+      </div>
+      <div class="flex justify-between items-center py-1">
+        <span class="text-sm text-gray-400">Total Pages:</span>
+        <span id="pdfTotalPages" class="text-sm font-semibold text-emerald-400">1</span>
+      </div>
     </div>
 
-    <!-- Options -->
-    <div class="space-y-3 mb-4">
-      <label class="flex items-center gap-3 bg-gray-900 border border-gray-700 rounded-lg p-3 cursor-pointer hover:border-indigo-500">
-        <input type="radio" name="pdfOption" value="all" checked onchange="onPDFOptionChange()" class="accent-indigo-500">
-        <span class="text-sm text-white">Download All Pages</span>
-      </label>
-      <label class="flex items-center gap-3 bg-gray-900 border border-gray-700 rounded-lg p-3 cursor-pointer hover:border-indigo-500">
-        <input type="radio" name="pdfOption" value="select" onchange="onPDFOptionChange()" class="accent-indigo-500">
-        <span class="text-sm text-white">Select Pages</span>
-      </label>
-    </div>
-
-    <!-- Page Selection (hidden by default) -->
-    <div id="pdfPageSelection" class="hidden bg-gray-900 border border-gray-700 rounded-xl p-4 mb-4">
-      <p class="text-xs text-gray-400 mb-3">Select pages to download:</p>
-      <div id="pdfPageCheckboxes" class="grid grid-cols-4 gap-2"></div>
-    </div>
+    <p class="text-xs text-gray-500 mb-4 text-center">
+      <i class="fa-solid fa-info-circle mr-1"></i>
+      A4 size PDF — saare pages download honge
+    </p>
 
     <!-- Action Buttons -->
     <div class="flex gap-2">
@@ -1488,18 +1484,104 @@ function generatePDFPreview() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-    // ---------- PDF GENERATION ----------
     const pageWidth = 210;
-    const pageHeight = 297;
     const margin = 12;
     const rowHeight = 6;
     const headerRowHeight = 7;
     const tableTop = 62;
     const tableBottomLimit = 275;
 
-    const colWidths = [20, 18, 30, 22, 20, 22, 54]; // Total: 186 (fits A4 portrait)
-
+    const colWidths = [20, 18, 30, 22, 20, 22, 54];
     const headers = ['Date', 'Type', 'Category', 'Person', 'Mode', 'Amount', 'Note'];
+
+    function drawHeader() {
+      doc.setFontSize(16);
+      doc.setTextColor(99, 102, 241);
+      doc.text('Finance Manager Report', margin, 15);
+
+      doc.setFontSize(9);
+      doc.setTextColor(80, 80, 80);
+      doc.text('Period: ' + periodLabel, margin, 22);
+      doc.text('Generated: ' + new Date().toLocaleString('en-IN'), margin, 27);
+      doc.text('Total Entries: ' + filtered.length, margin, 32);
+
+      doc.setFillColor(240, 240, 250);
+      doc.rect(margin, 36, pageWidth - 2 * margin, 12, 'F');
+      doc.setFontSize(9);
+      doc.setTextColor(0, 0, 0);
+      doc.text('Income: Rs.' + totalInc.toLocaleString('en-IN'), margin + 3, 44);
+      doc.text('Expense: Rs.' + totalExp.toLocaleString('en-IN'), margin + 48, 44);
+      doc.text('Savings: Rs.' + totalSav.toLocaleString('en-IN'), margin + 95, 44);
+      doc.text('Net: Rs.' + (totalInc - totalExp - totalSav).toLocaleString('en-IN'), margin + 140, 44);
+
+      doc.setFillColor(99, 102, 241);
+      doc.setTextColor(255, 255, 255);
+      doc.rect(margin, 52, pageWidth - 2 * margin, headerRowHeight, 'F');
+      let xH = margin + 2;
+      headers.forEach((h, i) => {
+        doc.text(h, xH, 57);
+        xH += colWidths[i];
+      });
+    }
+
+    drawHeader();
+    doc.setTextColor(0, 0, 0);
+    let yPos = tableTop;
+
+    filtered.forEach((t, idx) => {
+      if (yPos > tableBottomLimit) {
+        doc.addPage();
+        drawHeader();
+        doc.setTextColor(0, 0, 0);
+        yPos = tableTop;
+      }
+
+      if (idx % 2 === 1) {
+        doc.setFillColor(248, 248, 252);
+        doc.rect(margin, yPos - 4, pageWidth - 2 * margin, rowHeight, 'F');
+      }
+
+      const row = [
+        String(t.date || '').substring(0, 10),
+        String(t.type || '').substring(0, 9),
+        String(t.category || '').substring(0, 14),
+        String(t.person || 'Self').substring(0, 11),
+        String(t.paymentmode || t.paymentMode || '').substring(0, 10),
+        'Rs.' + (parseFloat(t.amount) || 0).toLocaleString('en-IN'),
+        String(t.note || '-').substring(0, 30)
+      ];
+
+      let xR = margin + 2;
+      row.forEach((val, i) => {
+        doc.text(val, xR, yPos);
+        xR += colWidths[i];
+      });
+      yPos += rowHeight;
+    });
+
+    // Footer
+    const totalPages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text('Page ' + i + ' of ' + totalPages, pageWidth - 30, 290);
+    }
+
+    _pdfDocRef = doc;
+
+    document.getElementById('pdfPeriod').textContent = periodLabel;
+    document.getElementById('pdfEntryCount').textContent = filtered.length;
+    document.getElementById('pdfTotalPages').textContent = totalPages;
+
+    document.getElementById('pdfPreviewModal').classList.remove('hidden');
+    document.body.classList.add('no-scroll');
+
+  } catch (e) {
+    console.error("PDF preview error:", e);
+    showToast("PDF generate nahi hui", "error");
+  }
+}
 
     // Page 1 header
     function drawHeader() {
@@ -1605,13 +1687,6 @@ function generatePDFPreview() {
   }
 }
 
-function onPDFOptionChange() {
-  const val = document.querySelector('input[name="pdfOption"]:checked').value;
-  const sel = document.getElementById('pdfPageSelection');
-  if (val === 'select') sel.classList.remove('hidden');
-  else sel.classList.add('hidden');
-}
-
 function closePDFPreview() {
   document.getElementById('pdfPreviewModal').classList.add('hidden');
   document.body.classList.remove('no-scroll');
@@ -1620,21 +1695,6 @@ function closePDFPreview() {
 
 async function confirmPDFDownload(btn) {
   if (!_pdfDocRef) { showToast("PDF not ready", "error"); return; }
-
-  const val = document.querySelector('input[name="pdfOption"]:checked').value;
-  let pagesToDownload = [];
-
-  if (val === 'all') {
-    const total = _pdfDocRef.internal.getNumberOfPages();
-    for (let i = 1; i <= total; i++) pagesToDownload.push(i);
-  } else {
-    const cbs = document.querySelectorAll('.pdf-page-cb:checked');
-    pagesToDownload = Array.from(cbs).map(c => parseInt(c.value));
-    if (pagesToDownload.length === 0) {
-      showToast("Kam se kam 1 page select karo", "error");
-      return;
-    }
-  }
 
   // Password puche
   const password = await askPassword("Confirm PDF Download", "Password daalo");
@@ -1655,40 +1715,9 @@ async function confirmPDFDownload(btn) {
     return;
   }
 
+  // PDF save karo
   try {
-    // Selected pages extract karo
-    const { jsPDF } = window.jspdf;
-    const newDoc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-
-    pagesToDownload.forEach((pgNum, idx) => {
-      if (idx > 0) newDoc.addPage();
-      // Har page ko copy karne ke liye direct render
-      // Trick: jsPDF mein page copy nahi hoti easily, isliye sab pages generate karke sirf select rakhte hain
-    });
-
-    // Simple approach: Agar "all" hai to direct save karo
-    // Agar "select" hai to naya doc banao with selected pages
-
-    if (val === 'all') {
-      _pdfDocRef.save('Finance_Report_' + Date.now() + '.pdf');
-    } else {
-      // Selected pages ka naya PDF banao
-      const srcDoc = _pdfDocRef;
-      const totalSrc = srcDoc.internal.getNumberOfPages();
-
-      // Naya doc with selected pages (re-generate approach)
-      // Since jsPDF doesn't easily copy pages, hum regenerate karte hain sirf selected ke liye
-      // Best: use "deletePage" on a copy
-      // But jsPDF doesn't support copy. So simplest: generate fresh with only selected rows.
-
-      // For now — simple approach: bolo user ko "All Pages" use kare ya hum sab pages save karke baad me delete
-      // Actually, chalo sab pages save karo, aur last me bolo — best effort
-      // Simpler: full save karo lekin jo pages select hue unhe rakhne ke liye alag function chahiye
-      // Filhal full doc save karo
-      showToast("Selected pages feature abhi 'All' ke saath download karta hai", "info");
-      srcDoc.save('Finance_Report_' + Date.now() + '.pdf');
-    }
-
+    _pdfDocRef.save('Finance_Report_' + Date.now() + '.pdf');
     showToast("PDF downloaded!");
     closePDFPreview();
   } catch (e) {
