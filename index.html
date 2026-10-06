@@ -1728,25 +1728,103 @@ function getPeriodFilterValues() {
   return { type, year, month };
 }
 
-  
+  function updateTransactionTable() {
+  const { type: filterType, year: filterYear, month: filterMonthNum } = getPeriodFilterValues();
+  const searchQuery = document.getElementById('searchTx').value.toLowerCase().trim();
+
+  const filtered = appData.transactions.filter(t => {
+    const tDate = String(t.date || '');
+    if (filterType === 'monthly') {
+      const ym = filterYear + '-' + filterMonthNum;
+      if (!tDate.startsWith(ym)) return false;
+    } else if (filterType === 'yearly') {
+      if (!tDate.startsWith(filterYear)) return false;
+    }
+    if (searchQuery) {
+      const hay = [t.category, t.person, t.note, t.type, t.paymentmode, t.paymentMode, t.date]
+        .map(x => String(x || '').toLowerCase()).join(' ');
+      if (!hay.includes(searchQuery)) return false;
+    }
+    return true;
+  });
+
+  filtered.sort((a, b) => {
+    const d = String(b.date || '').localeCompare(String(a.date || ''));
+    if (d !== 0) return d;
+    return String(b.id || '').localeCompare(String(a.id || ''));
+  });
+
+  const limit = parseInt(document.getElementById('rowsLimit').value) || 10;
+  const effectiveLimit = Math.min(limit, txDisplayLimit);
+  const limited = filtered.slice(0, effectiveLimit);
+
+  // Load More update
+  const loadMoreWrap = document.getElementById('loadMoreWrap');
+  const loadMoreInfo = document.getElementById('loadMoreInfo');
+  if (loadMoreWrap) {
+    if (filtered.length > effectiveLimit) {
+      loadMoreWrap.classList.remove('hidden');
+      loadMoreInfo.textContent = `Showing ${effectiveLimit} of ${filtered.length} entries`;
+    } else {
+      loadMoreWrap.classList.add('hidden');
+    }
+  }
+
+  // Count update
+  const countEl = document.getElementById('txCount');
+  if (countEl) countEl.textContent = '(' + filtered.length + ')';
+
+  // Table render
+  const tbody = document.getElementById('transactionTableBody');
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-gray-500">No records found</td></tr>`;
+    return;
+  }
+
+  const frag = document.createDocumentFragment();
+  limited.forEach(t => {
+    const tr = document.createElement('tr');
+    const mode = t.paymentmode || t.paymentMode || '-';
+    const t2 = String(t.type).toLowerCase();
+    let typeColor = 'text-red-400';
+    if (t2 === 'income') typeColor = 'text-emerald-400';
+    else if (t2 === 'savings') typeColor = 'text-blue-400';
+    else if (t2 === 'udhar') typeColor = 'text-amber-400';
+    else if (t2 === 'udhardiya') typeColor = 'text-blue-400';
+    else if (t2 === 'udharreceived') typeColor = 'text-emerald-400';
+    const tid = escapeHtml(t.id);
+    tr.innerHTML = `
+      <td class="py-2.5 px-3 whitespace-nowrap">${escapeHtml(t.date || '')}</td>
+      <td class="py-2.5 px-3 font-semibold ${typeColor}">${escapeHtml(t.type || '')}</td>
+      <td class="py-2.5 px-3">${escapeHtml(t.category || '')}</td>
+      <td class="py-2.5 px-3">${escapeHtml(t.person || 'Self')}</td>
+      <td class="py-2.5 px-3">${escapeHtml(mode)}</td>
+      <td class="py-2.5 px-3 font-bold whitespace-nowrap">${formatMoney(t.amount)}</td>
+      <td class="py-2.5 px-3 text-gray-400 max-w-[200px] truncate">${escapeHtml(t.note || '-')}</td>
+      <td class="py-2.5 px-3 text-right whitespace-nowrap">
+        <button data-action="edit" data-id="${tid}" class="text-indigo-400 hover:text-indigo-300 mx-1" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button>
+        <button data-action="delete" data-id="${tid}" class="text-red-400 hover:text-red-300 mx-1" title="Delete"><i class="fa-solid fa-trash"></i></button>
+      </td>
+    `;
+    frag.appendChild(tr);
+  });
+  tbody.innerHTML = '';
+  tbody.appendChild(frag);
+}
 
 function renderDashboard() {
   // Reset display limit agar filter change hua ho
     // Reset display limit agar search/filter change hua ho (rowsLimit ko chhod kar)
-  const currentFilterState = JSON.stringify({
+    const currentFilterState = JSON.stringify({
     type: document.getElementById('filterType').value,
     year: document.getElementById('filterYear')?.value || '',
     month: document.getElementById('filterMonthNum')?.value || '',
     search: document.getElementById('searchTx').value
   });
-    if (window._lastFilterState !== currentFilterState) {
-    // Sirf tab reset karo jab filter actually change hua ho (loadMore se nahi)
-    if (!window._skipLimitReset) {
-      txDisplayLimit = 200;
-    }
+  if (window._lastFilterState !== currentFilterState) {
+    txDisplayLimit = 200;
     window._lastFilterState = currentFilterState;
   }
-  window._skipLimitReset = false;
 
   renderCategories();
   renderCategoryList();
@@ -1972,12 +2050,14 @@ function renderCategoryWise() {
 
  function loadMoreTx(btn) {
   txDisplayLimit += 200;
-  window._skipLimitReset = true;   // Reset rok do
   btnLoading(btn, 'Loading...');
+
+  // Table ko directly update karo (bina renderDashboard ke)
+  updateTransactionTable();
+
   setTimeout(() => {
-    renderDashboard();
     btnReset(btn);
-  }, 200);
+  }, 300);
 }
 
 function onSearch() {
