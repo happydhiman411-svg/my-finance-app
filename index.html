@@ -1777,6 +1777,24 @@ function getPeriodFilterValues() {
   // Count update
   const countEl = document.getElementById('txCount');
   if (countEl) countEl.textContent = '(' + filtered.length + ')';
+      // Total of filtered transactions
+  let txTotal = 0;
+  filtered.forEach(t => {
+    const amt = parseFloat(t.amount) || 0;
+    const type = String(t.type).toLowerCase();
+    if (type === 'udhar' || type === 'udhardiya' || type === 'udharreceived') return;
+    txTotal += amt;
+  });
+  const totalEl = document.getElementById('txTotal');
+  if (totalEl) {
+    if (searchQuery) {
+      totalEl.textContent = '(' + formatMoney(txTotal) + ')';
+      totalEl.classList.remove('hidden');
+    } else {
+      totalEl.textContent = '';
+      totalEl.classList.add('hidden');
+    }
+  }
     // Table render
   const tbody = document.getElementById('transactionTableBody');
   if (filtered.length === 0) {
