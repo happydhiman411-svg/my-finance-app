@@ -598,6 +598,10 @@ tailwind.config = {
           <span class="text-sm text-gray-400">Period:</span>
           <span id="reportPeriodLabel" class="text-sm font-semibold text-indigo-300">All Time</span>
         </div>
+        <div id="reportSearchRow" class="flex justify-between hidden">
+          <span class="text-sm text-gray-400">Search:</span>
+          <span id="reportSearchLabel" class="text-sm font-semibold text-amber-300">-</span>
+        </div>
         <div class="flex justify-between">
           <span class="text-sm text-gray-400">Total Entries:</span>
           <span id="reportEntryCount" class="text-sm font-semibold text-indigo-300">0</span>
@@ -1443,7 +1447,8 @@ function openReportPreview(btn) {
 
 function generateReport() {
   try {
-    const { type: filterType, year: filterYear, month: filterMonthNum } = getPeriodFilterValues();
+        const { type: filterType, year: filterYear, month: filterMonthNum } = getPeriodFilterValues();
+    const searchQuery = document.getElementById('searchTx').value.toLowerCase().trim();
 
     const filtered = appData.transactions.filter(t => {
       const tDate = String(t.date || '');
@@ -1452,6 +1457,11 @@ function generateReport() {
         if (!tDate.startsWith(ym)) return false;
       } else if (filterType === 'yearly') {
         if (!tDate.startsWith(filterYear)) return false;
+      }
+      if (searchQuery) {
+        const hay = [t.category, t.person, t.note, t.type, t.paymentmode, t.paymentMode, t.date]
+          .map(x => String(x || '').toLowerCase()).join(' ');
+        if (!hay.includes(searchQuery)) return false;
       }
       return true;
     });
@@ -1568,9 +1578,20 @@ function generateReport() {
 
     _reportDocRef = doc;
 
-    document.getElementById('reportPeriodLabel').textContent = periodLabel;
+        document.getElementById('reportPeriodLabel').textContent = periodLabel;
     document.getElementById('reportEntryCount').textContent = filtered.length;
     document.getElementById('reportPageCount').textContent = totalPages;
+
+    // Search label update
+    const searchRow = document.getElementById('reportSearchRow');
+    const searchLbl = document.getElementById('reportSearchLabel');
+    const currentSearch = document.getElementById('searchTx').value.trim();
+    if (currentSearch) {
+      searchRow.classList.remove('hidden');
+      searchLbl.textContent = currentSearch;
+    } else {
+      searchRow.classList.add('hidden');
+    }
 
     document.getElementById('reportPreviewModal').classList.remove('hidden');
     document.body.classList.add('no-scroll');
