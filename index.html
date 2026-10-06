@@ -186,6 +186,11 @@ tailwind.config = {
       <button onclick="syncData(true)" class="bg-indigo-600 hover:bg-indigo-500 px-3 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 transition">
         <i id="syncIcon" class="fa-solid fa-sync"></i><span class="hidden sm:inline">Sync</span>
       </button>
+
+      <button onclick="openReportPreview(this)" title="Download Report PDF" class="bg-emerald-600 hover:bg-emerald-500 px-3 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 transition">
+  <i class="fa-solid fa-file-pdf"></i><span class="hidden sm:inline">Download Report</span>
+</button>
+      
       <button onclick="openSettings()" class="bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-lg text-sm font-medium border border-gray-700">
         <i class="fa-solid fa-gear"></i>
       </button>
@@ -581,6 +586,34 @@ tailwind.config = {
     <button onclick="closeSettings()" class="w-full bg-gray-800 hover:bg-gray-700 py-2 rounded-lg text-sm font-medium border border-gray-700">Close</button>
   </div>
 </div>
+
+  <!-- ============ REPORT PREVIEW MODAL ============ -->
+<div id="reportPreviewModal" class="fixed inset-0 z-[65] flex items-center justify-center bg-black/80 backdrop-blur-md hidden p-4">
+  <div class="bg-cardBg rounded-2xl shadow-2xl w-full max-w-4xl border border-gray-700 fade-in flex flex-col" style="max-height: 95vh;">
+
+    <!-- Header -->
+    <div class="flex justify-between items-center p-4 border-b border-gray-700">
+      <div>
+        <h3 class="text-lg font-bold text-emerald-400">Report Preview</h3>
+        <p class="text-xs text-gray-400 mt-0.5">Period: <span id="reportPeriodLabel">All Time</span> · <span id="reportPageCount">1</span> page(s)</p>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="confirmReportDownload(this)" class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded-lg text-sm font-medium">
+          <i class="fa-solid fa-download mr-1"></i> Download
+        </button>
+        <button onclick="closeReportPreview()" class="bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-lg text-sm font-medium border border-gray-700">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Preview Area -->
+    <div id="reportPreviewArea" class="flex-1 overflow-auto bg-gray-950 p-4 flex flex-col items-center gap-4">
+      <!-- PDF pages canvas yahan render honge -->
+    </div>
+  </div>
+</div>
+
 
 <!-- ============ PASSWORD CONFIRM MODAL ============ -->
 <div id="confirmModal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md hidden p-4">
@@ -1372,6 +1405,214 @@ function togglePass(inputId, btn) {
     input.classList.add('blur-sm');
     icon.classList.remove('fa-eye');
     icon.classList.add('fa-eye-slash');
+  }
+}
+
+let _reportDocRef = null;
+let _reportPeriodLabel = 'All Time';
+
+function openReportPreview(btn) {
+  btnLoading(btn, 'Loading...');
+
+  // jsPDF load karo
+  if (!window.jspdf) {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    s.onload = () => {
+      btnReset(btn);
+      generateReport();
+    };
+    s.onerror = () => {
+      showToast("PDF library load nahi hui", "error");
+      btnReset(btn);
+    };
+    document.head.appendChild(s);
+  } else {
+    btnReset(btn);
+    generateReport();
+  }
+}
+
+function generateReport() {
+  try {
+    const { type: filterType, year: filterYear, month: filterMonthNum } = getPeriodFilterValues();
+
+    const filtered = appData.transactions.filter(t => {
+      const tDate = String(t.date || '');
+      if (filterType === 'monthly') {
+        const ym = filterYear + '-' + filterMonthNum;
+        if (!tDate.startsWith(ym)) return false;
+      } else if (filterType === 'yearly') {
+        if (!tDate.startsWith(filterYear)) return false;
+      }
+      return true;
+    });
+
+    filtered.sort((a, b) => {
+      const d = String(b.date || '').localeCompare(String(a.date || ''));
+      if (d !== 0) return d;
+      return String(b.id || '').localeCompare(String(a.id || ''));
+    });
+
+    let totalInc = 0, totalExp = 0, totalSav = 0;
+    filtered.forEach(t => {
+      const amt = parseFloat(t.amount) || 0;
+      const type = String(t.type).toLowerCase();
+      if (type === 'income') totalInc += amt;
+      else if (type === 'savings') totalSav += amt;
+      else if (type === 'udhar' || type === 'udhardiya' || type === 'udharreceived') {}
+      else totalExp += amt;
+    });
+
+    let periodLabel = 'All Time';
+    if (filterType === 'monthly') {
+      const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      periodLabel = months[parseInt(filterMonthNum) - 1] + ' ' + filterYear;
+    } else if (filterType === 'yearly') {
+      periodLabel = 'Year ' + filterYear;
+    }
+    _reportPeriodLabel = periodLabel;
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+    const pageWidth = 210;
+    const margin = 12;
+    const rowHeight = 6;
+    const headerRowHeight = 7;
+    const tableTop = 62;
+    const tableBottomLimit = 275;
+    const colWidths = [20, 18, 30, 22, 20, 22, 54];
+    const headers = ['Date', 'Type', 'Category', 'Person', 'Mode', 'Amount', 'Note'];
+
+    function drawHeader() {
+      doc.setFontSize(16);
+      doc.setTextColor(99, 102, 241);
+      doc.text('Finance Manager Report', margin, 15);
+
+      doc.setFontSize(9);
+      doc.setTextColor(80, 80, 80);
+      doc.text('Period: ' + periodLabel, margin, 22);
+      doc.text('Generated: ' + new Date().toLocaleString('en-IN'), margin, 27);
+      doc.text('Total Entries: ' + filtered.length, margin, 32);
+
+      doc.setFillColor(240, 240, 250);
+      doc.rect(margin, 36, pageWidth - 2 * margin, 12, 'F');
+      doc.setFontSize(9);
+      doc.setTextColor(0, 0, 0);
+      doc.text('Income: Rs.' + totalInc.toLocaleString('en-IN'), margin + 3, 44);
+      doc.text('Expense: Rs.' + totalExp.toLocaleString('en-IN'), margin + 48, 44);
+      doc.text('Savings: Rs.' + totalSav.toLocaleString('en-IN'), margin + 95, 44);
+      doc.text('Net: Rs.' + (totalInc - totalExp - totalSav).toLocaleString('en-IN'), margin + 140, 44);
+
+      doc.setFillColor(99, 102, 241);
+      doc.setTextColor(255, 255, 255);
+      doc.rect(margin, 52, pageWidth - 2 * margin, headerRowHeight, 'F');
+      let xH = margin + 2;
+      headers.forEach((h, i) => {
+        doc.text(h, xH, 57);
+        xH += colWidths[i];
+      });
+    }
+
+    drawHeader();
+    doc.setTextColor(0, 0, 0);
+    let yPos = tableTop;
+
+    filtered.forEach((t, idx) => {
+      if (yPos > tableBottomLimit) {
+        doc.addPage();
+        drawHeader();
+        doc.setTextColor(0, 0, 0);
+        yPos = tableTop;
+      }
+
+      if (idx % 2 === 1) {
+        doc.setFillColor(248, 248, 252);
+        doc.rect(margin, yPos - 4, pageWidth - 2 * margin, rowHeight, 'F');
+      }
+
+      const row = [
+        String(t.date || '').substring(0, 10),
+        String(t.type || '').substring(0, 9),
+        String(t.category || '').substring(0, 14),
+        String(t.person || 'Self').substring(0, 11),
+        String(t.paymentmode || t.paymentMode || '').substring(0, 10),
+        'Rs.' + (parseFloat(t.amount) || 0).toLocaleString('en-IN'),
+        String(t.note || '-').substring(0, 30)
+      ];
+
+      let xR = margin + 2;
+      row.forEach((val, i) => {
+        doc.text(val, xR, yPos);
+        xR += colWidths[i];
+      });
+      yPos += rowHeight;
+    });
+
+    const totalPages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text('Page ' + i + ' of ' + totalPages, pageWidth - 30, 290);
+    }
+
+    _reportDocRef = doc;
+
+    document.getElementById('reportPeriodLabel').textContent = periodLabel;
+    document.getElementById('reportEntryCount').textContent = filtered.length;
+    document.getElementById('reportPageCount').textContent = totalPages;
+
+    document.getElementById('reportPreviewModal').classList.remove('hidden');
+    document.body.classList.add('no-scroll');
+
+  } catch (e) {
+    console.error("Report error:", e);
+    showToast("Report generate nahi hui", "error");
+  }
+}
+
+function closeReportPreview() {
+  document.getElementById('reportPreviewModal').classList.add('hidden');
+  document.body.classList.remove('no-scroll');
+  _reportDocRef = null;
+}
+
+async function confirmReportDownload(btn) {
+  if (!_reportDocRef) { showToast("Report ready nahi hai", "error"); return; }
+
+  // Confirmation popup
+  const ok = confirm("Are you sure you want to download this report?\n\nPeriod: " + _reportPeriodLabel);
+  if (!ok) return;
+
+  // Password puche
+  const password = await askPassword("Confirm Download", "Password daalo");
+  if (!password) return;
+
+  btnLoading(btn, 'Verifying...');
+  try {
+    const data = await apiPost({ action: 'verifyPassword', token: TOKEN, password: password });
+    if (data.status !== 'success') {
+      showToast("Password galat hai", "error");
+      btnReset(btn);
+      return;
+    }
+  } catch (e) {
+    showToast("Network error", "error");
+    btnReset(btn);
+    return;
+  }
+
+  try {
+    _reportDocRef.save('Finance_Report_' + Date.now() + '.pdf');
+    showToast("PDF downloaded!");
+    closeReportPreview();
+  } catch (e) {
+    console.error("Save error:", e);
+    showToast("PDF save nahi hui", "error");
+  } finally {
+    btnReset(btn);
   }
 }
 
