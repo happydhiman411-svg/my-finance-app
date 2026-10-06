@@ -189,6 +189,11 @@ tailwind.config = {
       <button onclick="openSettings()" class="bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-lg text-sm font-medium border border-gray-700">
         <i class="fa-solid fa-gear"></i>
       </button>
+
+            <button onclick="downloadPDF(this)" class="bg-emerald-600 hover:bg-emerald-500 px-3 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 transition">
+        <i class="fa-solid fa-file-pdf"></i><span class="hidden sm:inline">PDF</span>
+      </button>
+      
       <button onclick="handleLogout()" class="bg-red-600/20 hover:bg-red-600/30 text-red-400 px-3 py-2 rounded-lg text-sm font-medium border border-red-800">
         <i class="fa-solid fa-right-from-bracket"></i>
       </button>
@@ -1373,6 +1378,173 @@ function togglePass(inputId, btn) {
     icon.classList.remove('fa-eye');
     icon.classList.add('fa-eye-slash');
   }
+}
+
+  function downloadPDF(btn) {
+  btnLoading(btn, 'Loading...');
+
+  // jsPDF library dynamically load karo (agar pehle se nahi hai)
+  function loadScript(cb) {
+    if (window.jspdf) { cb(); return; }
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    s.onload = cb;
+    s.onerror = () => {
+      showToast("PDF library load nahi hui", "error");
+      btnReset(btn);
+    };
+    document.head.appendChild(s);
+  }
+
+  loadScript(() => {
+    try {
+      // Filter ke hisaab se data lo
+      const { type: filterType, year: filterYear, month: filterMonthNum } = getPeriodFilterValues();
+
+      const filtered = appData.transactions.filter(t => {
+        const tDate = String(t.date || '');
+        if (filterType === 'monthly') {
+          const ym = filterYear + '-' + filterMonthNum;
+          if (!tDate.startsWith(ym)) return false;
+        } else if (filterType === 'yearly') {
+          if (!tDate.startsWith(filterYear)) return false;
+        }
+        return true;
+      });
+
+      // Sort: latest first
+      filtered.sort((a, b) => {
+        const d = String(b.date || '').localeCompare(String(a.date || ''));
+        if (d !== 0) return d;
+        return String(b.id || '').localeCompare(String(a.id || ''));
+      });
+
+      // Totals calculate
+      let totalInc = 0, totalExp = 0, totalSav = 0;
+      filtered.forEach(t => {
+        const amt = parseFloat(t.amount) || 0;
+        const type = String(t.type).toLowerCase();
+        if (type === 'income') totalInc += amt;
+        else if (type === 'savings') totalSav += amt;
+        else if (type === 'udhar' || type === 'udhardiya' || type === 'udharreceived') { /* skip */ }
+        else totalExp += amt;
+      });
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+      // Period label
+      let periodLabel = 'All Time';
+      if (filterType === 'monthly') {
+        const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        periodLabel = months[parseInt(filterMonthNum) - 1] + ' ' + filterYear;
+      } else if (filterType === 'yearly') {
+        periodLabel = 'Year ' + filterYear;
+      }
+
+      // Header
+      doc.setFontSize(18);
+      doc.setTextColor(99, 102, 241);
+      doc.text('Finance Manager Report', 14, 15);
+
+      doc.setFontSize(10);
+      doc.setTextColor(80, 80, 80);
+      doc.text('Period: ' + periodLabel, 14, 22);
+      doc.text('Generated: ' + new Date().toLocaleString('en-IN'), 14, 27);
+      doc.text('Total Entries: ' + filtered.length, 14, 32);
+
+      // Summary Box
+      doc.setFillColor(240, 240, 250);
+      doc.rect(14, 37, 269, 14, 'F');
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+      doc.text('Income: Rs.' + totalInc.toLocaleString('en-IN'), 18, 46);
+      doc.text('Expense: Rs.' + totalExp.toLocaleString('en-IN'), 88, 46);
+      doc.text('Savings: Rs.' + totalSav.toLocaleString('en-IN'), 158, 46);
+      doc.text('Net: Rs.' + (totalInc - totalExp - totalSav).toLocaleString('en-IN'), 218, 46);
+
+      // Table
+      const headers = ['Date', 'Type', 'Category', 'Person', 'Mode', 'Amount', 'Note'];
+      const colWidths = [22, 25, 40, 30, 25, 28, 99];
+
+      // Table header
+      doc.setFontSize(10);
+      doc.setFillColor(99, 102, 241);
+      doc.setTextColor(255, 255, 255);
+      doc.rect(14, 55, 269, 8, 'F');
+
+      let xPos = 16;
+      headers.forEach((h, i) => {
+        doc.text(h, xPos, 60);
+        xPos += colWidths[i];
+      });
+
+      // Table rows
+      doc.setTextColor(0, 0, 0);
+      let yPos = 65;
+      const rowHeight = 7;
+
+      filtered.forEach((t, idx) => {
+        if (yPos > 195) {
+          doc.addPage();
+          yPos = 20;
+          // Header repeat
+          doc.setFillColor(99, 102, 241);
+          doc.setTextColor(255, 255, 255);
+          doc.rect(14, 15, 269, 8, 'F');
+          let xH = 16;
+          headers.forEach((h, i) => {
+            doc.text(h, xH, 20);
+            xH += colWidths[i];
+          });
+          doc.setTextColor(0, 0, 0);
+          yPos = 25;
+        }
+
+        // Alternate row colors
+        if (idx % 2 === 1) {
+          doc.setFillColor(248, 248, 252);
+          doc.rect(14, yPos - 5, 269, rowHeight, 'F');
+        }
+
+        const row = [
+          String(t.date || '').substring(0, 10),
+          String(t.type || '').substring(0, 10),
+          String(t.category || '').substring(0, 18),
+          String(t.person || 'Self').substring(0, 14),
+          String(t.paymentmode || t.paymentMode || '').substring(0, 12),
+          'Rs.' + (parseFloat(t.amount) || 0).toLocaleString('en-IN'),
+          String(t.note || '-').substring(0, 45)
+        ];
+
+        let xR = 16;
+        row.forEach((val, i) => {
+          doc.text(val, xR, yPos);
+          xR += colWidths[i];
+        });
+        yPos += rowHeight;
+      });
+
+      // Footer
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.text('Page ' + i + ' of ' + pageCount, 260, 200);
+      }
+
+      // Save
+      const fileName = 'Finance_Report_' + periodLabel.replace(/\s+/g, '_') + '_' + Date.now() + '.pdf';
+      doc.save(fileName);
+      showToast("PDF downloaded!");
+    } catch (e) {
+      console.error("PDF error:", e);
+      showToast("PDF generate nahi hui", "error");
+    } finally {
+      btnReset(btn);
+    }
+  });
 }
 
 function handleLogout(callServer = true) {
