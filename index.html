@@ -70,6 +70,50 @@ tailwind.config = {
   button {
     transition: background-color 0.2s ease, transform 0.1s ease, opacity 0.2s ease;
   }
+
+    /* Success Checkmark */
+  #successOverlay {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    z-index: 9999;
+    pointer-events: none;
+    opacity: 0;
+  }
+  #successOverlay.show {
+    animation: successPop 1.2s ease-out forwards;
+  }
+  @keyframes successPop {
+    0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+    20% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+    40% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    80% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+  }
+  #successOverlay svg {
+    width: 120px;
+    height: 120px;
+  }
+  #successOverlay .circle {
+    stroke: #10b981;
+    stroke-width: 4;
+    fill: none;
+    stroke-dasharray: 166;
+    stroke-dashoffset: 166;
+    animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+  }
+  #successOverlay .check {
+    stroke: #10b981;
+    stroke-width: 4;
+    fill: none;
+    stroke-dasharray: 48;
+    stroke-dashoffset: 48;
+    animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.6s forwards;
+  }
+  @keyframes stroke {
+    100% { stroke-dashoffset: 0; }
+  }
   
 </style>
 </head>
@@ -687,6 +731,14 @@ tailwind.config = {
 </div>
 
 <!-- TOAST -->
+  <!-- Success Checkmark Overlay -->
+<div id="successOverlay">
+  <svg viewBox="0 0 52 52">
+    <circle class="circle" cx="26" cy="26" r="25"/>
+    <path class="check" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+  </svg>
+</div>
+
 <div id="toast" class="fixed bottom-6 right-6 z-[70] hidden">
   <div id="toastBody" class="px-4 py-3 rounded-lg shadow-lg text-sm font-medium border"></div>
 </div>
@@ -1097,6 +1149,13 @@ async function deleteReminder(id, btn) {
   }
 }
 
+  function showSuccess() {
+  const el = document.getElementById('successOverlay');
+  if (!el) return;
+  el.classList.remove('show');
+  void el.offsetWidth; // reset animation
+  el.classList.add('show');
+}
 
 function showToast(msg, type = 'success') {
   const el = document.getElementById('toast');
@@ -1111,6 +1170,9 @@ function showToast(msg, type = 'success') {
   el.classList.remove('hidden');
   clearTimeout(showToast._t);
   showToast._t = setTimeout(() => el.classList.add('hidden'), 2800);
+
+  // Auto checkmark on success (error/info pe nahi)
+  if (type === 'success') showSuccess();
 }
 async function apiGet(params) {
   if (!API_URL) throw new Error("API URL not set");
