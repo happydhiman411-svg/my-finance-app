@@ -1594,24 +1594,7 @@ async function confirmReportDownload(btn) {
   const ok = confirm("Are you sure you want to download this report?\n\nPeriod: " + _reportPeriodLabel);
   if (!ok) return;
 
-  // Password puche
-  const password = await askPassword("Confirm Download", "Password daalo");
-  if (!password) return;
-
-  btnLoading(btn, 'Verifying...');
-  try {
-    const data = await apiPost({ action: 'verifyPassword', token: TOKEN, password: password });
-    if (data.status !== 'success') {
-      showToast("Password galat hai", "error");
-      btnReset(btn);
-      return;
-    }
-  } catch (e) {
-    showToast("Network error", "error");
-    btnReset(btn);
-    return;
-  }
-
+  // Direct download
   try {
     _reportDocRef.save('Finance_Report_' + Date.now() + '.pdf');
     showToast("PDF downloaded!");
