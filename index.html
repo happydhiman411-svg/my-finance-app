@@ -514,6 +514,13 @@ tailwind.config = {
         </thead>
         <tbody id="transactionTableBody" class="divide-y divide-gray-800"></tbody>
       </table>
+           </div>
+    <div id="loadMoreWrap" class="hidden text-center mt-4">
+      <button id="loadMoreBtn" onclick="loadMoreTx(this)" class="bg-indigo-600 hover:bg-indigo-500 px-6 py-2 rounded-lg text-sm font-medium transition">
+        <i class="fa-solid fa-arrow-down mr-1"></i> Load More
+      </button>
+      <p id="loadMoreInfo" class="text-xs text-gray-500 mt-2"></p>
+    </div>
     </div>
   </div>
 </div>
@@ -751,6 +758,7 @@ let TOKEN = localStorage.getItem('fin_token') || "";
 let USERNAME = localStorage.getItem('fin_user') || "";
 let appData = { transactions: [], categories: [], dailyLedger: [], udharLedger: [], persons: [] };
 let editingId = null;
+let txDisplayLimit = 200;
 let searchTimer = null;
 
 /* ============ UTILS ============ */
@@ -1720,8 +1728,27 @@ function getPeriodFilterValues() {
   return { type, year, month };
 }
 
+  
 
 function renderDashboard() {
+  // Reset display limit agar filter change hua ho
+  if (window._lastFilterState !== JSON.stringify({
+    type: document.getElementById('filterType').value,
+    year: document.getElementById('filterYear')?.value || '',
+    month: document.getElementById('filterMonthNum')?.value || '',
+    search: document.getElementById('searchTx').value,
+    rows: document.getElementById('rowsLimit').value
+  })) {
+    txDisplayLimit = 200;
+    window._lastFilterState = JSON.stringify({
+      type: document.getElementById('filterType').value,
+      year: document.getElementById('filterYear')?.value || '',
+      month: document.getElementById('filterMonthNum')?.value || '',
+      search: document.getElementById('searchTx').value,
+      rows: document.getElementById('rowsLimit').value
+    });
+  }
+
   renderCategories();
   renderCategoryList();
   renderCategoryWise();
@@ -1769,7 +1796,20 @@ function renderDashboard() {
     if (d !== 0) return d;
     return String(b.id || '').localeCompare(String(a.id || ''));
   });
-  const limited = filtered.slice(0, limit);
+    const effectiveLimit = Math.min(limit, txDisplayLimit);
+  const limited = filtered.slice(0, effectiveLimit);
+
+  // Load More button dikhao ya hide karo
+  const loadMoreWrap = document.getElementById('loadMoreWrap');
+  const loadMoreInfo = document.getElementById('loadMoreInfo');
+  if (loadMoreWrap) {
+    if (filtered.length > effectiveLimit) {
+      loadMoreWrap.classList.remove('hidden');
+      loadMoreInfo.textContent = `Showing ${effectiveLimit} of ${filtered.length} entries`;
+    } else {
+      loadMoreWrap.classList.add('hidden');
+    }
+  }
     const countEl = document.getElementById('txCount');
   if (countEl) countEl.textContent = '(' + filtered.length + ')';
 
@@ -1929,6 +1969,15 @@ function renderCategoryWise() {
       </div>
     `;
   }).join('');
+}
+
+  function loadMoreTx(btn) {
+  txDisplayLimit += 200;
+  btnLoading(btn, 'Loading...');
+  setTimeout(() => {
+    renderDashboard();
+    btnReset(btn);
+  }, 200);
 }
 
 function onSearch() {
