@@ -485,17 +485,7 @@ tailwind.config = {
             <i class="fa-solid fa-circle-xmark"></i>
           </button>
         </div>
-        <select id="rowsLimit" onchange="renderDashboard()"
-          class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white">
-          <option value="10" selected>10</option>
-          <option value="20">20</option>
-          <option value="50">50</option>
-          <option value="100">100</option>
-          <option value="200">200</option>
-          <option value="200">500</option>
-          <option value="200">1000</option>
-          <option value="200">1500</option>
-        </select>
+                <span class="text-xs text-gray-500 self-center">100 / page</span>
       </div>
     </div>
          <div class="overflow-x-auto overflow-y-auto" style="max-height: 500px;">
@@ -515,11 +505,14 @@ tailwind.config = {
         <tbody id="transactionTableBody" class="divide-y divide-gray-800"></tbody>
       </table>
            </div>
-    <div id="loadMoreWrap" class="hidden text-center mt-4">
-      <button id="loadMoreBtn" onclick="loadMoreTx(this)" class="bg-indigo-600 hover:bg-indigo-500 px-6 py-2 rounded-lg text-sm font-medium transition">
-        <i class="fa-solid fa-arrow-down mr-1"></i> Load More
+        <div id="paginationWrap" class="hidden flex justify-center items-center gap-3 mt-4">
+      <button id="prevPageBtn" onclick="prevPage(this)" class="bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded-lg text-sm font-medium border border-gray-700 disabled:opacity-40 disabled:cursor-not-allowed">
+        <i class="fa-solid fa-chevron-left mr-1"></i> Prev
       </button>
-      <p id="loadMoreInfo" class="text-xs text-gray-500 mt-2"></p>
+      <span id="pageInfo" class="text-sm text-gray-400"></span>
+      <button id="nextPageBtn" onclick="nextPage(this)" class="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed">
+        Next <i class="fa-solid fa-chevron-right ml-1"></i>
+      </button>
     </div>
     </div>
   </div>
@@ -758,7 +751,8 @@ let TOKEN = localStorage.getItem('fin_token') || "";
 let USERNAME = localStorage.getItem('fin_user') || "";
 let appData = { transactions: [], categories: [], dailyLedger: [], udharLedger: [], persons: [] };
 let editingId = null;
-let txDisplayLimit = 200;
+let txCurrentPage = 1;
+let txPerPage = 100;
 let searchTimer = null;
 
 /* ============ UTILS ============ */
@@ -1754,19 +1748,29 @@ function getPeriodFilterValues() {
     return String(b.id || '').localeCompare(String(a.id || ''));
   });
 
-  const limit = parseInt(document.getElementById('rowsLimit').value) || 10;
-  const effectiveLimit = Math.min(limit, txDisplayLimit);
-  const limited = filtered.slice(0, effectiveLimit);
+    // Pagination
+  const totalPages = Math.max(1, Math.ceil(filtered.length / txPerPage));
+  if (txCurrentPage > totalPages) txCurrentPage = totalPages;
+  if (txCurrentPage < 1) txCurrentPage = 1;
 
-  // Load More update
-  const loadMoreWrap = document.getElementById('loadMoreWrap');
-  const loadMoreInfo = document.getElementById('loadMoreInfo');
-  if (loadMoreWrap) {
-    if (filtered.length > effectiveLimit) {
-      loadMoreWrap.classList.remove('hidden');
-      loadMoreInfo.textContent = `Showing ${effectiveLimit} of ${filtered.length} entries`;
+  const startIdx = (txCurrentPage - 1) * txPerPage;
+  const endIdx = startIdx + txPerPage;
+  const limited = filtered.slice(startIdx, endIdx);
+
+  // Pagination buttons update
+  const paginationWrap = document.getElementById('paginationWrap');
+  const pageInfo = document.getElementById('pageInfo');
+  const prevBtn = document.getElementById('prevPageBtn');
+  const nextBtn = document.getElementById('nextPageBtn');
+
+  if (paginationWrap) {
+    if (filtered.length > txPerPage) {
+      paginationWrap.classList.remove('hidden');
+      pageInfo.textContent = `Page ${txCurrentPage} of ${totalPages} (${filtered.length} entries)`;
+      prevBtn.disabled = (txCurrentPage === 1);
+      nextBtn.disabled = (txCurrentPage === totalPages);
     } else {
-      loadMoreWrap.classList.add('hidden');
+      paginationWrap.classList.add('hidden');
     }
   }
 
@@ -1821,8 +1825,8 @@ function renderDashboard() {
     month: document.getElementById('filterMonthNum')?.value || '',
     search: document.getElementById('searchTx').value
   });
-  if (window._lastFilterState !== currentFilterState) {
-    txDisplayLimit = 200;
+    if (window._lastFilterState !== currentFilterState) {
+    txCurrentPage = 1;
     window._lastFilterState = currentFilterState;
   }
 
@@ -1852,7 +1856,10 @@ function renderDashboard() {
     }
     return true;
   });
-
+  // Pagination reset agar page out of bounds hai
+  const totalPagesCheck = Math.max(1, Math.ceil(filtered.length / txPerPage));
+  if (txCurrentPage > totalPagesCheck) txCurrentPage = totalPagesCheck;
+  if (txCurrentPage < 1) txCurrentPage = 1;
     renderFyCards();
 
   const todayStr = getTodayLocal();
@@ -2048,16 +2055,21 @@ function renderCategoryWise() {
   }).join('');
 }
 
- function loadMoreTx(btn) {
-  txDisplayLimit += 200;
-  btnLoading(btn, 'Loading...');
-
-  // Table ko directly update karo (bina renderDashboard ke)
+function goToPage(page) {
+  txCurrentPage = page;
   updateTransactionTable();
+}
 
-  setTimeout(() => {
-    btnReset(btn);
-  }, 300);
+function nextPage(btn) {
+  txCurrentPage++;
+  updateTransactionTable();
+}
+
+function prevPage(btn) {
+  if (txCurrentPage > 1) {
+    txCurrentPage--;
+    updateTransactionTable();
+  }
 }
 
 function onSearch() {
