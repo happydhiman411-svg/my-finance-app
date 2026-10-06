@@ -1777,10 +1777,11 @@ function getPeriodFilterValues() {
   // Count update
   const countEl = document.getElementById('txCount');
   if (countEl) countEl.textContent = '(' + filtered.length + ')';
-
+  const tbody = document.getElementById('transactionTableBody');
+  tbody.innerHTML = '';
+  tbody.appendChild(frag);
   // Table render
-    // Table update karo (baaki sab updateTransactionTable sambhal lega)
-  updateTransactionTable();
+    
 }
 
 function renderDashboard() {
