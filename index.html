@@ -2140,60 +2140,7 @@ function setupSwipe(row) {
   handle.addEventListener('mouseleave', (e) => { if (isDragging) onEnd(e); });
 }
 
-  function onMove(e) {
-    if (!isDragging) return;
-    const touch = e.touches ? e.touches[0] : e;
-    currentX = touch.clientX;
-    const diff = currentX - startX;
-
-    if (diff > 0) return;
-    if (Math.abs(diff) > 10) {
-      swiping = true;
-      row.classList.add('swipe-left');
-    }
-
-    const translate = Math.max(diff, -threshold * 1.5);
-    row.style.transform = 'translateX(' + translate + 'px)';
-  }
-
-  async function onEnd(e) {
-    if (!isDragging) return;
-    isDragging = false;
-    row.classList.remove('swiping');
-
-    const diff = currentX - startX;
-
-    if (diff < -threshold && swiping) {
-      row.style.transform = 'translateX(-' + threshold + 'px)';
-
-      const shouldHide = await askHideRow();
-
-      if (shouldHide) {
-        row.classList.add('removing');
-        setTimeout(() => {
-          if (!hiddenRowsInSearch.includes(rowId)) {
-            hiddenRowsInSearch.push(rowId);
-          }
-          updateTransactionTable();
-        }, 300);
-      } else {
-        row.style.transform = 'translateX(0)';
-        row.classList.remove('swipe-left');
-      }
-    } else {
-      row.style.transform = 'translateX(0)';
-      row.classList.remove('swipe-left');
-    }
-  }
-
-  row.addEventListener('touchstart', onStart, { passive: true });
-  row.addEventListener('touchmove', onMove, { passive: true });
-  row.addEventListener('touchend', onEnd);
-  row.addEventListener('mousedown', onStart);
-  row.addEventListener('mousemove', onMove);
-  row.addEventListener('mouseup', onEnd);
-  row.addEventListener('mouseleave', (e) => { if (isDragging) onEnd(e); });
-}
+  
 
   function updateTransactionTable() {
   const { type: filterType, year: filterYear, month: filterMonthNum } = getPeriodFilterValues();
