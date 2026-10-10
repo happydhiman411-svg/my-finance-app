@@ -114,6 +114,27 @@ tailwind.config = {
   @keyframes stroke {
     100% { stroke-dashoffset: 0; }
   }
+
+    /* Swipe to Hide */
+  #transactionTableBody tr[data-row-id] {
+    transition: transform 0.25s ease-out, opacity 0.25s ease-out;
+    will-change: transform;
+    position: relative;
+  }
+  #transactionTableBody tr[data-row-id].swiping {
+    transition: none;
+  }
+  #transactionTableBody tr[data-row-id].swipe-left {
+    background: linear-gradient(to left, #dc2626 0%, #dc2626 100%) !important;
+  }
+  #transactionTableBody tr[data-row-id].swipe-left td {
+    background: transparent !important;
+  }
+  #transactionTableBody tr[data-row-id].removing {
+    transform: translateX(-120%) !important;
+    opacity: 0;
+    transition: transform 0.3s ease-in, opacity 0.3s ease-in;
+  }
   
 </style>
 </head>
@@ -626,7 +647,22 @@ tailwind.config = {
   </div>
 </div>
 
-
+<!-- ============ HIDE ROW CONFIRM MODAL ============ -->
+<div id="hideRowModal" class="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 backdrop-blur-sm hidden p-4">
+  <div class="bg-cardBg p-6 rounded-2xl shadow-2xl w-full max-w-sm border border-gray-700 fade-in">
+    <h3 class="text-lg font-bold mb-3 text-red-400">Hide Row?</h3>
+    <p class="text-sm text-gray-400 mb-5">This row will be hidden from search results.</p>
+    <div class="flex gap-2">
+      <button onclick="confirmHideRow(true)" class="flex-1 bg-red-600 hover:bg-red-500 py-2.5 rounded-lg text-sm font-medium">
+        Yes, Hide
+      </button>
+      <button onclick="confirmHideRow(false)" class="flex-1 bg-gray-800 hover:bg-gray-700 py-2.5 rounded-lg text-sm font-medium border border-gray-700">
+        Cancel
+      </button>
+    </div>
+  </div>
+</div>
+  
 <!-- ============ PASSWORD CONFIRM MODAL ============ -->
 <div id="confirmModal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md hidden p-4">
   <div class="bg-cardBg p-6 rounded-2xl shadow-2xl w-full max-w-sm border border-gray-700 fade-in">
@@ -1975,6 +2011,114 @@ function getPeriodFilterValues() {
   return { type, year, month };
 }
 
+  // ============ SWIPE TO HIDE ============
+let hiddenRowsInSearch = [];
+let hideRowResolver = null;
+
+function askHideRow() {
+  return new Promise(resolve => {
+    hideRowResolver = resolve;
+    document.getElementById('hideRowModal').classList.remove('hidden');
+    document.body.classList.add('no-scroll');
+  });
+}
+
+function confirmHideRow(shouldHide) {
+  document.getElementById('hideRowModal').classList.add('hidden');
+  document.body.classList.remove('no-scroll');
+  if (hideRowResolver) {
+    hideRowResolver(shouldHide);
+    hideRowResolver = null;
+  }
+}
+
+function attachSwipeHandlers() {
+  const searchActive = document.getElementById('searchTx').value.trim().length > 0;
+  if (!searchActive) return;
+
+  const rows = document.querySelectorAll('#transactionTableBody tr[data-row-id]');
+
+  rows.forEach(row => {
+    if (row.dataset.swipeAttached === '1') return;
+    row.dataset.swipeAttached = '1';
+    setupSwipe(row);
+  });
+}
+
+function setupSwipe(row) {
+  let startX = 0;
+  let currentX = 0;
+  let isDragging = false;
+  let swiping = false;
+
+  const threshold = 80;
+  const rowId = row.getAttribute('data-row-id');
+
+  function onStart(e) {
+    if (e.target.closest('button')) return;
+    const touch = e.touches ? e.touches[0] : e;
+    startX = touch.clientX;
+    currentX = startX;
+    isDragging = true;
+    swiping = false;
+    row.classList.add('swiping');
+  }
+
+  function onMove(e) {
+    if (!isDragging) return;
+    const touch = e.touches ? e.touches[0] : e;
+    currentX = touch.clientX;
+    const diff = currentX - startX;
+
+    if (diff > 0) return;
+    if (Math.abs(diff) > 10) {
+      swiping = true;
+      row.classList.add('swipe-left');
+    }
+
+    const translate = Math.max(diff, -threshold * 1.5);
+    row.style.transform = 'translateX(' + translate + 'px)';
+  }
+
+  async function onEnd(e) {
+    if (!isDragging) return;
+    isDragging = false;
+    row.classList.remove('swiping');
+
+    const diff = currentX - startX;
+
+    if (diff < -threshold && swiping) {
+      row.style.transform = 'translateX(-' + threshold + 'px)';
+
+      const shouldHide = await askHideRow();
+
+      if (shouldHide) {
+        row.classList.add('removing');
+        setTimeout(() => {
+          if (!hiddenRowsInSearch.includes(rowId)) {
+            hiddenRowsInSearch.push(rowId);
+          }
+          updateTransactionTable();
+        }, 300);
+      } else {
+        row.style.transform = 'translateX(0)';
+        row.classList.remove('swipe-left');
+      }
+    } else {
+      row.style.transform = 'translateX(0)';
+      row.classList.remove('swipe-left');
+    }
+  }
+
+  row.addEventListener('touchstart', onStart, { passive: true });
+  row.addEventListener('touchmove', onMove, { passive: true });
+  row.addEventListener('touchend', onEnd);
+  row.addEventListener('mousedown', onStart);
+  row.addEventListener('mousemove', onMove);
+  row.addEventListener('mouseup', onEnd);
+  row.addEventListener('mouseleave', (e) => { if (isDragging) onEnd(e); });
+}
+
   function updateTransactionTable() {
   const { type: filterType, year: filterYear, month: filterMonthNum } = getPeriodFilterValues();
   const searchQuery = document.getElementById('searchTx').value.toLowerCase().trim();
@@ -1995,21 +2139,28 @@ function getPeriodFilterValues() {
     return true;
   });
 
-  filtered.sort((a, b) => {
+  // Hidden rows skip karo (sirf search active hone pe)
+  const searchActive = searchQuery.length > 0;
+  let visibleFiltered = filtered;
+  if (searchActive) {
+    visibleFiltered = filtered.filter(t => !hiddenRowsInSearch.includes(String(t.id)));
+  }
+    
+ visibleFiltered.sort((a, b) => {
     const d = String(b.date || '').localeCompare(String(a.date || ''));
     if (d !== 0) return d;
     return String(b.id || '').localeCompare(String(a.id || ''));
   });
 
     // Pagination
-  const totalPages = Math.max(1, Math.ceil(filtered.length / txPerPage));
+  const totalPages = Math.max(1, Math.ceil(visibleFiltered.length / txPerPage));
   if (txCurrentPage > totalPages) txCurrentPage = totalPages;
   if (txCurrentPage < 1) txCurrentPage = 1;
 
   const startIdx = (txCurrentPage - 1) * txPerPage;
   const endIdx = startIdx + txPerPage;
-  const limited = filtered.slice(startIdx, endIdx);
-
+  const limited = visibleFiltered.slice(startIdx, endIdx);
+    
   // Pagination buttons update
   const paginationWrap = document.getElementById('paginationWrap');
   const pageInfo = document.getElementById('pageInfo');
@@ -2017,9 +2168,9 @@ function getPeriodFilterValues() {
   const nextBtn = document.getElementById('nextPageBtn');
 
   if (paginationWrap) {
-    if (filtered.length > txPerPage) {
+    if (visibleFiltered.length > txPerPage) {
       paginationWrap.classList.remove('hidden');
-      pageInfo.textContent = `Page ${txCurrentPage} of ${totalPages} (${filtered.length} entries)`;
+      pageInfo.textContent = `Page ${txCurrentPage} of ${totalPages} (${visibleFiltered.length} entries)`;
       prevBtn.disabled = (txCurrentPage === 1);
       nextBtn.disabled = (txCurrentPage === totalPages);
     } else {
@@ -2029,10 +2180,10 @@ function getPeriodFilterValues() {
 
   // Count update
   const countEl = document.getElementById('txCount');
-  if (countEl) countEl.textContent = '(' + filtered.length + ')';
+  if (countEl) countEl.textContent = '(' + visibleFiltered.length + ')';
       // Total of filtered transactions
   let txTotal = 0;
-  filtered.forEach(t => {
+  visibleFiltered.forEach(t => {
     const amt = parseFloat(t.amount) || 0;
     const type = String(t.type).toLowerCase();
     if (type === 'udhar' || type === 'udhardiya' || type === 'udharreceived') return;
@@ -2050,7 +2201,7 @@ function getPeriodFilterValues() {
   }
     // Table render
   const tbody = document.getElementById('transactionTableBody');
-  if (filtered.length === 0) {
+  if (visibleFiltered.length === 0) {
     tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-gray-500">No records found</td></tr>`;
     return;
   }
@@ -2058,6 +2209,7 @@ function getPeriodFilterValues() {
   const frag = document.createDocumentFragment();
   limited.forEach(t => {
     const tr = document.createElement('tr');
+    tr.setAttribute('data-row-id', String(t.id));
     const mode = t.paymentmode || t.paymentMode || '-';
     const t2 = String(t.type).toLowerCase();
     let typeColor = 'text-red-400';
@@ -2084,6 +2236,9 @@ function getPeriodFilterValues() {
   });
   tbody.innerHTML = '';
   tbody.appendChild(frag);
+
+      // Swipe handlers attach karo
+  attachSwipeHandlers();
 }
 
 
@@ -2267,11 +2422,20 @@ function prevPage(btn) {
   }
 }
 
+let lastSearchQuery = '';
+
 function onSearch() {
   const btn = document.getElementById('clearSearchBtn');
   const val = document.getElementById('searchTx').value;
   if (val.length > 0) btn.classList.remove('hidden');
   else btn.classList.add('hidden');
+
+  // Sirf tab reset karo jab search text actually change hua ho
+  if (val.trim() !== lastSearchQuery) {
+    hiddenRowsInSearch = [];
+    lastSearchQuery = val.trim();
+  }
+
   clearTimeout(searchTimer);
   searchTimer = setTimeout(renderDashboard, 250);
 }
@@ -2280,6 +2444,8 @@ function clearSearch() {
   const el = document.getElementById('searchTx');
   el.value = '';
   document.getElementById('clearSearchBtn').classList.add('hidden');
+  hiddenRowsInSearch = [];
+  lastSearchQuery = '';
   renderDashboard();
 }
 
