@@ -539,7 +539,7 @@ tailwind.config = {
             <th class="py-3 px-3">MODE</th>
             <th class="py-3 px-3">AMOUNT</th>
             <th class="py-3 px-3">NOTE</th>
-            <th class="py-3 px-2 text-center" style="width: 40px;">🐵</th>
+            <th class="py-3 px-2 text-center" style="width: 40px;" id="monkeyHeader"></th>
             <th class="py-3 px-3 text-right">ACTIONS</th>
           </tr>
         </thead>
@@ -2146,6 +2146,12 @@ function setupSwipe(row) {
   const { type: filterType, year: filterYear, month: filterMonthNum } = getPeriodFilterValues();
   const searchQuery = document.getElementById('searchTx').value.toLowerCase().trim();
 
+      // Monkey header dikhao ya hide karo
+  const monkeyHeader = document.getElementById('monkeyHeader');
+  if (monkeyHeader) {
+    monkeyHeader.textContent = searchQuery ? '🐵' : '';
+  }
+
   const filtered = appData.transactions.filter(t => {
     const tDate = String(t.date || '');
     if (filterType === 'monthly') {
@@ -2251,7 +2257,7 @@ function setupSwipe(row) {
       <td class="py-2.5 px-3 font-bold whitespace-nowrap">${formatMoney(t.amount)}</td>
       <td class="py-2.5 px-3 text-gray-400 max-w-[200px] truncate">${escapeHtml(t.note || '-')}</td>
       <td class="py-2.5 px-2 text-center" style="width: 40px;">
-  <div class="swipe-handle cursor-grab active:cursor-grabbing text-2xl select-none" title="Swipe left to hide">🐵</div>
+  ${searchQuery ? `<div class="swipe-handle cursor-grab active:cursor-grabbing text-2xl select-none" title="Swipe left to hide">🐵</div>` : ''}
 </td>
       <td class="py-2.5 px-3 text-right whitespace-nowrap">
         <button data-action="edit" data-id="${tid}" class="text-indigo-400 hover:text-indigo-300 mx-1" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button>
