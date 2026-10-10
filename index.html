@@ -116,6 +116,20 @@ tailwind.config = {
   }
 
     /* Swipe to Hide */
+  #transactionTableBody tr[data-row-id] .swipe-handle {
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+    display: inline-block;
+    transition: transform 0.2s ease;
+  }
+  #transactionTableBody tr[data-row-id] .swipe-handle:hover {
+    transform: scale(1.2);
+  }
+  #transactionTableBody tr[data-row-id].swiping .swipe-handle {
+    transform: scale(1.3);
+  }
+  
   #transactionTableBody tr[data-row-id] {
     transition: transform 0.25s ease-out, opacity 0.25s ease-out;
     will-change: transform;
@@ -525,6 +539,7 @@ tailwind.config = {
             <th class="py-3 px-3">MODE</th>
             <th class="py-3 px-3">AMOUNT</th>
             <th class="py-3 px-3">NOTE</th>
+            <th class="py-3 px-2 text-center" style="width: 40px;">🐵</th>
             <th class="py-3 px-3 text-right">ACTIONS</th>
           </tr>
         </thead>
@@ -2054,15 +2069,76 @@ function setupSwipe(row) {
   const threshold = 80;
   const rowId = row.getAttribute('data-row-id');
 
+  // Sirf monkey icon pe swipe kaam kare
+  const handle = row.querySelector('.swipe-handle');
+  if (!handle) return;
+
   function onStart(e) {
-    if (e.target.closest('button')) return;
     const touch = e.touches ? e.touches[0] : e;
     startX = touch.clientX;
     currentX = startX;
     isDragging = true;
     swiping = false;
     row.classList.add('swiping');
+    e.preventDefault();
   }
+
+  function onMove(e) {
+    if (!isDragging) return;
+    const touch = e.touches ? e.touches[0] : e;
+    currentX = touch.clientX;
+    const diff = currentX - startX;
+
+    if (diff > 0) return;
+    if (Math.abs(diff) > 10) {
+      swiping = true;
+      row.classList.add('swipe-left');
+    }
+
+    const translate = Math.max(diff, -threshold * 1.5);
+    row.style.transform = 'translateX(' + translate + 'px)';
+    e.preventDefault();
+  }
+
+  async function onEnd(e) {
+    if (!isDragging) return;
+    isDragging = false;
+    row.classList.remove('swiping');
+
+    const diff = currentX - startX;
+
+    if (diff < -threshold && swiping) {
+      row.style.transform = 'translateX(-' + threshold + 'px)';
+
+      const shouldHide = await askHideRow();
+
+      if (shouldHide) {
+        row.classList.add('removing');
+        setTimeout(() => {
+          if (!hiddenRowsInSearch.includes(rowId)) {
+            hiddenRowsInSearch.push(rowId);
+          }
+          updateTransactionTable();
+        }, 300);
+      } else {
+        row.style.transform = 'translateX(0)';
+        row.classList.remove('swipe-left');
+      }
+    } else {
+      row.style.transform = 'translateX(0)';
+      row.classList.remove('swipe-left');
+    }
+  }
+
+  // Event listeners sirf monkey icon pe
+  handle.addEventListener('touchstart', onStart, { passive: false });
+  handle.addEventListener('touchmove', onMove, { passive: false });
+  handle.addEventListener('touchend', onEnd);
+  handle.addEventListener('mousedown', onStart);
+  handle.addEventListener('mousemove', onMove);
+  handle.addEventListener('mouseup', onEnd);
+  handle.addEventListener('mouseleave', (e) => { if (isDragging) onEnd(e); });
+}
 
   function onMove(e) {
     if (!isDragging) return;
@@ -2227,6 +2303,9 @@ function setupSwipe(row) {
       <td class="py-2.5 px-3">${escapeHtml(mode)}</td>
       <td class="py-2.5 px-3 font-bold whitespace-nowrap">${formatMoney(t.amount)}</td>
       <td class="py-2.5 px-3 text-gray-400 max-w-[200px] truncate">${escapeHtml(t.note || '-')}</td>
+      <td class="py-2.5 px-2 text-center" style="width: 40px;">
+  <div class="swipe-handle cursor-grab active:cursor-grabbing text-2xl select-none" title="Swipe left to hide">🐵</div>
+</td>
       <td class="py-2.5 px-3 text-right whitespace-nowrap">
         <button data-action="edit" data-id="${tid}" class="text-indigo-400 hover:text-indigo-300 mx-1" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button>
         <button data-action="delete" data-id="${tid}" class="text-red-400 hover:text-red-300 mx-1" title="Delete"><i class="fa-solid fa-trash"></i></button>
