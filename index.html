@@ -1686,6 +1686,23 @@ async function confirmReportDownload(btn) {
   }
 }
 
+  function toggleFyCard() {
+  const wrapper = document.getElementById('fyStatsWrapper');
+  const icon = document.getElementById('fyToggleIcon');
+  if (!wrapper || !icon) return;
+
+  const isHidden = wrapper.style.display === 'none';
+  if (isHidden) {
+    wrapper.style.display = 'block';
+    icon.classList.remove('fa-plus');
+    icon.classList.add('fa-minus');
+  } else {
+    wrapper.style.display = 'none';
+    icon.classList.remove('fa-minus');
+    icon.classList.add('fa-plus');
+  }
+}
+
 function handleLogout(callServer = true) {
   if (callServer && TOKEN && API_URL) {
     apiPost({ action: 'logout', token: TOKEN }).catch(() => {});
@@ -1825,35 +1842,40 @@ function onTypeChange() {
   const parts = String(dateStr).split('-');
   if (parts.length < 3) return '';
   const y = parseInt(parts[0]);
-  const m = parseInt(parts[1]);
-  if (m >= 4) {
-    return y + '-' + (y + 1);
-  } else {
-    return (y - 1) + '-' + y;
-  }
+  return String(y);  // Sirf year return karega (Calendar Year)
 }
 
 function populateFyDropdown() {
   const sel = document.getElementById('fyFilter');
   if (!sel) return;
   const currentVal = sel.value;
-  const fys = new Set();
+  const years = new Set();
 
   appData.transactions.forEach(t => {
-    const fy = getFinancialYear(t.date);
-    if (fy) fys.add(fy);
+    const dateStr = String(t.date || '').trim();
+    const y = dateStr.substring(0, 4);
+    if (y && /^\d{4}$/.test(y)) years.add(y);
   });
 
-  const todayFy = getFinancialYear(getTodayLocal());
-  if (todayFy) fys.add(todayFy);
+  // Current year + next + previous
+  const nowY = new Date().getFullYear();
+  years.add(String(nowY));
+  years.add(String(nowY + 1));
+  years.add(String(nowY - 1));
 
-  const sorted = Array.from(fys).sort().reverse();
+  const sorted = Array.from(years).sort().reverse();
 
   sel.innerHTML = '<option value="all">All</option>' +
-    sorted.map(fy => `<option value="${fy}">${fy}</option>`).join('');
+    sorted.map(y => `<option value="${y}">${y}</option>`).join('');
 
+  // Default: current year (agar pehle se kuch selected nahi hai)
+  const currentYear = String(nowY);
   if (currentVal && (currentVal === 'all' || sorted.indexOf(currentVal) !== -1)) {
     sel.value = currentVal;
+  } else if (sorted.indexOf(currentYear) !== -1) {
+    sel.value = currentYear;  // Current year default
+  } else {
+    sel.value = sorted[0];
   }
 }
 
