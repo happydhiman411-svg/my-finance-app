@@ -2348,7 +2348,7 @@ function setupSwipe(row) {
       <td class="py-2.5 px-3">${escapeHtml(t.person || 'Self')}</td>
       <td class="py-2.5 px-3">${escapeHtml(mode)}</td>
       <td class="py-2.5 px-3 font-bold whitespace-nowrap">${formatMoney(t.amount)}</td>
-      <td class="py-2.5 px-3 text-gray-400 max-w-[200px] truncate">${escapeHtml(t.note || '-')}</td>
+            <td class="py-2.5 px-3 text-gray-400 whitespace-normal break-words" style="max-width: 250px; word-wrap: break-word;">${escapeHtml(t.note || '-')}</td>
       <td class="py-2.5 px-2 text-center" style="width: 40px;">
         ${searchQuery ? `<div class="swipe-handle cursor-grab active:cursor-grabbing text-2xl select-none" title="Swipe left to hide">🙈</div>` : ''}
       </td>
