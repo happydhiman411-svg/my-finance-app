@@ -2322,7 +2322,7 @@ function setupSwipe(row) {
   }
 
   const frag = document.createDocumentFragment();
-  limited.forEach(t => {
+    limited.forEach(t => {
     const tr = document.createElement('tr');
     tr.setAttribute('data-row-id', String(t.id));
     const mode = t.paymentmode || t.paymentMode || '-';
@@ -2334,8 +2334,14 @@ function setupSwipe(row) {
     else if (t2 === 'udhardiya') typeColor = 'text-blue-400';
     else if (t2 === 'udharreceived') typeColor = 'text-emerald-400';
     const tid = escapeHtml(t.id);
+
+    // Same date hai to date hide karo
+    const currentDate = String(t.date || '');
+    const showDate = (currentDate !== lastDate);
+    lastDate = currentDate;
+
     tr.innerHTML = `
-      <td class="py-2.5 px-3 whitespace-nowrap">${escapeHtml(t.date || '')}</td>
+      <td class="py-2.5 px-3 whitespace-nowrap font-semibold text-gray-300">${showDate ? escapeHtml(currentDate) : ''}</td>
       <td class="py-2.5 px-3 font-semibold ${typeColor}">${escapeHtml(t.type || '')}</td>
       <td class="py-2.5 px-3">${escapeHtml(t.category || '')}</td>
       <td class="py-2.5 px-3">${escapeHtml(t.person || 'Self')}</td>
@@ -2343,8 +2349,8 @@ function setupSwipe(row) {
       <td class="py-2.5 px-3 font-bold whitespace-nowrap">${formatMoney(t.amount)}</td>
       <td class="py-2.5 px-3 text-gray-400 max-w-[200px] truncate">${escapeHtml(t.note || '-')}</td>
       <td class="py-2.5 px-2 text-center" style="width: 40px;">
-  ${searchQuery ? `<div class="swipe-handle cursor-grab active:cursor-grabbing text-2xl select-none" title="Swipe left to hide">🙈</div>` : ''}
-</td>
+        ${searchQuery ? `<div class="swipe-handle cursor-grab active:cursor-grabbing text-2xl select-none" title="Swipe left to hide">🙈</div>` : ''}
+      </td>
       <td class="py-2.5 px-3 text-right whitespace-nowrap">
         <button data-action="edit" data-id="${tid}" class="text-indigo-400 hover:text-indigo-300 mx-1" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button>
         <button data-action="delete" data-id="${tid}" class="text-red-400 hover:text-red-300 mx-1" title="Delete"><i class="fa-solid fa-trash"></i></button>
