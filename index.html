@@ -1515,15 +1515,15 @@ function cancelConfirm() {
   initSavingsVisibility();
   document.getElementById('setApiUrl').value = API_URL;
 
-   if (TOKEN) {
+     if (TOKEN) {
     if (loadCache()) renderDashboard();
     showApp();
-    
-    
-    // Sync alag
     syncData();
   } else {
-    // login modal
+    // Login modal dikhao
+    document.getElementById('loginModal').classList.remove('hidden');
+    document.getElementById('loginUser').value = USERNAME || '';
+    setTimeout(() => document.getElementById('loginPass').focus(), 100);
   }
 };
 
