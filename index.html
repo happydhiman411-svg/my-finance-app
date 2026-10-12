@@ -238,17 +238,17 @@ tailwind.config = {
     <!-- Current Year Total + Stats -->
   <div class="bg-cardBg rounded-2xl border border-gray-700 shadow mb-4 fade-in-up overflow-hidden">
     
-    <!-- Compact Header Row -->
-    <div class="flex items-center justify-between px-4 py-2.5">
+        <!-- Compact Header Row -->
+    <div class="flex items-center justify-between px-4 py-2.5 cursor-pointer select-none" onclick="toggleFyCard(event)">
       <div class="flex items-center gap-3">
         <span class="text-sm font-semibold text-emerald-300">Current Year Total</span>
-        <select id="fyFilter" onchange="renderFyCards()"
-          class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1 text-sm text-white">
+        <select id="fyFilter" onchange="renderFyCards()" onclick="event.stopPropagation()"
+          class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1 text-sm text-white cursor-pointer">
         </select>
       </div>
-      <button onclick="toggleFyCard()" id="fyToggleBtn" class="text-gray-400 hover:text-emerald-400 p-1" title="Show/Hide Stats">
+      <div class="text-gray-400 hover:text-emerald-400 p-1">
         <i id="fyToggleIcon" class="fa-solid fa-plus"></i>
-      </button>
+      </div>
     </div>
 
     <!-- Stats Cards (hidden by default) -->
@@ -1686,7 +1686,10 @@ async function confirmReportDownload(btn) {
   }
 }
 
-  function toggleFyCard() {
+  function toggleFyCard(event) {
+  // Agar dropdown pe click hua to toggle mat karo
+  if (event && event.target.tagName === 'SELECT') return;
+
   const wrapper = document.getElementById('fyStatsWrapper');
   const icon = document.getElementById('fyToggleIcon');
   if (!wrapper || !icon) return;
