@@ -2323,23 +2323,21 @@ function setupSwipe(row) {
 
   const frag = document.createDocumentFragment();
     let lastDate = null;
-    limited.forEach(t => {
+      limited.forEach(t => {
     const tr = document.createElement('tr');
     tr.setAttribute('data-row-id', String(t.id));
     const mode = t.paymentmode || t.paymentMode || '-';
-    const t2 = String(t.type).toLowerCase();
-    let typeColor = 'text-red-400';
-    if (t2 === 'income') typeColor = 'text-emerald-400';
-    else if (t2 === 'savings') typeColor = 'text-blue-400';
-    else if (t2 === 'udhar') typeColor = 'text-amber-400';
-    else if (t2 === 'udhardiya') typeColor = 'text-blue-400';
-    else if (t2 === 'udharreceived') typeColor = 'text-emerald-400';
-    const tid = escapeHtml(t.id);
+    ...
 
     // Same date hai to date hide karo
     const currentDate = String(t.date || '');
     const showDate = (currentDate !== lastDate);
     lastDate = currentDate;
+
+    // Date change hone pe top border add karo
+    if (showDate) {
+      tr.style.borderTop = '2px solid #4b5563';
+    }
 
     tr.innerHTML = `
             <td class="py-2.5 px-3 whitespace-nowrap font-semibold ${showDate ? 'text-gray-300' : 'text-gray-600'}">${showDate ? escapeHtml(currentDate) : '----------'}</td>
