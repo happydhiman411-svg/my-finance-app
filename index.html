@@ -1899,6 +1899,10 @@ function loadCache() {
   
 /* ============ SYNC ============ */
 async function syncData(showSpin = false) {
+  // Reset flag — har sync attempt pe
+  const _wasWelcomePending = window._sayWelcomeOnSync;
+  window._sayWelcomeOnSync = false;
+
   if (!API_URL || !TOKEN) return;
   const statusEl = document.getElementById('connectionStatus');
   const spinIcon = document.getElementById('syncIcon');
@@ -1935,11 +1939,10 @@ async function syncData(showSpin = false) {
   } finally {
     if (showSpin && spinIcon) spinIcon.classList.remove('spin');
   }
-       // Sync complete hone pe Connected bolo (refresh + manual pe, login pe nahi)
-  if (!window._sayWelcomeOnSync) {
+         // Sync complete hone pe Connected bolo (login pe nahi, baaki sab pe)
+  if (!_wasWelcomePending) {
     speak('Connected', { delay: 200 });
   }
-  window._sayWelcomeOnSync = false;
 }
 
 function getCategoriesForType(type) {
