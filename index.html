@@ -2330,6 +2330,7 @@ function setupSwipe(row) {
 
     const t2 = String(t.type).toLowerCase();
     let typeColor = 'text-red-400';
+            const tid = escapeHtml(t.id);
     if (t2 === 'income') typeColor = 'text-emerald-400';
     else if (t2 === 'savings') typeColor = 'text-blue-400';
     else if (t2 === 'udhar') typeColor = 'text-amber-400';
