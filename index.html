@@ -272,7 +272,7 @@ tailwind.config = {
     </div>
     <div class="flex items-center gap-2 flex-wrap justify-center">
       <span id="currentDateDisplay" class="text-xs text-gray-400 whitespace-nowrap"></span>
-     <button onclick="syncData(true); setTimeout(() => speak('Connected'), 500);" class="bg-indigo-600 hover:bg-indigo-500 px-3 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 transition">
+     <button onclick="syncData(true)" class="bg-indigo-600 hover:bg-indigo-500 px-3 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 transition">
   <i id="syncIcon" class="fa-solid fa-sync"></i><span class="hidden sm:inline">Sync</span>
 </button>
 
@@ -1939,7 +1939,10 @@ async function syncData(showSpin = false) {
   } finally {
     if (showSpin && spinIcon) spinIcon.classList.remove('spin');
   }
-        
+       // ✅ YE ADD KARO — Manual sync pe Connected bolo (API response ke baad)
+  if (showSpin) {
+    speak('Connected');
+  }  
 }
 
 function getCategoriesForType(type) {
