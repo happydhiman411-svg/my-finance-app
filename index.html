@@ -272,7 +272,7 @@ tailwind.config = {
     </div>
     <div class="flex items-center gap-2 flex-wrap justify-center">
       <span id="currentDateDisplay" class="text-xs text-gray-400 whitespace-nowrap"></span>
-      <button onclick="syncData(true)" class="bg-indigo-600 hover:bg-indigo-500 px-3 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 transition">
+      <button onclick="syncData(true); setTimeout(() => speak('Connected'), 500);" class="bg-indigo-600 ...">
         <i id="syncIcon" class="fa-solid fa-sync"></i><span class="hidden sm:inline">Sync</span>
       </button>
 
@@ -1515,10 +1515,15 @@ function cancelConfirm() {
   initSavingsVisibility();
   document.getElementById('setApiUrl').value = API_URL;
 
-  if (TOKEN) {
+   if (TOKEN) {
     if (loadCache()) renderDashboard();
     showApp();
-    setTimeout(() => syncData(), 1500);
+    
+    // Voice independent — 1.5 sec baad
+    setTimeout(() => speak('Connected'), 1500);
+    
+    // Sync alag
+    syncData();
   } else {
     // login modal
   }
@@ -1574,8 +1579,7 @@ async function handleLogin() {
             showApp();
       if (loadCache()) renderDashboard();
 
-      // Welcome voice
-      window._sayWelcomeOnSync = true;
+            // Welcome voice
       speak('Jai Shri Ram, You are Welcome', { delay: 500 });
 
       syncData();
@@ -1897,9 +1901,7 @@ function loadCache() {
   
 /* ============ SYNC ============ */
 async function syncData(showSpin = false) {
-  // Reset flag — har sync attempt pe
-  const _wasWelcomePending = window._sayWelcomeOnSync;
-  window._sayWelcomeOnSync = false;
+  
 
   if (!API_URL || !TOKEN) return;
   const statusEl = document.getElementById('connectionStatus');
@@ -1937,10 +1939,7 @@ async function syncData(showSpin = false) {
   } finally {
     if (showSpin && spinIcon) spinIcon.classList.remove('spin');
   }
-         // Sync complete hone pe Connected bolo (login pe nahi, baaki sab pe)
-  if (!_wasWelcomePending) {
-    speak('Connected', { delay: 200 });
-  }
+        
 }
 
 function getCategoriesForType(type) {
