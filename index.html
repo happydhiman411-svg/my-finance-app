@@ -2342,7 +2342,7 @@ function setupSwipe(row) {
     lastDate = currentDate;
 
     tr.innerHTML = `
-      <td class="py-2.5 px-3 whitespace-nowrap font-semibold text-gray-300">${showDate ? escapeHtml(currentDate) : ''}</td>
+            <td class="py-2.5 px-3 whitespace-nowrap font-semibold ${showDate ? 'text-gray-300' : 'text-gray-600'}">${showDate ? escapeHtml(currentDate) : '----------'}</td>
       <td class="py-2.5 px-3 font-semibold ${typeColor}">${escapeHtml(t.type || '')}</td>
       <td class="py-2.5 px-3">${escapeHtml(t.category || '')}</td>
       <td class="py-2.5 px-3">${escapeHtml(t.person || 'Self')}</td>
