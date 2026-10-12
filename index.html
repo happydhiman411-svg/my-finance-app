@@ -1519,8 +1519,6 @@ function cancelConfirm() {
     if (loadCache()) renderDashboard();
     showApp();
     
-    // Voice independent — 1.5 sec baad
-    setTimeout(() => speak('Connected'), 2500);
     
     // Sync alag
     syncData();
@@ -1927,6 +1925,8 @@ async function syncData(showSpin = false) {
             populateYearDropdown();
       statusEl.textContent = 'Connected';
       statusEl.className = 'px-2.5 py-1 text-xs rounded-full bg-emerald-900/50 text-emerald-400 border border-emerald-700';
+         // ✅ Voice — status green hote hi bolo
+      speak('Connected');
       renderDashboard();
       loadNotepad();
     } else {
