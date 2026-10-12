@@ -272,9 +272,9 @@ tailwind.config = {
     </div>
     <div class="flex items-center gap-2 flex-wrap justify-center">
       <span id="currentDateDisplay" class="text-xs text-gray-400 whitespace-nowrap"></span>
-      <button onclick="syncData(true); setTimeout(() => speak('Connected'), 500);" class="bg-indigo-600 ...">
-        <i id="syncIcon" class="fa-solid fa-sync"></i><span class="hidden sm:inline">Sync</span>
-      </button>
+     <button onclick="syncData(true); setTimeout(() => speak('Connected'), 500);" class="bg-indigo-600 hover:bg-indigo-500 px-3 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 transition">
+  <i id="syncIcon" class="fa-solid fa-sync"></i><span class="hidden sm:inline">Sync</span>
+</button>
 
       <button onclick="openReportPreview(this)" title="Download Report PDF" class="bg-emerald-600 hover:bg-emerald-500 px-3 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 transition">
   <i class="fa-solid fa-file-pdf"></i><span class="hidden sm:inline">Download Report</span>
@@ -1520,7 +1520,7 @@ function cancelConfirm() {
     showApp();
     
     // Voice independent — 1.5 sec baad
-    setTimeout(() => speak('Connected'), 1500);
+    setTimeout(() => speak('Connected'), 2500);
     
     // Sync alag
     syncData();
