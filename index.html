@@ -1334,6 +1334,90 @@ async function deleteReminder(id, btn) {
   }
 }
 
+  // ============ VOICE SYSTEM ============
+let _voiceCache = null;
+
+function getFemaleVoice() {
+  if (_voiceCache) return _voiceCache;
+  if (!('speechSynthesis' in window)) return null;
+
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices || voices.length === 0) return null;
+
+  const preferred = [
+    'Google UK English Female',
+    'Microsoft Zira',
+    'Samantha',
+    'Karen',
+    'Victoria',
+    'Google हिन्दी',
+    'Google US English'
+  ];
+
+  for (const name of preferred) {
+    const v = voices.find(v => v.name.includes(name));
+    if (v && (v.lang.startsWith('en') || v.lang.startsWith('hi'))) {
+      _voiceCache = v;
+      return v;
+    }
+  }
+
+  const fallback = voices.find(v => v.lang.startsWith('en'));
+  _voiceCache = fallback || voices[0];
+  return _voiceCache;
+}
+
+function speak(text, opts = {}) {
+  if (!('speechSynthesis' in window)) return Promise.resolve();
+  if (!text) return Promise.resolve();
+
+  return new Promise((resolve) => {
+    try {
+      window.speechSynthesis.cancel();
+
+      const msg = new SpeechSynthesisUtterance(String(text));
+      msg.lang = 'en-IN';
+      msg.rate = opts.rate || 0.95;
+      msg.pitch = opts.pitch || 1.05;
+      msg.volume = 1;
+
+      const voice = getFemaleVoice();
+      if (voice) msg.voice = voice;
+
+      msg.onend = () => resolve();
+      msg.onerror = () => resolve();
+
+      setTimeout(() => {
+        window.speechSynthesis.speak(msg);
+      }, opts.delay || 300);
+
+    } catch (e) {
+      console.warn("Speak error:", e);
+      resolve();
+    }
+  });
+}
+
+function numberToWords(n) {
+  n = parseInt(n) || 0;
+  const ones = ['Zero','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten',
+    'Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+  const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+  if (n < 20) return ones[n];
+  if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '');
+  if (n < 1000) return ones[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' ' + numberToWords(n % 100) : '');
+  return String(n);
+}
+
+if ('speechSynthesis' in window) {
+  window.speechSynthesis.getVoices();
+  window.speechSynthesis.onvoiceschanged = () => {
+    _voiceCache = null;
+    getFemaleVoice();
+  };
+}
+
   function showSuccess() {
   const el = document.getElementById('successOverlay');
   if (!el) return;
@@ -1489,8 +1573,13 @@ async function handleLogin() {
       localStorage.setItem('fin_token', TOKEN);
       localStorage.setItem('fin_user', USERNAME);
       document.getElementById('loginPass').value = '';
-      showApp();
-            if (loadCache()) renderDashboard();
+            showApp();
+      if (loadCache()) renderDashboard();
+
+      // Welcome voice
+      window._sayWelcomeOnSync = true;
+      speak('Jai Shri Ram, You are Welcome', { delay: 500 });
+
       syncData();
     } else {
       errEl.textContent = data.message || 'Invalid credentials';
@@ -1845,6 +1934,10 @@ async function syncData(showSpin = false) {
     statusEl.className = 'px-2.5 py-1 text-xs rounded-full bg-red-900/50 text-red-400 border border-red-700';
   } finally {
     if (showSpin && spinIcon) spinIcon.classList.remove('spin');
+  }
+    // Sync complete hone pe Connected bolo (sirf manual sync pe)
+  if (showSpin) {
+    speak('Connected', { delay: 200 });
   }
 }
 
@@ -2630,6 +2723,11 @@ function onSearch() {
   if (val.length > 0) btn.classList.remove('hidden');
   else btn.classList.add('hidden');
 
+  // Voice cancel karo (agar chal rahi hai)
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+  }
+
   // Sirf tab reset karo jab search text actually change hua ho
   if (val.trim() !== lastSearchQuery) {
     hiddenRowsInSearch = [];
@@ -2637,7 +2735,23 @@ function onSearch() {
   }
 
   clearTimeout(searchTimer);
-  searchTimer = setTimeout(renderDashboard, 250);
+
+  const query = val.trim();
+
+  // Search box khali hai to seedha render
+  if (!query) {
+    searchTimer = setTimeout(renderDashboard, 250);
+    return;
+  }
+
+  // 1 second wait — user typing complete kare
+  searchTimer = setTimeout(async () => {
+    // Voice bolo
+    await speak('Searching ' + query, { delay: 100 });
+
+    // Voice complete hone ke baad entries load karo
+    renderDashboard();
+  }, 1000);
 }
 
 function clearSearch() {
@@ -2764,6 +2878,7 @@ async function saveTransaction() {
     if (handleAuthError(data)) return;
     if (data.status === 'success') {
       showToast(isEdit ? "Updated!" : "Saved!");
+            speak(isEdit ? 'Entry edited' : 'One entry saved');
       resetForm();
       if (data.transactions) {
         appData.transactions = data.transactions;
@@ -2794,6 +2909,7 @@ async function deleteTransaction(id, btn) {
     if (handleAuthError(data)) return;
     if (data.status === 'success') {
       showToast("Deleted!");
+            speak('Entry deleted');
       if (data.transactions) {
         appData.transactions = data.transactions;
         appData.categories = data.categories || appData.categories;
@@ -3130,6 +3246,8 @@ async function submitBulk(btn) {
     if (handleAuthError(data)) return;
     if (data.status === 'success') {
       showToast(`${data.count} entries added!`);
+            const count = data.count || items.length;
+      speak(count === 1 ? 'One entry saved' : numberToWords(count) + ' entries saved');
       closeBulkModal();
       if (data.transactions) {
         appData.transactions = data.transactions;
