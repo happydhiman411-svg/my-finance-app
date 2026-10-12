@@ -2322,6 +2322,7 @@ function setupSwipe(row) {
   }
 
   const frag = document.createDocumentFragment();
+    let lastDate = null;
     limited.forEach(t => {
     const tr = document.createElement('tr');
     tr.setAttribute('data-row-id', String(t.id));
