@@ -1939,10 +1939,7 @@ async function syncData(showSpin = false) {
   } finally {
     if (showSpin && spinIcon) spinIcon.classList.remove('spin');
   }
-       // ✅ YE ADD KARO — Manual sync pe Connected bolo (API response ke baad)
-  if (showSpin) {
-    speak('Connected');
-  }  
+  
 }
 
 function getCategoriesForType(type) {
