@@ -2076,10 +2076,11 @@ function renderFyCards() {
     `<option value="${y}">${y}</option>`
   ).join('');
 
+  // Default: current year
   if (currentVal && sorted.indexOf(currentVal) !== -1) {
     sel.value = currentVal;
   } else {
-    sel.value = String(nowY);
+    sel.value = String(nowY);  // Current year default
   }
 }
 
