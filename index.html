@@ -1503,28 +1503,16 @@ function cancelConfirm() {
 }
 
 /* ============ LOGIN ============ */
-window.onload = function () {
-  document.getElementById('txDate').value = getTodayLocal();
-  
-  startLiveClock();
-  initCollapsibles();
-    populateYearDropdown();
-    onFilterTypeChange();
-  loadNotepad();
-    initIncomeVisibility();
-    initSavingsVisibility();
-  document.getElementById('setApiUrl').value = API_URL;
-
   if (TOKEN) {
-        if (loadCache()) renderDashboard();
+    // Flag reset karo — page load pe
+    window._sayWelcomeOnSync = false;
+    
+    if (loadCache()) renderDashboard();
     showApp();
-        setTimeout(() => syncData(), 1500);
+    setTimeout(() => syncData(), 1500);
   } else {
-    document.getElementById('loginModal').classList.remove('hidden');
-    document.getElementById('loginUser').value = USERNAME || '';
-    setTimeout(() => document.getElementById('loginPass').focus(), 100);
+    // login modal
   }
-};
 
 function startLiveClock() {
   const el = document.getElementById('currentDateDisplay');
