@@ -1935,10 +1935,11 @@ async function syncData(showSpin = false) {
   } finally {
     if (showSpin && spinIcon) spinIcon.classList.remove('spin');
   }
-    // Sync complete hone pe Connected bolo (sirf manual sync pe)
-  if (showSpin) {
+       // Sync complete hone pe Connected bolo (refresh + manual pe, login pe nahi)
+  if (!window._sayWelcomeOnSync) {
     speak('Connected', { delay: 200 });
   }
+  window._sayWelcomeOnSync = false;
 }
 
 function getCategoriesForType(type) {
