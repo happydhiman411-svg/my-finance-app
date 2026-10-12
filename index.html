@@ -2367,6 +2367,53 @@ function renderDashboard() {
   updateTransactionTable();
 }
 
+  function searchFromCategory(categoryName, btn) {
+  // Button pe click animation
+  if (btn) {
+    btn.classList.add('scale-125', 'text-indigo-400');
+    setTimeout(() => {
+      btn.classList.remove('scale-125', 'text-indigo-400');
+    }, 400);
+  }
+
+  // Smooth scroll karo search box tak
+  const searchBox = document.getElementById('searchTx');
+  if (!searchBox) return;
+
+  searchBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+  // Search box highlight
+  setTimeout(() => {
+    searchBox.classList.add('ring-2', 'ring-indigo-500', 'transition-all', 'duration-500');
+    
+    // Typewriter effect
+    searchBox.value = '';
+    let i = 0;
+    const text = categoryName;
+    
+    function typeChar() {
+      if (i < text.length) {
+        searchBox.value += text.charAt(i);
+        i++;
+        setTimeout(typeChar, 40);
+      } else {
+        // Type ho gaya — search apply karo
+        searchBox.classList.remove('ring-2', 'ring-indigo-500');
+        searchBox.classList.add('ring-0');
+        
+        // Search box ke andar changes trigger karo
+        const evt = new Event('input', { bubbles: true });
+        searchBox.dispatchEvent(evt);
+        
+        // Manual search call (kyunki input event listener hai)
+        onSearch();
+      }
+    }
+    
+    typeChar();
+  }, 500);
+}
+
 function renderCategoryWise() {
   const container = document.getElementById('categoryWiseList');
   if (!container) return;
@@ -2460,10 +2507,17 @@ function renderCategoryWise() {
         </div>
       `;
     }
-    return `
-      <div class="bg-gray-900 border border-gray-700 rounded-xl p-3">
-        <p class="text-sm font-medium text-white truncate mb-2">${escapeHtml(e.cat)}</p>
-        ${amountHtml}
+        return `
+      <div class="bg-gray-900 border border-gray-700 rounded-xl p-3 flex justify-between items-start gap-2">
+        <div class="min-w-0 flex-1">
+          <p class="text-sm font-medium text-white truncate mb-2">${escapeHtml(e.cat)}</p>
+          ${amountHtml}
+        </div>
+        <button onclick="searchFromCategory('${escapeHtml(e.cat).replace(/'/g, "\\'")}', this)" 
+          class="text-gray-500 hover:text-indigo-400 transition-colors flex-shrink-0 mt-0.5" 
+          title="Search this category">
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </button>
       </div>
     `;
   }).join('');
