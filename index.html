@@ -1518,7 +1518,7 @@ window.onload = function () {
   if (TOKEN) {
         if (loadCache()) renderDashboard();
     showApp();
-    syncData();
+        setTimeout(() => syncData(), 1500);
   } else {
     document.getElementById('loginModal').classList.remove('hidden');
     document.getElementById('loginUser').value = USERNAME || '';
