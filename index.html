@@ -517,7 +517,7 @@ tailwind.config = {
         <select id="filterType" onchange="onFilterTypeChange()" class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white">
           <option value="all">All Time</option>
           <option value="monthly">Monthly</option>
-          <option value="yearly">Yearly</option>
+          <option value="yearly" selected>Yearly</option>
         </select>
         <select id="filterYear" onchange="renderDashboard()" class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white hidden">
         </select>
@@ -1425,6 +1425,7 @@ window.onload = function () {
   startLiveClock();
   initCollapsibles();
     populateYearDropdown();
+    onFilterTypeChange();
   loadNotepad();
     initIncomeVisibility();
     initSavingsVisibility();
@@ -2053,7 +2054,7 @@ function renderFyCards() {
   if (netEl) animateNumber(netEl, totalInc - totalExp - totalSav);
 }
 
-  function populateYearDropdown() {
+ function populateYearDropdown() {
   const sel = document.getElementById('filterYear');
   if (!sel) return;
   const currentVal = sel.value;
@@ -2065,6 +2066,7 @@ function renderFyCards() {
     if (y && /^\d{4}$/.test(y)) years.add(y);
   });
 
+  // Current year + next + previous
   const nowY = new Date().getFullYear();
   years.add(String(nowY));
   years.add(String(nowY + 1));
@@ -2076,11 +2078,11 @@ function renderFyCards() {
     `<option value="${y}">${y}</option>`
   ).join('');
 
-  // Default: current year
+  // Default: current year (jaise Current Year Total mein hai)
   if (currentVal && sorted.indexOf(currentVal) !== -1) {
     sel.value = currentVal;
   } else {
-    sel.value = String(nowY);  // Current year default
+    sel.value = String(nowY);
   }
 }
 
