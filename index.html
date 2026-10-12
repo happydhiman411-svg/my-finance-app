@@ -235,51 +235,58 @@ tailwind.config = {
     </div>
   </header>
 
-  <!-- Stats -->
-  <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4 mb-4">
-    <div class="bg-cardBg p-4 md:p-5 rounded-2xl border border-gray-700 shadow">
-      <p class="text-xs md:text-sm text-gray-400">Today's Status</p>
-      <p id="todayStatus" class="text-sm md:text-lg font-bold text-red-400 mt-1">Aaj entry nahi hui!</p>
-    </div>
-        <div class="bg-cardBg p-4 md:p-5 rounded-2xl border border-gray-700 shadow">
-      <div class="flex items-center justify-between">
-        <p class="text-xs md:text-sm text-gray-400">Total Income</p>
-        <button onclick="toggleIncome()" id="incomeEyeBtn" class="text-gray-500 hover:text-emerald-400" title="Show/Hide">
-          <i class="fa-solid fa-eye-slash"></i>
-        </button>
-      </div>
-      <p id="totalIncome" class="text-lg md:text-2xl font-bold text-emerald-400 mt-1">•••••</p>
-    </div>
+    <!-- Current Year Total + Stats -->
+  <div class="bg-cardBg rounded-2xl border border-gray-700 shadow mb-4 fade-in-up overflow-hidden">
     
-        <div class="bg-cardBg p-4 md:p-5 rounded-2xl border border-gray-700 shadow">
-      <div class="flex items-center justify-between">
-        <p class="text-xs md:text-sm text-gray-400">Total Savings</p>
-        <button onclick="toggleSavings()" id="savingsEyeBtn" class="text-gray-500 hover:text-blue-400" title="Show/Hide">
-          <i class="fa-solid fa-eye-slash"></i>
-        </button>
+    <!-- Compact Header Row -->
+    <div class="flex items-center justify-between px-4 py-2.5">
+      <div class="flex items-center gap-3">
+        <span class="text-sm font-semibold text-emerald-300">Current Year Total</span>
+        <select id="fyFilter" onchange="renderFyCards()"
+          class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1 text-sm text-white">
+        </select>
       </div>
-      <p id="totalSavings" class="text-lg md:text-2xl font-bold text-blue-400 mt-1">•••••</p>
+      <button onclick="toggleFyCard()" id="fyToggleBtn" class="text-gray-400 hover:text-emerald-400 p-1" title="Show/Hide Stats">
+        <i id="fyToggleIcon" class="fa-solid fa-plus"></i>
+      </button>
     </div>
 
-    <div class="bg-cardBg p-4 md:p-5 rounded-2xl border border-gray-700 shadow">
-      <p class="text-xs md:text-sm text-gray-400">Total Expense</p>
-      <p id="totalExpense" class="text-lg md:text-2xl font-bold text-red-400 mt-1">₹0</p>
+    <!-- Stats Cards (hidden by default) -->
+    <div id="fyStatsWrapper" style="display:none;" class="px-4 pb-4 pt-2 border-t border-gray-700">
+      <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
+        <div class="bg-gray-900 p-4 md:p-5 rounded-xl border border-gray-700 shadow">
+          <p class="text-xs md:text-sm text-gray-400">Today's Status</p>
+          <p id="todayStatus" class="text-sm md:text-lg font-bold text-red-400 mt-1">Aaj entry nahi hui!</p>
+        </div>
+        <div class="bg-gray-900 p-4 md:p-5 rounded-xl border border-gray-700 shadow">
+          <div class="flex items-center justify-between">
+            <p class="text-xs md:text-sm text-gray-400">Total Income</p>
+            <button onclick="toggleIncome()" id="incomeEyeBtn" class="text-gray-500 hover:text-emerald-400" title="Show/Hide">
+              <i class="fa-solid fa-eye-slash"></i>
+            </button>
+          </div>
+          <p id="totalIncome" class="text-lg md:text-2xl font-bold text-emerald-400 mt-1">•••••</p>
+        </div>
+        <div class="bg-gray-900 p-4 md:p-5 rounded-xl border border-gray-700 shadow">
+          <div class="flex items-center justify-between">
+            <p class="text-xs md:text-sm text-gray-400">Total Savings</p>
+            <button onclick="toggleSavings()" id="savingsEyeBtn" class="text-gray-500 hover:text-blue-400" title="Show/Hide">
+              <i class="fa-solid fa-eye-slash"></i>
+            </button>
+          </div>
+          <p id="totalSavings" class="text-lg md:text-2xl font-bold text-blue-400 mt-1">•••••</p>
+        </div>
+        <div class="bg-gray-900 p-4 md:p-5 rounded-xl border border-gray-700 shadow">
+          <p class="text-xs md:text-sm text-gray-400">Total Expense</p>
+          <p id="totalExpense" class="text-lg md:text-2xl font-bold text-red-400 mt-1">₹0</p>
+        </div>
+        <div class="bg-gray-900 p-4 md:p-5 rounded-xl border border-gray-700 shadow">
+          <p class="text-xs md:text-sm text-gray-400">Net Balance</p>
+          <p id="netBalance" class="text-lg md:text-2xl font-bold text-indigo-400 mt-1">₹0</p>
+        </div>
+      </div>
     </div>
-    
-    <div class="bg-cardBg p-4 md:p-5 rounded-2xl border border-gray-700 shadow">
-      <p class="text-xs md:text-sm text-gray-400">Net Balance</p>
-      <p id="netBalance" class="text-lg md:text-2xl font-bold text-indigo-400 mt-1">₹0</p>
-    </div>
-  </div>
 
-    <!-- Financial Year Filter -->
-  <div class="bg-cardBg p-5 rounded-2xl border border-gray-700 shadow mb-4 fade-in-up">
-    <div class="flex flex-col sm:flex-row justify-between items-center gap-3">
-      <h3 class="text-lg font-semibold text-emerald-300">Financial Year</h3>
-      <select id="fyFilter" onchange="renderFyCards()"
-        class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white w-full sm:w-auto">
-      </select>
-    </div>
   </div>
 
 
