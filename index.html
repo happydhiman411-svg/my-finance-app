@@ -3165,13 +3165,40 @@ function addBulkRow() {
       <option value="UPI">UPI</option>
       <option value="Bank Transfer">Bank Transfer</option>
     </select>
-    <input type="text" class="bulk-note col-span-2 bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-white" placeholder="Note">
-    <button onclick="removeBulkRow(this)" class="col-span-1 text-red-400 hover:text-red-300 flex justify-center">
-      <i class="fa-solid fa-trash text-xs"></i>
-    </button>
+        <input type="text" class="bulk-note col-span-2 bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-white" placeholder="Note">
+    <div class="col-span-1 flex justify-center gap-1">
+      <button onclick="copyBulkRow(this)" class="text-emerald-400 hover:text-emerald-300" title="Copy date">
+        <i class="fa-solid fa-copy text-xs"></i>
+      </button>
+      <button onclick="removeBulkRow(this)" class="text-red-400 hover:text-red-300" title="Delete row">
+        <i class="fa-solid fa-trash text-xs"></i>
+      </button>
+    </div>
   `;
   container.appendChild(row);
   setTimeout(() => row.querySelector('.bulk-amount').focus(), 50);
+}
+
+  function copyBulkRow(btn) {
+  const row = btn.closest('.bulk-row');
+  if (!row) return;
+  
+  // Sirf DATE copy karo
+  const date = row.querySelector('.bulk-date').value;
+  
+  // Nayi row add karo (default values ke saath)
+  addBulkRow();
+  
+  // Nayi row lo (last one)
+  const container = document.getElementById('bulkRows');
+  const newRow = container.lastElementChild;
+  if (!newRow) return;
+  
+  // Sirf date set karo
+  newRow.querySelector('.bulk-date').value = date;
+  
+  // Amount pe focus karo
+  setTimeout(() => newRow.querySelector('.bulk-amount').focus(), 100);
 }
 
 function removeBulkRow(btn) {
