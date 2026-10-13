@@ -2717,6 +2717,7 @@ function prevPage(btn) {
 }
 
 let lastSearchQuery = '';
+let lastSpokenQuery = '';
 
 function onSearch() {
   const btn = document.getElementById('clearSearchBtn');
@@ -2742,17 +2743,21 @@ function onSearch() {
   // Search box khali hai to seedha render
   if (!query) {
     searchTimer = setTimeout(renderDashboard, 250);
+    lastSpokenQuery = '';
     return;
   }
 
-  // 1 second wait — user typing complete kare
-  searchTimer = setTimeout(async () => {
-    // Voice bolo
-    await speak('Searching ' + query, { delay: 100 });
+  // ✅ Entries turant update karo (jaise pehle hota tha)
+  searchTimer = setTimeout(renderDashboard, 250);
 
-    // Voice complete hone ke baad entries load karo
-    renderDashboard();
-  }, 1000);
+  // ✅ Voice alag se, parallel mein (jab user typing ruk jaye)
+  clearTimeout(window._voiceTimer);
+  window._voiceTimer = setTimeout(() => {
+    if (query !== lastSpokenQuery) {
+      lastSpokenQuery = query;
+      speak('Showing result of ' + query, { delay: 0, rate: 1.1 });
+    }
+  }, 600);
 }
 
 function clearSearch() {
