@@ -1398,6 +1398,128 @@ function speak(text, opts = {}) {
   });
 }
 
+  // ============ SMART VOICE (Hindi vs English auto-detect) ============
+function detectLanguage(text) {
+  const str = String(text || '').toLowerCase();
+  
+  // Hinglish/Hindi roman words (common)
+  const hindiWords = [
+    'ko', 'ki', 'ka', 'ke', 'se', 'me', 'mein', 'par', 'aur', 'ya',
+    'diye', 'diya', 'liye', 'liya', 'kharida', 'kharide', 'becha', 'beche',
+    'papa', 'mummy', 'maa', 'baap', 'bhai', 'behen', 'didi', 'bhaiya',
+    'doodh', 'dudh', 'ghar', 'bazar', 'bazaar', 'dukan', 'dukaan',
+    'khana', 'paani', 'pani', 'chai', 'nashta', 'subzi', 'sabzi',
+    'kapda', 'kapde', 'dawa', 'dawai', 'doctor', 'daktar',
+    'kiraya', 'kirana', 'saman', 'saaman', 'jhadu', 'pocha',
+    'bijli', 'paisa', 'paise', 'rupaye', 'rupay', 'udhar', 'udhaar',
+    'savings', 'kharch', 'kharcha', 'aamdani', 'kamai', 'tankha',
+    'scooter', 'cycle', 'rickshaw', 'auto', 'train', 'bus',
+    'kal', 'aaj', 'parso', 'abhi', 'baad', 'pehle',
+    'diya', 'liya', 'gaya', 'gayi', 'aya', 'ayi'
+  ];
+  
+  // English words (common)
+  const englishWords = [
+    'the', 'and', 'or', 'for', 'with', 'from', 'to', 'of', 'in', 'on', 'at',
+    'bought', 'sold', 'paid', 'received', 'gave', 'took', 'got',
+    'new', 'old', 'big', 'small', 'good', 'bad',
+    'food', 'water', 'tea', 'milk', 'bread', 'rice',
+    'home', 'house', 'shop', 'market', 'store',
+    'father', 'mother', 'brother', 'sister', 'friend',
+    'doctor', 'medicine', 'bill', 'rent',
+    'money', 'cash', 'online', 'bank',
+    'car', 'bike', 'bus', 'train',
+    'today', 'tomorrow', 'yesterday', 'now'
+  ];
+  
+  // Words mein split karo
+  const words = str.split(/\s+/).filter(w => w.length > 1);
+  if (words.length === 0) return 'en';
+  
+  let hindiScore = 0;
+  let englishScore = 0;
+  
+  words.forEach(w => {
+    // Clean word (remove punctuation)
+    const clean = w.replace(/[^a-z0-9]/g, '');
+    if (!clean) return;
+    
+    if (hindiWords.includes(clean)) hindiScore += 1;
+    if (englishWords.includes(clean)) englishScore += 1;
+  });
+  
+  // Agar Hindi words zyada hain toh Hindi, warna English
+  if (hindiScore > englishScore) return 'hi';
+  if (englishScore > hindiScore) return 'en';
+  
+  // Tie ho toh: agar koi bhi Hindi word mila toh Hindi
+  if (hindiScore > 0) return 'hi';
+  
+  // Default: English
+  return 'en';
+}
+
+// Hindi voice dhoondo
+function getHindiVoice() {
+  if (!('speechSynthesis' in window)) return null;
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices || voices.length === 0) return null;
+  
+  const hindiVoice = voices.find(v => 
+    v.lang.startsWith('hi') || 
+    v.name.includes('Hindi') || 
+    v.name.includes('हिन्दी') ||
+    v.name.includes('Swara') ||
+    v.name.includes('Lekha') ||
+    v.name.includes('Kalpana')
+  );
+  return hindiVoice || null;
+}
+
+// Smart speak — Hindi ya English auto-detect karke bolo
+function speakSmart(text, opts = {}) {
+  const lang = detectLanguage(text);
+  const hindiVoice = getHindiVoice();
+  
+  if (lang === 'hi' && hindiVoice) {
+    // Hindi voice use karo
+    return speakWithVoice(text, hindiVoice, 'hi-IN', opts);
+  } else {
+    // English voice use karo
+    return speak(text, opts);
+  }
+}
+
+// Specific voice se bolo
+function speakWithVoice(text, voice, lang, opts = {}) {
+  if (!('speechSynthesis' in window)) return Promise.resolve();
+  if (!text) return Promise.resolve();
+  
+  return new Promise((resolve) => {
+    try {
+      window.speechSynthesis.cancel();
+      
+      const msg = new SpeechSynthesisUtterance(String(text));
+      msg.lang = lang;
+      msg.rate = opts.rate || 1.0;
+      msg.pitch = opts.pitch || 1.0;
+      msg.volume = 1;
+      msg.voice = voice;
+      
+      msg.onend = () => resolve();
+      msg.onerror = () => resolve();
+      
+      setTimeout(() => {
+        window.speechSynthesis.speak(msg);
+      }, opts.delay || 0);
+      
+    } catch (e) {
+      console.warn("Speak error:", e);
+      resolve();
+    }
+  });
+}
+
 function numberToWords(n) {
   n = parseInt(n) || 0;
   const ones = ['Zero','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten',
@@ -2755,7 +2877,7 @@ function onSearch() {
   window._voiceTimer = setTimeout(() => {
     if (query !== lastSpokenQuery) {
       lastSpokenQuery = query;
-      speak('Showing result of ' + query, { delay: 0, rate: 1.1 });
+            speakSmart('Showing result of ' + query, { delay: 0, rate: 1.1 });
     }
   }, 600);
 }
