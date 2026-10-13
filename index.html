@@ -283,9 +283,9 @@ tailwind.config = {
       <button onclick="openSettings()" class="bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-lg text-sm font-medium border border-gray-700">
         <i class="fa-solid fa-gear"></i>
       </button>
-      <button onclick="handleLogout()" class="bg-red-600/20 hover:bg-red-600/30 text-red-400 px-3 py-2 rounded-lg text-sm font-medium border border-red-800">
-        <i class="fa-solid fa-right-from-bracket"></i>
-      </button>
+      <button onclick="handleLogout()" title="Logout" class="bg-red-600/20 hover:bg-red-600/30 text-red-400 px-3 py-2 rounded-lg text-sm font-medium border border-red-800">
+  <i class="fa-solid fa-right-from-bracket"></i>
+</button>
     </div>
   </header>
 
@@ -1975,6 +1975,12 @@ async function confirmReportDownload(btn) {
 }
 
 function handleLogout(callServer = true) {
+  // Confirmation dialog (sirf manual logout ke liye)
+  if (callServer) {
+    const ok = confirm('Do you want to logout?');
+    if (!ok) return;
+  }
+  
   if (callServer && TOKEN && API_URL) {
     apiPost({ action: 'logout', token: TOKEN }).catch(() => {});
   }
