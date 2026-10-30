@@ -2491,6 +2491,11 @@ function setupSwipe(row) {
   function updateTransactionTable() {
   const { type: filterType, year: filterYear, month: filterMonthNum } = getPeriodFilterValues();
   const searchQuery = document.getElementById('searchTx').value.toLowerCase().trim();
+      // --- NAYA FILTER CODE START ---
+  const fType = document.getElementById('filterSearchType')?.value || 'all';
+  const fCat = document.getElementById('filterSearchCategory')?.value || 'all';
+  const fPerson = document.getElementById('filterSearchPerson')?.value || 'all';
+  // --- NAYA FILTER CODE END ---
 
       // Monkey header dikhao ya hide karo
   const monkeyHeader = document.getElementById('monkeyHeader');
@@ -2506,6 +2511,20 @@ function setupSwipe(row) {
     } else if (filterType === 'yearly') {
       if (!tDate.startsWith(filterYear)) return false;
     }
+
+        // --- NAYE DROPDOWN FILTERS START ---
+    if (fType !== 'all') {
+      const tType = String(t.type || '').toLowerCase().replace(/\s+/g, '');
+      if (tType !== fType) return false;
+    }
+    if (fCat !== 'all') {
+      if (String(t.category || '') !== fCat) return false;
+    }
+    if (fPerson !== 'all') {
+      if (String(t.person || 'Self') !== fPerson) return false;
+    }
+    // --- NAYE DROPDOWN FILTERS END ---
+    
     if (searchQuery) {
       const hay = [t.category, t.person, t.note, t.type, t.paymentmode, t.paymentMode, t.date]
         .map(x => String(x || '').toLowerCase()).join(' ');
@@ -2700,6 +2719,12 @@ function renderDashboard() {
     const { type: filterType, year: filterYear, month: filterMonthNum } = getPeriodFilterValues();
   const searchQuery = document.getElementById('searchTx').value.toLowerCase().trim();
 
+    // --- NAYA FILTER CODE START ---
+  const fType = document.getElementById('filterSearchType')?.value || 'all';
+  const fCat = document.getElementById('filterSearchCategory')?.value || 'all';
+  const fPerson = document.getElementById('filterSearchPerson')?.value || 'all';
+  // --- NAYA FILTER CODE END ---
+
     const filtered = appData.transactions.filter(t => {
     const tDate = String(t.date || '');
     if (filterType === 'monthly') {
@@ -2708,6 +2733,20 @@ function renderDashboard() {
     } else if (filterType === 'yearly') {
       if (!tDate.startsWith(filterYear)) return false;
     }
+
+      // --- NAYE DROPDOWN FILTERS START ---
+    if (fType !== 'all') {
+      const tType = String(t.type || '').toLowerCase().replace(/\s+/g, '');
+      if (tType !== fType) return false;
+    }
+    if (fCat !== 'all') {
+      if (String(t.category || '') !== fCat) return false;
+    }
+    if (fPerson !== 'all') {
+      if (String(t.person || 'Self') !== fPerson) return false;
+    }
+    // --- NAYE DROPDOWN FILTERS END ---
+      
     if (searchQuery) {
             const hay = [t.category, t.person, t.note, t.type, t.paymentmode, t.paymentMode, t.date]
         .map(x => String(x || '').toLowerCase()).join(' ');
@@ -2969,6 +3008,15 @@ function clearSearch() {
   const el = document.getElementById('searchTx');
   el.value = '';
   document.getElementById('clearSearchBtn').classList.add('hidden');
+  
+  // Dropdowns reset karo
+  const fType = document.getElementById('filterSearchType');
+  const fCat = document.getElementById('filterSearchCategory');
+  const fPerson = document.getElementById('filterSearchPerson');
+  if (fType) fType.value = 'all';
+  if (fCat) fCat.value = 'all';
+  if (fPerson) fPerson.value = 'all';
+
   hiddenRowsInSearch = [];
   lastSearchQuery = '';
   renderDashboard();
