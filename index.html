@@ -580,16 +580,40 @@ tailwind.config = {
     <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-3">
      <h3 class="text-lg font-semibold text-indigo-300">Recent Transactions <span id="txCount" class="text-sm text-gray-400">(0)</span> <span id="txTotal" class="text-sm text-indigo-400">(₹0)</span></h3>
       <div class="flex gap-2 w-full sm:w-auto">
-        <div class="relative flex-1 sm:w-64">
-          <input type="text" id="searchTx" placeholder="Search category, person, note..." oninput="onSearch()"
-            class="w-full bg-gray-900 border border-gray-700 rounded-lg pl-3 pr-9 py-1.5 text-sm text-white">
-          <button id="clearSearchBtn" onclick="clearSearch()" title="Clear"
-            class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-400 hidden">
-            <i class="fa-solid fa-circle-xmark"></i>
-          </button>
-        </div>
-                <span class="text-xs text-gray-500 self-center">100 / page</span>
-      </div>
+        <div class="flex flex-col sm:flex-row gap-2 w-full justify-end items-center">
+  
+  <!-- TYPE Dropdown -->
+  <select id="filterSearchType" onchange="onSearch()" class="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white w-full sm:w-28">
+    <option value="all">All Types</option>
+    <option value="expense">Expense</option>
+    <option value="income">Income</option>
+    <option value="savings">Savings</option>
+    <option value="udhar">Udhar (Liya)</option>
+    <option value="udhardiya">Udhar (Diya)</option>
+  </select>
+
+  <!-- CATEGORY Dropdown -->
+  <select id="filterSearchCategory" onchange="onSearch()" class="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white w-full sm:w-32">
+    <option value="all">All Categories</option>
+  </select>
+
+  <!-- PERSON Dropdown -->
+  <select id="filterSearchPerson" onchange="onSearch()" class="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white w-full sm:w-28">
+    <option value="all">All Persons</option>
+  </select>
+
+  <!-- Search Box (Purana Wala) -->
+  <div class="relative flex-1 sm:w-56">
+    <input type="text" id="searchTx" placeholder="Search..." oninput="onSearch()"
+      class="w-full bg-gray-900 border border-gray-700 rounded-lg pl-3 pr-9 py-1.5 text-sm text-white">
+    <button id="clearSearchBtn" onclick="clearSearch()" title="Clear"
+      class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-400 hidden">
+      <i class="fa-solid fa-circle-xmark"></i>
+    </button>
+  </div>
+  
+  <span class="text-xs text-gray-500 self-center whitespace-nowrap">100 / page</span>
+</div>
     </div>
          <div class="overflow-x-auto overflow-y-auto" style="max-height: 500px;">
       <table class="w-full text-left text-sm">
@@ -2599,8 +2623,50 @@ function setupSwipe(row) {
   attachSwipeHandlers();
 }
 
+// ============ SEARCH FILTER DROPDOWNS ============
+function populateSearchDropdowns() {
+  // 1. CATEGORY Dropdown Fill Karo
+  const catSelect = document.getElementById('filterSearchCategory');
+  if (catSelect) {
+    const currentVal = catSelect.value;
+    let cats = (appData.categories || []).map(c => String(c.category || c.name || '').trim()).filter(Boolean);
+    
+    // Agar koi category transactions mein hai par list mein nahi, toh wo bhi add karo
+    (appData.transactions || []).forEach(t => {
+      if (t.category && !cats.includes(t.category)) cats.push(t.category);
+    });
+    
+    cats = [...new Set(cats)].sort(); // Duplicate hatao aur A-Z sort karo
+    
+    catSelect.innerHTML = '<option value="all">All Categories</option>' + 
+      cats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+      
+    if (currentVal && cats.includes(currentVal)) catSelect.value = currentVal;
+  }
+
+  // 2. PERSON Dropdown Fill Karo
+  const perSelect = document.getElementById('filterSearchPerson');
+  if (perSelect) {
+    const currentVal = perSelect.value;
+    let persons = (appData.persons || []).map(p => String(p.person || p.name || '').trim()).filter(Boolean);
+    
+    // Agar koi person transactions mein hai par list mein nahi, toh wo bhi add karo
+    (appData.transactions || []).forEach(t => {
+      if (t.person && !persons.includes(t.person)) persons.push(t.person);
+    });
+    
+    persons = [...new Set(persons)].sort();
+    
+    perSelect.innerHTML = '<option value="all">All Persons</option>' + 
+      persons.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+      
+    if (currentVal && persons.includes(currentVal)) perSelect.value = currentVal;
+  }
+}
+  
 
 function renderDashboard() {
+    populateSearchDropdowns(); // ✅ Dropdowns ko fill karo
   // Reset display limit agar filter change hua ho
     // Reset display limit agar search/filter change hua ho (rowsLimit ko chhod kar)
     const currentFilterState = JSON.stringify({
