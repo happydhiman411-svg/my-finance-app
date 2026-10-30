@@ -2575,7 +2575,7 @@ function setupSwipe(row) {
   // Count update
   const countEl = document.getElementById('txCount');
   if (countEl) countEl.textContent = '(' + visibleFiltered.length + ')';
-      // Total of filtered transactions
+        // Total of filtered transactions
   let txTotal = 0;
   visibleFiltered.forEach(t => {
     const amt = parseFloat(t.amount) || 0;
@@ -2583,9 +2583,11 @@ function setupSwipe(row) {
     if (type === 'udhar' || type === 'udhardiya' || type === 'udharreceived') return;
     txTotal += amt;
   });
+  
   const totalEl = document.getElementById('txTotal');
   if (totalEl) {
-    if (searchQuery) {
+    // Agar search hai YA koi dropdown select hua hai, toh total dikhao
+    if (searchQuery || fType !== 'all' || fCat !== 'all' || fPerson !== 'all') {
       totalEl.textContent = '(' + formatMoney(txTotal) + ')';
       totalEl.classList.remove('hidden');
     } else {
