@@ -580,41 +580,53 @@ tailwind.config = {
     <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-3">
      <h3 class="text-lg font-semibold text-indigo-300">Recent Transactions <span id="txCount" class="text-sm text-gray-400">(0)</span> <span id="txTotal" class="text-sm text-indigo-400">(₹0)</span></h3>
       <div class="flex gap-2 w-full sm:w-auto">
-        <div class="flex flex-col sm:flex-row gap-2 w-full justify-end items-center">
+        <!-- Search & Filter Section -->
+<div class="flex flex-col sm:flex-row justify-between items-center w-full mb-4 gap-3">
   
-  <!-- TYPE Dropdown -->
-  <select id="filterSearchType" onchange="onSearch()" class="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white w-full sm:w-28">
-    <option value="all">All Types</option>
-    <option value="expense">Expense</option>
-    <option value="income">Income</option>
-    <option value="savings">Savings</option>
-    <option value="udhar">Udhar (Liya)</option>
-    <option value="udhardiya">Udhar (Diya)</option>
-  </select>
+  <!-- Left side: Title & Count -->
+  <h3 class="text-lg font-semibold text-indigo-300 w-full sm:w-auto text-left">
+    Recent Transactions 
+    <span id="txCount" class="text-sm text-gray-400">(0)</span> 
+    <span id="txTotal" class="text-sm text-indigo-400">(₹0)</span>
+  </h3>
 
-  <!-- CATEGORY Dropdown -->
-  <select id="filterSearchCategory" onchange="onSearch()" class="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white w-full sm:w-32">
-    <option value="all">All Categories</option>
-  </select>
+  <!-- Right side: Filters & Search -->
+  <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto justify-end items-center">
+    
+    <!-- TYPE Dropdown -->
+    <select id="filterSearchType" onchange="onSearch()" class="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white w-full sm:w-auto">
+      <option value="all">All Types</option>
+      <option value="expense">Expense</option>
+      <option value="income">Income</option>
+      <option value="savings">Savings</option>
+      <option value="udhar">Udhar (Liya)</option>
+      <option value="udhardiya">Udhar (Diya)</option>
+    </select>
 
-  <!-- PERSON Dropdown -->
-  <select id="filterSearchPerson" onchange="onSearch()" class="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white w-full sm:w-28">
-    <option value="all">All Persons</option>
-  </select>
+    <!-- CATEGORY Dropdown -->
+    <select id="filterSearchCategory" onchange="onSearch()" class="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white w-full sm:w-auto">
+      <option value="all">All Categories</option>
+    </select>
 
-  <!-- Search Box (Purana Wala) -->
-  <div class="relative flex-1 sm:w-56">
-    <input type="text" id="searchTx" placeholder="Search..." oninput="onSearch()"
-      class="w-full bg-gray-900 border border-gray-700 rounded-lg pl-3 pr-9 py-1.5 text-sm text-white">
-    <button id="clearSearchBtn" onclick="clearSearch()" title="Clear"
-      class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-400 hidden">
-      <i class="fa-solid fa-circle-xmark"></i>
-    </button>
-  </div>
-  
-  <span class="text-xs text-gray-500 self-center whitespace-nowrap">100 / page</span>
-</div>
+    <!-- PERSON Dropdown -->
+    <select id="filterSearchPerson" onchange="onSearch()" class="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white w-full sm:w-auto">
+      <option value="all">All Persons</option>
+    </select>
+
+    <!-- Search Box -->
+    <div class="relative w-full sm:w-56">
+      <input type="text" id="searchTx" placeholder="Search..." oninput="onSearch()"
+        class="w-full bg-gray-900 border border-gray-700 rounded-lg pl-3 pr-9 py-1.5 text-sm text-white">
+      <button id="clearSearchBtn" onclick="clearSearch()" title="Clear"
+        class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-400 hidden">
+        <i class="fa-solid fa-circle-xmark"></i>
+      </button>
     </div>
+    
+    <!-- 100 / Page text -->
+    <span class="text-xs text-gray-500 self-center whitespace-nowrap hidden sm:block">100 / page</span>
+  </div>
+</div>
          <div class="overflow-x-auto overflow-y-auto" style="max-height: 500px;">
       <table class="w-full text-left text-sm">
         <thead>
