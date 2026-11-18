@@ -1724,7 +1724,7 @@ async function handleLogin() {
   errEl.classList.add('hidden');
 
   try {
-    const data = await apiGet({ action: 'verifyLogin', username: user, password: pass });
+    const data = await apiPost({ action: 'verifyLogin', username: user, password: pass });
     if (data.status === 'success') {
       TOKEN = data.token;
       USERNAME = data.user || user;
